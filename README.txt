@@ -34,6 +34,7 @@ Control Tab and Control Shift Tab, or Control Page Down and Control Page Up: nex
 The tab row: Shift Tab from a tab's first list, then Left and Right Arrow move through the tabs.
 Shift F1: view the changelog.
 Control N: quick add a task.
+Enter on a task: go to the Task field, to read it by character or by word with the arrows. Escape goes back to the list.
 Control D: mark the chosen task done.
 Control 1 to Control 6: Today, This week, Next week, Done not submitted, Waiting on someone, Done.
 Control Z: undo.

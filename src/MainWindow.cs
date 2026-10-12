@@ -20,11 +20,13 @@ namespace BusyBunny
     {
         private readonly Store _store;
         private readonly Settings _settings;
-        private readonly TextBox _summary = new() { IsReadOnly = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 6, 8, 2) };
-        private readonly TextBox _progress = new() { IsReadOnly = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 2, 8, 2) };
+        private readonly TextBox _summary = new() { IsReadOnly = true, IsReadOnlyCaretVisible = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 6, 8, 2) };
+        private readonly TextBox _progress = new() { IsReadOnly = true, IsReadOnlyCaretVisible = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 2, 8, 2) };
         private readonly QuietProgressBar _day = new() { Height = 10, Margin = new Thickness(8, 2, 8, 2), Focusable = false };
         private readonly QuietProgressBar _week = new() { Height = 10, Margin = new Thickness(8, 2, 8, 6), Focusable = false };
         private readonly TabControl _tabs = new() { Margin = new Thickness(6, 0, 6, 0) };
+        // The chosen task as text, to read by character or word with the arrows (and on braille): a list item can't be.
+        private readonly TextBox _detail = new() { IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 8, 8, 0), MinHeight = 28 };
         private readonly ComboBox _status = new() { Width = 240, Margin = new Thickness(0, 0, 16, 0) };
         private readonly ComboBox _move = new() { Width = 240 };
         private readonly MenuItem _shortMenu = new() { Header = "_Short mode", IsCheckable = true, InputGestureText = "Ctrl+Shift+S" };
@@ -126,11 +128,22 @@ namespace BusyBunny
                 DockPanel.SetDock(top, Dock.Top);
                 dock.Children.Add(top);
             }
+            AutomationProperties.SetName(_detail, "Task");
+            AutomationProperties.SetHelpText(_detail, "Read it with the arrows, by character or by word. Escape goes back to the list.");
+            _detail.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key != Key.Escape || _lastList == null) return;
+                e.Handled = true;
+                TextViewer.Select(_lastList, Math.Max(0, _lastList.SelectedIndex));
+            };
             var body = new Grid();
             body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            Grid.SetRow(pickers, 1);
+            body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(_detail, 1);
+            Grid.SetRow(pickers, 2);
             body.Children.Add(_tabs);
+            body.Children.Add(_detail);
             body.Children.Add(pickers);
             dock.Children.Add(body);
             KeyboardNavigation.SetTabNavigation(dock, KeyboardNavigationMode.Cycle);
@@ -150,8 +163,8 @@ namespace BusyBunny
         {
             var lb = new ListBox { MinHeight = 40, MaxHeight = 420, BorderThickness = new Thickness(1) };
             ScrollViewer.SetCanContentScroll(lb, true);
-            lb.GotKeyboardFocus += (_, _) => _lastList = lb;
-            lb.SelectionChanged += (_, _) => { if (lb.IsKeyboardFocusWithin) _lastList = lb; };
+            lb.GotKeyboardFocus += (_, _) => { _lastList = lb; ShowDetail(); };
+            lb.SelectionChanged += (_, _) => { if (lb.IsKeyboardFocusWithin) { _lastList = lb; ShowDetail(); } };
             lb.ContextMenu = new ContextMenu();
             lb.ContextMenuOpening += (_, e) => { if (!FillContextMenu(lb)) e.Handled = true; };
             _lists[key] = lb;
@@ -260,6 +273,13 @@ namespace BusyBunny
             }
             if (mods == ModifierKeys.Shift && key == Key.F1) { e.Handled = true; ShowChanges(); return; }
             if (mods == ModifierKeys.None && key == Key.Delete && Keyboard.FocusedElement is ListBoxItem) { e.Handled = true; DeleteTask(); }
+            if (mods == ModifierKeys.None && key == Key.Enter && Keyboard.FocusedElement is ListBoxItem { Tag: Guid })
+            {
+                e.Handled = true;
+                ShowDetail();
+                _detail.Focus();
+                _detail.CaretIndex = 0;
+            }
         }
 
         // ---- Showing the tasks ----
@@ -326,6 +346,7 @@ namespace BusyBunny
                 int at = focusId is Guid id ? IndexOf(back, id) : -1;
                 TextViewer.Select(back, at >= 0 ? at : Math.Min(focusIndex, back.Items.Count - 1));
             }
+            ShowDetail();
         }
 
         private void Fill(ListBox lb, IEnumerable<TaskItem> tasks, string name, string empty)
@@ -377,6 +398,14 @@ namespace BusyBunny
             var lb = _lastList;
             if (lb == null || (lb.SelectedItem as ListBoxItem)?.Tag is not Guid id) return null;
             return _store.Data.Tasks.FirstOrDefault(t => t.Id == id);
+        }
+
+        /// <summary>The Task field: the chosen task's line, then where it lives and how big it is.</summary>
+        private void ShowDetail()
+        {
+            var t = Current();
+            string text = t == null ? "" : _store.Line(t, DateTime.Now, _settings.ShortMode) + ". List: " + t.List + ". Size: " + Words.Of(t.Size) + ".";
+            if (_detail.Text != text) _detail.Text = text;
         }
 
         private TaskItem? CurrentOrSay()
@@ -595,6 +624,7 @@ namespace BusyBunny
             "The tab row: Shift Tab from a tab's first list, then Left and Right Arrow move through the tabs",
             "View the changelog: Shift F1",
             "Quick add a task: Control N",
+            "Read the chosen task by character or word: Enter, then the arrows. Escape goes back to the list",
             "Mark the chosen task done: Control D",
             "Set its status: Control 1 Today, 2 This week, 3 Next week, 4 Done not submitted, 5 Waiting on someone, 6 Done",
             "Undo: Control Z",

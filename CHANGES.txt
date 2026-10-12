@@ -1,3 +1,6 @@
+0.2.1
+Bug fixed: you could not read a task by character or by word, because tasks are list items. Now press Enter on a task to go to the Task field, where the arrows read it by character and Control with the arrows by word, on braille too. Escape goes back to the list, on the same task. The Task field is also just after the lists when you press Tab.
+Changed: the summary and progress lines show a cursor, so they read the same way.
 0.2.0
 New feature: a startup picture with the Busy Bunny logo, and a startup sound on real strings, harp and glockenspiel. Options, Sounds, Startup changes it or turns it off.
 New feature: Busy Bunny has its own bunny icon in the taskbar and on the exe.
