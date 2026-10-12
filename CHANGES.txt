@@ -1,3 +1,8 @@
+0.4.0
+New feature: Options, Settings, or Control Comma. Pick a section at the top. General has sounds, short mode, automatic update checks, how many hours you have on a typical day, and when to warn you about too many urgent tasks. Then each list has its own section: its name, its place among the tabs, and its priority scale.
+New feature: add your own lists. In Settings, choose Add a new list from the Section menu, type its name and choose its settings. It gets its own tab when you press OK.
+New feature: rename lists and change their order in Settings. Their tasks go with them. Control Z undoes it.
+Changed: Options, Priority scales now opens Settings at the list you are on.
 0.3.0
 New feature: Options, Priority scales. Choose a list, then its scale: Coffee, Space, Burner, any other scale from the library, a custom one with your own levels, or None. The Levels field shows the order, like 1 Triple shot, 2 Double shot, 3 Single shot, 4 Decaf. Control Z undoes it.
 New feature: tabs say each list's scale after its name, like Homework (Coffee).

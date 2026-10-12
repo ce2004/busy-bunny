@@ -16,9 +16,12 @@ If Windows SmartScreen says it does not recognise the app, choose More info, the
 To update: Help menu, Check for updates. Busy Bunny shows what is new in every version you are missing, then downloads the new one, restarts, and keeps all your tasks. It also checks quietly every 30 seconds and as soon as the internet comes back, and tells you once when there is a new version and how many versions behind you are. Options, Check for updates automatically turns that off.
 
 
-Priority scales
+Settings
 
-Each list can have its own priority scale. Options, Priority scales: choose a list, then a scale from the library (Coffee, Space, Burner and more), a custom one with your own levels, or None. The Levels field shows the order. Tabs show the scale after the list's name, like Homework (Coffee).
+Options, Settings, or Control Comma. Pick a section at the top.
+General: sounds, short mode, automatic update checks, the hours you have on a typical day, and when to warn you about too many urgent tasks.
+Each list has its own section: its name, its place among the tabs, and its priority scale (Coffee, Space, Burner and more from the library, a custom one with your own levels, or None). The Levels field shows the order. Tabs show the scale after the list's name, like Homework (Coffee).
+Add a new list, at the end of the Section menu, makes a new list with its own tab.
 
 
 The main screen

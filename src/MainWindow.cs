@@ -33,6 +33,7 @@ namespace BusyBunny
         private readonly MenuItem _soundsOnMenu = new() { Header = "Sounds _on", IsCheckable = true };
         private readonly MenuItem _checkAtStartMenu = new() { Header = "Check for updates _automatically", IsCheckable = true };
         private MenuItem _updateMenu = new();
+        private readonly MenuItem _moveMenu = new() { Header = "_Move to list" };
 
         // Every task list on screen, by a key that stays the same across refreshes, so focus can come back to it.
         private readonly Dictionary<string, ListBox> _lists = new();
@@ -78,13 +79,6 @@ namespace BusyBunny
 
             _tabs.Items.Add(new TabItem { Header = "Upcoming", Content = new ScrollViewer { Content = _upcoming, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
 
-            foreach (var l in _store.Data.Lists)
-            {
-                var lb = NewList("list-" + l.Name);
-                var panel = new StackPanel { Margin = new Thickness(6) };
-                panel.Children.Add(lb);
-                _tabs.Items.Add(new TabItem { Header = l.TabName, Content = new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, Tag = l.Name });
-            }
             // Left and Right Arrow on the tab row move through the tabs and stay there, like any tab
             // control; Control Tab and Control Page Down jump straight into the new tab's tasks.
             _tabs.SelectionChanged += (s, e) =>
@@ -97,7 +91,6 @@ namespace BusyBunny
             // The pick menus for the chosen task. Arrowing through them changes nothing until Enter or
             // leaving the menu, so passing over Done on the way to Waiting never hides a task by accident.
             _status.ItemsSource = Enum.GetValues<Status>().Select(Words.Of).ToList();
-            _move.ItemsSource = _store.Data.Lists.Select(l => l.Name).ToList();
             AutomationProperties.SetName(_status, "Status");
             AutomationProperties.SetName(_move, "Move to list");
             AutomationProperties.SetHelpText(_status, "Arrow to a status, then press Enter.");
@@ -208,9 +201,7 @@ namespace BusyBunny
                 statuses.Items.Add(Item(Words.Of(s), () => SetStatus(st), "Ctrl+" + ((int)s + 1)));
             }
             task.Items.Add(statuses);
-            var move = new MenuItem { Header = "_Move to list" };
-            foreach (var l in _store.Data.Lists) { var name = l.Name; move.Items.Add(Item(name, () => MoveTo(name))); }
-            task.Items.Add(move);
+            task.Items.Add(_moveMenu); // its lists are filled in by SyncListTabs
             task.Items.Add(Item("D_elete", DeleteTask, "Delete"));
             task.Items.Add(new Separator());
             task.Items.Add(Item("_Undo", Undo, "Ctrl+Z"));
@@ -221,6 +212,7 @@ namespace BusyBunny
             view.Items.Add(_shortMenu);
 
             var options = new MenuItem { Header = "_Options" };
+            options.Items.Add(Item("_Settings...", () => OpenSettings(null), "Ctrl+Comma"));
             options.Items.Add(Item("_Priority scales...", EditScales));
             options.Items.Add(Item("S_ounds...", () => { SoundsDialog.Show(this, _settings); _soundsOnMenu.IsChecked = _settings.SoundsOn; }));
             _soundsOnMenu.IsChecked = _settings.SoundsOn;
@@ -289,6 +281,7 @@ namespace BusyBunny
             }
             if (mods == ModifierKeys.Shift && key == Key.F1) { e.Handled = true; ShowChanges(); return; }
             if (mods == ModifierKeys.None && key == Key.F2) { e.Handled = true; EditTask(); return; }
+            if (mods == ModifierKeys.Control && key == Key.OemComma) { e.Handled = true; OpenSettings(null); return; }
             if (mods == ModifierKeys.None && key == Key.Delete && Keyboard.FocusedElement is ListBoxItem) { e.Handled = true; DeleteTask(); }
             if (mods == ModifierKeys.None && key == Key.Enter && Keyboard.FocusedElement is ListBoxItem { Tag: Guid })
             {
@@ -306,6 +299,7 @@ namespace BusyBunny
         {
             var now = DateTime.Now;
             _shownDate = now.Date;
+            SyncListTabs();
             // Tab names follow the lists' scales: Homework (Coffee).
             foreach (TabItem tab in _tabs.Items)
                 if (tab.Tag is string name && _store.Data.Lists.FirstOrDefault(l => l.Name == name) is TaskList list && !Equals(tab.Header, list.TabName))
@@ -546,14 +540,57 @@ namespace BusyBunny
             WarnIfOverloaded();
         }
 
-        /// <summary>Options, Priority scales: starts on the list whose tab is open.</summary>
+        /// <summary>Options, Priority scales: Settings, opened at the list whose tab is open (or the chosen task's list).</summary>
         private void EditScales()
         {
-            string? list = _tabs.SelectedItem is TabItem { Tag: string l } ? l : _lastList != null && Current() is TaskItem t ? t.List : null;
-            if (!ScalesDialog.Show(this, _store, list)) return;
+            string? list = _tabs.SelectedItem is TabItem { Tag: string l } ? l : _lastList != null && Current() is TaskItem t ? t.List : _store.Data.Lists.FirstOrDefault()?.Name;
+            OpenSettings(list);
+        }
+
+        private void OpenSettings(string? list)
+        {
+            if (!SettingsWindow.Show(this, _store, _settings, list)) { FocusTab(false); return; }
             Save();
+            _shortMenu.IsChecked = _settings.ShortMode;
+            _soundsOnMenu.IsChecked = _settings.SoundsOn;
+            _checkAtStartMenu.IsChecked = _settings.CheckForUpdatesAtStart;
+            if (_settings.CheckForUpdatesAtStart) StartAutoUpdates();
             Refresh();
-            Speech.Say(this, "Priority scales saved.");
+            FocusTab(false);
+            Speech.Say(this, "Settings saved.");
+        }
+
+        /// <summary>
+        /// Makes the list tabs, the Move to pick menu and the Move to list menu match the lists: after
+        /// Settings adds, renames or reorders them, and after Undo puts them back.
+        /// </summary>
+        private void SyncListTabs()
+        {
+            var names = _store.Data.Lists.Select(l => l.Name).ToList();
+            var tabs = _tabs.Items.OfType<TabItem>().Where(t => t.Tag is string).ToList();
+            if (tabs.Select(t => (string)t.Tag).SequenceEqual(names) && _moveMenu.Items.Count == names.Count) return;
+            object? selectedTag = (_tabs.SelectedItem as TabItem)?.Tag;
+            int selectedIndex = _tabs.SelectedIndex;
+            foreach (var t in tabs) { _tabs.Items.Remove(t); _lists.Remove("list-" + t.Tag); }
+            foreach (var l in _store.Data.Lists)
+            {
+                var lb = NewList("list-" + l.Name);
+                var panel = new StackPanel { Margin = new Thickness(6) };
+                panel.Children.Add(lb);
+                _tabs.Items.Add(new TabItem { Header = l.TabName, Content = new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, Tag = l.Name });
+            }
+            var same = _tabs.Items.OfType<TabItem>().FirstOrDefault(t => selectedTag is string s && Equals(t.Tag, s));
+            if (same != null) _tabs.SelectedItem = same;
+            else _tabs.SelectedIndex = Math.Clamp(selectedIndex, 0, _tabs.Items.Count - 1);
+            _move.ItemsSource = names;
+            _moveMenu.Items.Clear();
+            foreach (var n in names)
+            {
+                var name = n;
+                var m = new MenuItem { Header = name };
+                m.Click += (_, _) => MoveTo(name);
+                _moveMenu.Items.Add(m);
+            }
         }
 
         private void SwapFocus()
@@ -750,6 +787,7 @@ namespace BusyBunny
             "Quick add a task: Control N",
             "Read the chosen task by character or word: Enter, then the arrows. Escape goes back to the list",
             "Edit the chosen task, its name or anything else: F2",
+            "Settings: Control Comma",
             "Mark the chosen task done: Control D",
             "Set its status: Control 1 Today, 2 This week, 3 Next week, 4 Done not submitted, 5 Waiting on someone, 6 Done",
             "Undo: Control Z",
