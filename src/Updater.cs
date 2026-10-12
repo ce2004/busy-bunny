@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices;
@@ -20,7 +22,8 @@ namespace BusyBunny
         public const string Repo = "ce2004/busy-bunny";
         public const string Website = "https://github.com/" + Repo;
 
-        public sealed record Release(Version Version, string Notes, string Url, string? Sha256);
+        /// <summary>The newest release for this PC, and every version newer than this copy with its notes, newest first.</summary>
+        public sealed record Release(Version Version, string Url, string? Sha256, IReadOnlyList<(Version Version, string Notes)> Missed);
 
         public static Version Current
         {
@@ -58,47 +61,80 @@ namespace BusyBunny
 
         internal sealed record Parsed(Version Version, string Notes, string? Url, string? Sha256);
 
-        internal static Parsed ParseRelease(string text, string asset)
+        /// <summary>Every published release in GitHub's answer (drafts and pre-releases left out), newest first.</summary>
+        internal static List<Parsed> ParseReleases(string text, string asset)
         {
             if (text.TrimStart().StartsWith("<", StringComparison.Ordinal)) throw new InvalidOperationException(WebPageInstead);
             JsonDocument doc;
             try { doc = JsonDocument.Parse(text); }
             catch (JsonException) { throw new InvalidOperationException(WebPageInstead); }
+            var all = new List<Parsed>();
             using (doc)
             {
-                var root = doc.RootElement;
-                if (root.ValueKind != JsonValueKind.Object ||
-                    !root.TryGetProperty("tag_name", out var tagEl) || tagEl.ValueKind != JsonValueKind.String ||
-                    NormalizeTag(tagEl.GetString()) is not Version version)
-                    throw new InvalidOperationException("GitHub's answer about the newest Busy Bunny could not be understood. Try again later.");
-                string notes = root.TryGetProperty("body", out var b) && b.ValueKind == JsonValueKind.String ? b.GetString() ?? "" : "";
-                if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+                if (doc.RootElement.ValueKind != JsonValueKind.Array)
+                    throw new InvalidOperationException("GitHub's answer about Busy Bunny's versions could not be understood. Try again later.");
+                foreach (var root in doc.RootElement.EnumerateArray())
                 {
-                    foreach (var a in assets.EnumerateArray())
-                    {
-                        if (a.ValueKind != JsonValueKind.Object || !a.TryGetProperty("name", out var n) || n.ValueKind != JsonValueKind.String || n.GetString() != asset) continue;
-                        if (!a.TryGetProperty("browser_download_url", out var u) || u.ValueKind != JsonValueKind.String) continue;
-                        string? sha = a.TryGetProperty("digest", out var d) && d.ValueKind == JsonValueKind.String && d.GetString() is string ds && ds.StartsWith("sha256:") ? ds[7..] : null;
-                        return new Parsed(version, notes, u.GetString(), sha);
-                    }
+                    if (root.ValueKind != JsonValueKind.Object) continue;
+                    if (root.TryGetProperty("draft", out var dr) && dr.ValueKind == JsonValueKind.True) continue;
+                    if (root.TryGetProperty("prerelease", out var pr) && pr.ValueKind == JsonValueKind.True) continue;
+                    if (!root.TryGetProperty("tag_name", out var tagEl) || tagEl.ValueKind != JsonValueKind.String || NormalizeTag(tagEl.GetString()) is not Version version) continue;
+                    string notes = root.TryGetProperty("body", out var b) && b.ValueKind == JsonValueKind.String ? b.GetString() ?? "" : "";
+                    string? url = null, sha = null;
+                    if (root.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
+                        foreach (var a in assets.EnumerateArray())
+                        {
+                            if (a.ValueKind != JsonValueKind.Object || !a.TryGetProperty("name", out var n) || n.ValueKind != JsonValueKind.String || n.GetString() != asset) continue;
+                            if (!a.TryGetProperty("browser_download_url", out var u) || u.ValueKind != JsonValueKind.String) continue;
+                            url = u.GetString();
+                            sha = a.TryGetProperty("digest", out var d) && d.ValueKind == JsonValueKind.String && d.GetString() is string ds && ds.StartsWith("sha256:") ? ds[7..] : null;
+                            break;
+                        }
+                    all.Add(new Parsed(version, notes, url, sha));
                 }
-                return new Parsed(version, notes, null, null);
             }
+            return all.OrderByDescending(p => p.Version).ToList();
         }
 
-        private static async Task<string> ReleaseJsonAsync()
+        // GitHub answers only 60 questions an hour from one internet address, and Busy Bunny asks every
+        // 30 seconds. So it asks "has this changed since?" (the ETag): a "not changed" answer does not
+        // count. If GitHub still says to slow down, nothing is asked again until the time it gives.
+        private static string? _etag, _lastAnswer;
+        private static DateTime _quietUntil = DateTime.MinValue;
+        private static readonly object AnswerGate = new();
+
+        private static async Task<string> ReleasesJsonAsync(TimeSpan limitAfter)
         {
+            if (DateTime.UtcNow < _quietUntil)
+                throw new InvalidOperationException("GitHub asked Busy Bunny to wait before checking again. It will try again by itself at " + _quietUntil.ToLocalTime().ToString("h:mm tt") + ".");
             using var h = Http();
-            using var limit = new System.Threading.CancellationTokenSource(ApiLimit);
+            using var limit = new System.Threading.CancellationTokenSource(limitAfter);
             try
             {
-                using var resp = await h.GetAsync("https://api.github.com/repos/" + Repo + "/releases/latest", limit.Token);
+                using var req = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/" + Repo + "/releases?per_page=100");
+                string? etag, last;
+                lock (AnswerGate) { etag = _etag; last = _lastAnswer; }
+                if (etag != null && last != null) req.Headers.TryAddWithoutValidation("If-None-Match", etag);
+                using var resp = await h.SendAsync(req, limit.Token);
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotModified && last != null) return last;
                 string text = await resp.Content.ReadAsStringAsync(limit.Token);
                 if (resp.Content.Headers.ContentType?.MediaType == "text/html" || text.TrimStart().StartsWith("<")) throw new InvalidOperationException(WebPageInstead);
-                if ((int)resp.StatusCode is 403 or 429) throw new InvalidOperationException("GitHub is limiting update checks right now. Try again in an hour.");
-                if ((int)resp.StatusCode == 404) throw new InvalidOperationException("There is no Busy Bunny release on GitHub yet.");
+                if ((int)resp.StatusCode is 403 or 429)
+                {
+                    var wait = TimeSpan.FromMinutes(5);
+                    if (resp.Headers.TryGetValues("X-RateLimit-Reset", out var reset) && long.TryParse(reset.FirstOrDefault(), out long unix))
+                        wait = DateTimeOffset.FromUnixTimeSeconds(unix).UtcDateTime - DateTime.UtcNow + TimeSpan.FromSeconds(5);
+                    else if (resp.Headers.RetryAfter?.Delta is TimeSpan after) wait = after;
+                    _quietUntil = DateTime.UtcNow + (wait < TimeSpan.FromSeconds(30) ? TimeSpan.FromSeconds(30) : wait);
+                    throw new InvalidOperationException("GitHub is limiting update checks right now. Busy Bunny will try again by itself at " + _quietUntil.ToLocalTime().ToString("h:mm tt") + ".");
+                }
                 if (!resp.IsSuccessStatusCode)
                     throw new InvalidOperationException("GitHub answered " + (int)resp.StatusCode + " " + resp.ReasonPhrase + ". Try again later.");
+                lock (AnswerGate)
+                {
+                    _lastAnswer = text;
+                    _etag = resp.Headers.ETag?.ToString();
+                }
                 return text;
             }
             catch (OperationCanceledException) when (limit.IsCancellationRequested)
@@ -111,13 +147,24 @@ namespace BusyBunny
             }
         }
 
-        /// <summary>The latest release, or null when this copy is already up to date.</summary>
-        public static async Task<Release?> CheckAsync()
+        /// <summary>
+        /// The newest release, with every version this copy is missing, or null when it is up to date.
+        /// quick: the background check gives up after 10 seconds instead of 30.
+        /// </summary>
+        public static async Task<Release?> CheckAsync(bool quick = false)
         {
-            var p = ParseRelease(await ReleaseJsonAsync(), AssetName);
-            if (p.Version <= Current) return null;
-            if (p.Url == null) throw new InvalidOperationException("Version " + p.Version + " has no " + AssetName + " yet. Try again in a few minutes.");
-            return new Release(p.Version, p.Notes, p.Url, p.Sha256);
+            return Pick(ParseReleases(await ReleasesJsonAsync(TimeSpan.FromSeconds(quick ? 10 : 30)), AssetName), Current);
+        }
+
+        internal static Release? Pick(List<Parsed> all, Version current)
+        {
+            var missed = all.Where(p => p.Version > current).ToList();
+            if (missed.Count == 0) return null;
+            // The newest one that has this PC's exe: a release still being built has no files for a few minutes.
+            var newest = missed.FirstOrDefault(p => p.Url != null);
+            if (newest == null) throw new InvalidOperationException("Version " + missed[0].Version + " has no " + AssetName + " yet. Try again in a few minutes.");
+            return new Release(newest.Version, newest.Url!, newest.Sha256,
+                missed.Where(p => p.Version <= newest.Version).Select(p => (p.Version, p.Notes)).ToList());
         }
 
         /// <summary>Downloads, checks and swaps in the new exe, then starts it. The caller saves and closes.</summary>
@@ -150,7 +197,7 @@ namespace BusyBunny
             }
             try
             {
-                Process.Start(new ProcessStartInfo(exe, "--after-update " + Environment.ProcessId) { UseShellExecute = false });
+                Process.Start(new ProcessStartInfo(exe, "--after-update " + Environment.ProcessId + " " + Current) { UseShellExecute = false });
             }
             catch (Exception e)
             {

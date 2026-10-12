@@ -13,7 +13,12 @@ On any other Windows laptop, download BusyBunny-x64.exe.
 Put it somewhere of your own, like your Documents folder, and open it. Nothing else needs installing.
 If Windows SmartScreen says it does not recognise the app, choose More info, then Run anyway.
 
-To update: Help menu, Check for updates. Busy Bunny downloads the new version, restarts, and keeps all your tasks. It also checks quietly each time it starts, and tells you when there is a new one.
+To update: Help menu, Check for updates. Busy Bunny shows what is new in every version you are missing, then downloads the new one, restarts, and keeps all your tasks. It also checks quietly every 30 seconds and as soon as the internet comes back, and tells you once when there is a new version and how many versions behind you are. Options, Check for updates automatically turns that off.
+
+
+Priority scales
+
+Each list can have its own priority scale. Options, Priority scales: choose a list, then a scale from the library (Coffee, Space, Burner and more), a custom one with your own levels, or None. The Levels field shows the order. Tabs show the scale after the list's name, like Homework (Coffee).
 
 
 The main screen

@@ -1,3 +1,11 @@
+0.3.0
+New feature: Options, Priority scales. Choose a list, then its scale: Coffee, Space, Burner, any other scale from the library, a custom one with your own levels, or None. The Levels field shows the order, like 1 Triple shot, 2 Double shot, 3 Single shot, 4 Decaf. Control Z undoes it.
+New feature: tabs say each list's scale after its name, like Homework (Coffee).
+New feature: the Task field also says the task's priority, like Triple shot, 1 of 4, and the order of its list's scale.
+New feature: Busy Bunny checks for updates every 30 seconds, and again as soon as the internet comes back. With no internet it just waits quietly. When there is a new version it tells you once, and says how many versions behind you are, like You're 3 versions out of date.
+New feature: the update window shows the changelog of every version you are missing, newest first, before you install. After updating, What's new shows just the versions you got.
+Changed: Options, Check for updates when Busy Bunny starts is now Check for updates automatically.
+Bug fixed: if a quiet update check was running when you chose Help, Check for updates, nothing happened. Now it always checks.
 0.2.2
 New feature: Edit task. Press F2 on a task, or choose Edit task from its menu (the Applications key or Shift F10) or from the Task menu. You can change its name, list, tag, status, priority, due date and size, then press Save. Control Z undoes it. Move to list and Set status are still their own items in the menu.
 Changed: a task's menu now starts on its first item, Edit task, so NVDA reads it right away instead of just saying menu.

@@ -31,7 +31,8 @@ namespace BusyBunny
         private readonly ComboBox _move = new() { Width = 240 };
         private readonly MenuItem _shortMenu = new() { Header = "_Short mode", IsCheckable = true, InputGestureText = "Ctrl+Shift+S" };
         private readonly MenuItem _soundsOnMenu = new() { Header = "Sounds _on", IsCheckable = true };
-        private readonly MenuItem _checkAtStartMenu = new() { Header = "Check for updates when Busy Bunny _starts", IsCheckable = true };
+        private readonly MenuItem _checkAtStartMenu = new() { Header = "Check for updates _automatically", IsCheckable = true };
+        private MenuItem _updateMenu = new();
 
         // Every task list on screen, by a key that stays the same across refreshes, so focus can come back to it.
         private readonly Dictionary<string, ListBox> _lists = new();
@@ -82,7 +83,7 @@ namespace BusyBunny
                 var lb = NewList("list-" + l.Name);
                 var panel = new StackPanel { Margin = new Thickness(6) };
                 panel.Children.Add(lb);
-                _tabs.Items.Add(new TabItem { Header = l.Name, Content = new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, Tag = l.Name });
+                _tabs.Items.Add(new TabItem { Header = l.TabName, Content = new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, Tag = l.Name });
             }
             // Left and Right Arrow on the tab row move through the tabs and stay there, like any tab
             // control; Control Tab and Control Page Down jump straight into the new tab's tasks.
@@ -220,17 +221,24 @@ namespace BusyBunny
             view.Items.Add(_shortMenu);
 
             var options = new MenuItem { Header = "_Options" };
+            options.Items.Add(Item("_Priority scales...", EditScales));
             options.Items.Add(Item("S_ounds...", () => { SoundsDialog.Show(this, _settings); _soundsOnMenu.IsChecked = _settings.SoundsOn; }));
             _soundsOnMenu.IsChecked = _settings.SoundsOn;
             _soundsOnMenu.Click += (_, _) => { _settings.SoundsOn = _soundsOnMenu.IsChecked; _settings.Save(); _settings.Apply(); };
             options.Items.Add(_soundsOnMenu);
             _checkAtStartMenu.IsChecked = _settings.CheckForUpdatesAtStart;
-            _checkAtStartMenu.Click += (_, _) => { _settings.CheckForUpdatesAtStart = _checkAtStartMenu.IsChecked; _settings.Save(); };
+            _checkAtStartMenu.Click += (_, _) =>
+            {
+                _settings.CheckForUpdatesAtStart = _checkAtStartMenu.IsChecked;
+                _settings.Save();
+                if (_settings.CheckForUpdatesAtStart) { StartAutoUpdates(); BackgroundCheck(); }
+            };
             options.Items.Add(_checkAtStartMenu);
 
             var help = new MenuItem { Header = "_Help" };
-            help.Items.Add(Item("Check for _updates...", () => CheckForUpdates(quiet: false)));
-            help.Items.Add(Item("View the _changelog...", ShowChanges, "Shift+F1"));
+            _updateMenu = Item("Check for _updates...", CheckForUpdates);
+            help.Items.Add(_updateMenu);
+            help.Items.Add(Item("View the _changelog...", () => ShowChanges(), "Shift+F1"));
             help.Items.Add(Item("_Keyboard shortcuts...", () => TextViewer.Show(this, "Keyboard shortcuts", Shortcuts())));
             help.Items.Add(new Separator());
             help.Items.Add(Item("_About Busy Bunny...", () => TextViewer.Show(this, "About Busy Bunny", About())));
@@ -298,6 +306,10 @@ namespace BusyBunny
         {
             var now = DateTime.Now;
             _shownDate = now.Date;
+            // Tab names follow the lists' scales: Homework (Coffee).
+            foreach (TabItem tab in _tabs.Items)
+                if (tab.Tag is string name && _store.Data.Lists.FirstOrDefault(l => l.Name == name) is TaskList list && !Equals(tab.Header, list.TabName))
+                    tab.Header = list.TabName;
             bool shortMode = _settings.ShortMode;
             string? focusKey = null;
             Guid? focusId = null;
@@ -413,7 +425,15 @@ namespace BusyBunny
         private void ShowDetail()
         {
             var t = Current();
-            string text = t == null ? "" : _store.Line(t, DateTime.Now, _settings.ShortMode) + ". List: " + t.List + ". Size: " + Words.Of(t.Size) + ".";
+            string text = "";
+            if (t != null)
+            {
+                var list = _store.ListOf(t);
+                text = _store.Line(t, DateTime.Now, _settings.ShortMode) + ". List: " + t.List + ". Size: " + Words.Of(t.Size) + ".";
+                if (list.Scale.Length > 0)
+                    text += " Priority: " + (t.Priority > 0 && t.Priority <= list.Scale.Length ? list.Scale[t.Priority - 1] + ", " + t.Priority + " of " + list.Scale.Length : "none")
+                        + ", on the " + list.ScaleName + " scale: " + Scales.Rank(list.Scale);
+            }
             if (_detail.Text != text) _detail.Text = text;
         }
 
@@ -526,6 +546,16 @@ namespace BusyBunny
             WarnIfOverloaded();
         }
 
+        /// <summary>Options, Priority scales: starts on the list whose tab is open.</summary>
+        private void EditScales()
+        {
+            string? list = _tabs.SelectedItem is TabItem { Tag: string l } ? l : _lastList != null && Current() is TaskItem t ? t.List : null;
+            if (!ScalesDialog.Show(this, _store, list)) return;
+            Save();
+            Refresh();
+            Speech.Say(this, "Priority scales saved.");
+        }
+
         private void SwapFocus()
         {
             if ((_focus.SelectedItem as ListBoxItem)?.Tag is not Guid id) { Speech.Say(this, "Nothing to swap.", true); return; }
@@ -607,29 +637,71 @@ namespace BusyBunny
 
         // ---- Updates ----
 
-        private bool _checking;
+        private bool _manualChecking, _backgroundChecking;
+        private Updater.Release? _available;
+        private Version? _announced;
+        private System.Windows.Threading.DispatcherTimer? _updateTimer;
 
-        public async void CheckForUpdates(bool quiet)
+        /// <summary>
+        /// Checks for updates every 30 seconds, and again a few seconds after the internet comes back.
+        /// No connection, GitHub down or a Wi-Fi sign-in page: nothing is said and nothing breaks; the
+        /// next check simply tries again. A new version is announced once, saying how far behind this copy is.
+        /// </summary>
+        public void StartAutoUpdates()
         {
-            if (_checking) return;
-            _checking = true;
+            if (_updateTimer != null) return;
+            _updateTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            _updateTimer.Tick += (_, _) => BackgroundCheck();
+            _updateTimer.Start();
+            void Reconnected()
+            {
+                // A moment for the connection to settle (names to resolve) before asking.
+                Dispatcher.BeginInvoke(async () => { await System.Threading.Tasks.Task.Delay(3000); BackgroundCheck(); });
+            }
+            System.Net.NetworkInformation.NetworkChange.NetworkAvailabilityChanged += (_, e) => { if (e.IsAvailable) Reconnected(); };
+            System.Net.NetworkInformation.NetworkChange.NetworkAddressChanged += (_, _) => Reconnected();
+            BackgroundCheck();
+        }
+
+        private async void BackgroundCheck()
+        {
+            if (_backgroundChecking || _manualChecking || !_settings.CheckForUpdatesAtStart) return;
+            _backgroundChecking = true;
             try
             {
-                if (!quiet) Speech.Say(this, "Checking for updates.", true);
+                var r = await Updater.CheckAsync(quick: true);
+                _available = r;
+                _updateMenu.Header = r == null ? "Check for _updates..." : "_Install version " + r.Version + "...";
+                if (r != null && r.Version != _announced)
+                {
+                    _announced = r.Version;
+                    Speech.Say(this, "Busy Bunny " + r.Version + " is out. " + Behind(r) + " Help menu, Install version " + r.Version + " shows what's new and installs it.");
+                }
+            }
+            catch { } // offline or GitHub unhappy: try again at the next tick or when the connection comes back
+            finally { _backgroundChecking = false; }
+        }
+
+        private static string Behind(Updater.Release r) =>
+            "You're " + r.Missed.Count + (r.Missed.Count == 1 ? " version" : " versions") + " out of date.";
+
+        public async void CheckForUpdates()
+        {
+            if (_manualChecking) return;
+            _manualChecking = true;
+            try
+            {
+                Speech.Say(this, "Checking for updates.", true);
                 var r = await Updater.CheckAsync();
+                _available = r;
+                _updateMenu.Header = r == null ? "Check for _updates..." : "_Install version " + r.Version + "...";
                 if (r == null)
                 {
-                    if (!quiet) MessageBox.Show(this, "You have the newest Busy Bunny, version " + Updater.Current + ".", "Check for updates", MessageBoxButton.OK, MessageBoxImage.Information);
+                    MessageBox.Show(this, "You have the newest Busy Bunny, version " + Updater.Current + ".", "Check for updates", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
-                if (quiet)
-                {
-                    Speech.Say(this, "Busy Bunny " + r.Version + " is out. Help menu, Check for updates installs it.");
-                    return;
-                }
-                string notes = r.Notes.Trim().Length > 0 ? "\n\nWhat's new:\n" + r.Notes.Trim() : "";
-                if (MessageBox.Show(this, "Busy Bunny " + r.Version + " is out. You have " + Updater.Current + "." + notes + "\n\nUpdate now? Busy Bunny restarts by itself and keeps all your tasks.",
-                        "Update available", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.Yes) != MessageBoxResult.Yes) return;
+                _announced = r.Version;
+                if (!UpdateDialog.Show(this, r, Behind(r))) return;
                 Speech.Say(this, "Downloading the update.", true);
                 Save();
                 await Updater.InstallAsync(r);
@@ -637,24 +709,36 @@ namespace BusyBunny
             }
             catch (Exception e)
             {
-                if (!quiet) MessageBox.Show(this, e.Message, "Check for updates", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show(this, e.Message, "Check for updates", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-            finally { _checking = false; }
+            finally { _manualChecking = false; }
         }
 
         // ---- Help ----
 
         /// <summary>Every change, a line each, under Version headings (Control Down and Up jump between them). Opens by itself after an update.</summary>
-        public void ShowChanges()
+        public void ShowChanges() => ShowChanges(null);
+
+        /// <summary>The changelog; after an update (since given), only the versions newer than the one updated from, each under its own heading.</summary>
+        public void ShowChanges(Version? since)
         {
             var lines = new List<string>();
+            bool keep = true;
+            int versions = 0;
             foreach (var raw in App.Resource("CHANGES.txt").Split('\n'))
             {
                 string line = raw.Trim();
                 if (line.Length == 0) continue;
-                lines.Add(Version.TryParse(line, out _) ? "Version " + line + (line == Updater.Current.ToString() ? ", this one" : "") : line);
+                if (Version.TryParse(line, out var v))
+                {
+                    keep = since == null || v > since;
+                    if (keep) { versions++; lines.Add("Version " + line + (line == Updater.Current.ToString() ? ", this one" : "")); }
+                }
+                else if (keep) lines.Add(line);
             }
-            TextViewer.Show(this, "Busy Bunny changelog", lines, l => l.StartsWith("Version "));
+            if (since != null && versions > 0)
+                lines.Insert(0, "Updated from " + since + " to " + Updater.Current + ": " + versions + (versions == 1 ? " new version." : " new versions."));
+            TextViewer.Show(this, since == null ? "Busy Bunny changelog" : "What's new since " + since, lines, l => l.StartsWith("Version "));
         }
 
         private static List<string> Shortcuts() => new()

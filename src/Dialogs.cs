@@ -89,6 +89,151 @@ namespace BusyBunny
         }
     }
 
+    /// <summary>
+    /// Priority scales (spec 6.2i): pick a list, then its scale: None, one from the library, or Custom.
+    /// The Levels field shows the order (1 Triple shot, 2 Double shot...). For Custom, type the
+    /// levels highest first, separated by commas, and a name for the tab. OK keeps every change.
+    /// </summary>
+    public static class ScalesDialog
+    {
+        private const string NoneName = "None";
+        private const string CustomName = "Custom";
+
+        public static bool Show(Window owner, Store store, string? startList = null)
+        {
+            var w = Layout.Dialog(owner, "Priority scales");
+            var pending = store.Data.Lists.ToDictionary(l => l.Name, l => (Name: l.Scale.Length == 0 ? "" : l.ScaleName, Levels: l.Scale));
+            var lists = new ComboBox { ItemsSource = store.Data.Lists.Select(l => l.Name).ToList() };
+            var scales = new ComboBox { ItemsSource = new[] { NoneName }.Concat(Scales.Library.Select(s => s.Name)).Append(CustomName).ToList() };
+            var levels = new TextBox { TextWrapping = TextWrapping.Wrap, IsReadOnlyCaretVisible = true };
+            var customName = new TextBox();
+            AutomationProperties.SetHelpText(levels, "For a custom scale, type the levels highest first, separated by commas.");
+            bool loading = false;
+
+            bool IsCustom() => scales.SelectedItem as string == CustomName;
+            void ShowLevels()
+            {
+                var (_, lv) = pending[(string)lists.SelectedItem];
+                levels.IsReadOnly = !IsCustom();
+                levels.Text = IsCustom() ? string.Join(", ", lv) : Scales.Rank(lv);
+                customName.IsEnabled = IsCustom();
+            }
+            void LoadList()
+            {
+                loading = true;
+                var (name, lv) = pending[(string)lists.SelectedItem];
+                scales.SelectedItem = lv.Length == 0 ? NoneName : Scales.Library.Any(s => s.Name == name && s.Levels.SequenceEqual(lv)) ? name : CustomName;
+                customName.Text = scales.SelectedItem as string == CustomName ? name : "";
+                ShowLevels();
+                loading = false;
+            }
+            lists.SelectionChanged += (_, _) => LoadList();
+            scales.SelectionChanged += (_, _) =>
+            {
+                if (loading || lists.SelectedItem is not string l || scales.SelectedItem is not string s) return;
+                if (s == NoneName) pending[l] = ("", Array.Empty<string>());
+                else if (s == CustomName)
+                {
+                    var before = pending[l];
+                    pending[l] = (customName.Text.Trim().Length > 0 ? customName.Text.Trim() : CustomName, before.Levels);
+                }
+                else pending[l] = (s, Scales.Library.First(x => x.Name == s).Levels);
+                ShowLevels();
+            };
+            levels.TextChanged += (_, _) =>
+            {
+                if (loading || !IsCustom() || lists.SelectedItem is not string l) return;
+                var lv = levels.Text.Split(',').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
+                pending[l] = (pending[l].Name, lv);
+            };
+            customName.TextChanged += (_, _) =>
+            {
+                if (loading || !IsCustom() || lists.SelectedItem is not string l) return;
+                pending[l] = (customName.Text.Trim().Length > 0 ? customName.Text.Trim() : CustomName, pending[l].Levels);
+            };
+
+            var panel = new StackPanel { Margin = new Thickness(14) };
+            panel.Children.Add(Layout.Row("_List", lists));
+            panel.Children.Add(Layout.Row("Priority _scale", scales));
+            panel.Children.Add(Layout.Row("Le_vels, highest first", levels, 420));
+            panel.Children.Add(Layout.Row("Custom scale _name", customName));
+            var ok = Layout.Button("OK", isDefault: true);
+            var cancel = Layout.Button("Cancel", isCancel: true);
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+            buttons.Children.Add(ok);
+            buttons.Children.Add(cancel);
+            panel.Children.Add(buttons);
+            w.Content = panel;
+
+            ok.Click += (_, _) =>
+            {
+                foreach (var (l, (name, lv)) in pending)
+                    if (name.Length > 0 && lv.Length == 0)
+                    {
+                        lists.SelectedItem = l;
+                        Speech.Say(w, l + " has a custom scale with no levels. Type them in Levels, separated by commas, or choose None.", true);
+                        levels.Focus();
+                        return;
+                    }
+                store.Remember("changing priority scales");
+                foreach (var list in store.Data.Lists)
+                {
+                    var (name, lv) = pending[list.Name];
+                    list.Scale = lv;
+                    list.ScaleName = lv.Length == 0 ? "" : name;
+                    // A shorter scale: tasks past its end take its lowest level; no scale clears them.
+                    foreach (var t in store.Data.Tasks.Where(t => t.List == list.Name && t.Priority > lv.Length)) t.Priority = lv.Length;
+                }
+                w.DialogResult = true;
+            };
+            lists.SelectedItem = startList != null && pending.ContainsKey(startList) ? startList : store.Data.Lists[0].Name;
+            LoadList();
+            w.Loaded += (_, _) => lists.Focus();
+            return w.ShowDialog() == true;
+        }
+    }
+
+    /// <summary>
+    /// Update available: how far behind this copy is, then the changelog of every version it is
+    /// missing, newest first, a line each (Control Down and Up jump between versions). Install now or Later.
+    /// </summary>
+    public static class UpdateDialog
+    {
+        public static bool Show(Window owner, Updater.Release r, string behind)
+        {
+            var w = Layout.Dialog(owner, "Update available");
+            var lines = new List<string> { "Busy Bunny " + r.Version + " is out. " + behind + " You have " + Updater.Current + "." };
+            foreach (var (v, notes) in r.Missed)
+            {
+                lines.Add("Version " + v);
+                lines.AddRange(notes.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
+            }
+            var list = TextViewer.LinesList(lines, "What's new", 380);
+            list.PreviewKeyDown += (_, e) =>
+            {
+                if (Keyboard.Modifiers != ModifierKeys.Control || e.Key is not (Key.Down or Key.Up)) return;
+                e.Handled = true;
+                int step = e.Key == Key.Down ? 1 : -1;
+                for (int i = list.SelectedIndex + step; i >= 0 && i < lines.Count; i += step)
+                    if (lines[i].StartsWith("Version ")) { TextViewer.Select(list, i); return; }
+                Speech.Say(w, step > 0 ? "No more versions." : "This is the first version.", true);
+            };
+            var install = Layout.Button("_Install now", isDefault: true);
+            var later = Layout.Button("_Later", isCancel: true);
+            install.Click += (_, _) => w.DialogResult = true;
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+            buttons.Children.Add(install);
+            buttons.Children.Add(later);
+            var panel = new StackPanel { Margin = new Thickness(12) };
+            panel.Children.Add(list);
+            panel.Children.Add(new TextBlock { Text = "Busy Bunny restarts by itself and keeps all your tasks.", Margin = new Thickness(0, 8, 0, 0) });
+            panel.Children.Add(buttons);
+            w.Content = panel;
+            w.Loaded += (_, _) => TextViewer.Select(list, 0);
+            return w.ShowDialog() == true;
+        }
+    }
+
     /// <summary>Plain-language dates for now: today, tomorrow, a weekday, 10/20, with an optional time like at 3 or 3:30 pm.</summary>
     public static class Dates
     {
@@ -213,15 +358,7 @@ namespace BusyBunny
             var w = Layout.Dialog(owner, title);
             w.ResizeMode = ResizeMode.CanResize;
             // Each line its own item: plain strings that repeat (two "Bug fixed" lines alike) made the arrows jump back to the first one.
-            var list = new ListBox { Width = 720, Height = 420 };
-            foreach (var l in lines)
-            {
-                var item = new ListBoxItem { Content = new TextBlock { Text = l, TextWrapping = TextWrapping.Wrap, MaxWidth = 680 } };
-                AutomationProperties.SetName(item, l);
-                list.Items.Add(item);
-            }
-            ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
-            AutomationProperties.SetName(list, title);
+            var list = LinesList(lines, title, 420);
             list.PreviewKeyDown += (_, e) =>
             {
                 if (heading == null || Keyboard.Modifiers != ModifierKeys.Control || e.Key is not (Key.Down or Key.Up)) return;
@@ -248,8 +385,31 @@ namespace BusyBunny
             list.SelectedIndex = i;
             list.ScrollIntoView(list.Items[i]);
             list.UpdateLayout();
-            if (list.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item) item.Focus();
-            else list.Focus();
+            if (list.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem item) { item.Focus(); return; }
+            // Not drawn yet (far down a long list): focus it once the list has caught up. Focusing the
+            // list instead left the arrows starting from the old line, so Control Down seemed to do nothing.
+            list.Focus();
+            list.Dispatcher.BeginInvoke(() =>
+            {
+                if (list.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem later) later.Focus();
+            }, System.Windows.Threading.DispatcherPriority.Loaded);
+        }
+
+        /// <summary>A list of lines to read: every line made up front (they are few), so any line can take focus at once.</summary>
+        public static ListBox LinesList(IEnumerable<string> lines, string name, double height)
+        {
+            var list = new ListBox { Width = 720, Height = height };
+            VirtualizingPanel.SetIsVirtualizing(list, false);
+            ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
+            foreach (var l in lines)
+            {
+                var item = new ListBoxItem { Content = new TextBlock { Text = l, TextWrapping = TextWrapping.Wrap, MaxWidth = 680 } };
+                AutomationProperties.SetName(item, l);
+                list.Items.Add(item);
+            }
+            AutomationProperties.SetName(list, name);
+            if (list.Items.Count > 0) list.SelectedIndex = 0;
+            return list;
         }
     }
 }

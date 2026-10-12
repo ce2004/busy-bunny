@@ -56,6 +56,39 @@ namespace BusyBunny
     {
         public string Name { get; set; } = "";
         public string[] Scale { get; set; } = Array.Empty<string>();
+        /// <summary>The scale's name, like Coffee, shown after the list's name on its tab. Empty when it has no scale.</summary>
+        public string ScaleName { get; set; } = "";
+
+        /// <summary>The tab's name: Homework (Coffee), or just the name when there is no scale.</summary>
+        public string TabName => Scale.Length > 0 && ScaleName.Length > 0 ? Name + " (" + ScaleName + ")" : Name;
+    }
+
+    /// <summary>The library of priority scales (spec section 18 and 6.2), highest level first.</summary>
+    public static class Scales
+    {
+        public static readonly (string Name, string[] Levels)[] Library =
+        {
+            ("Coffee", new[] { "Triple shot", "Double shot", "Single shot", "Decaf" }),
+            ("Space", new[] { "Launch", "Orbit", "Deep space" }),
+            ("Burner", new[] { "Front burner", "Back burner", "In the freezer" }),
+            ("Importance", new[] { "Important", "Not immediate" }),
+            ("Attendance", new[] { "Required", "Optional" }),
+            ("Todoist", new[] { "P1", "P2", "P3", "P4" }),
+            ("Bunny", new[] { "Fox at the door", "Hop to it", "Nibble on it", "Burrow nap" }),
+            ("Heat", new[] { "On fire", "Spicy", "Warm", "Chill" }),
+            ("Rock", new[] { "Big rock", "Pebble" }),
+            ("Speed", new[] { "Sprint", "Jog", "Stroll", "Nap" }),
+            ("Volume", new[] { "Blasting", "Loud", "Background", "Muted" }),
+            ("Road trip", new[] { "Driving now", "Next exit", "Someday road trip" }),
+        };
+
+        /// <summary>The library name for these levels, or Custom.</summary>
+        public static string NameFor(string[] levels) =>
+            Library.FirstOrDefault(s => s.Levels.SequenceEqual(levels)).Name ?? "Custom";
+
+        /// <summary>The order of a scale, to read: 1 Triple shot, 2 Double shot, 3 Single shot, 4 Decaf.</summary>
+        public static string Rank(string[] levels) =>
+            levels.Length == 0 ? "No priority scale." : string.Join(", ", levels.Select((l, i) => (i + 1) + " " + l)) + ".";
     }
 
     public sealed class TaskItem
@@ -100,7 +133,7 @@ namespace BusyBunny
 
         public Data Data { get; private set; } = new();
         // Undo history, newest last, at most 100 steps.
-        private readonly List<(List<TaskItem> Tasks, string What)> _undo = new();
+        private readonly List<(List<TaskItem> Tasks, List<TaskList> Lists, string What)> _undo = new();
 
         public string? PathOverride { get; init; }
         private string MyFile => PathOverride ?? FilePath;
@@ -122,6 +155,9 @@ namespace BusyBunny
                 s.Data = Sample.Make();
             }
             if (s.Data.Lists.Count == 0) s.Data.Lists = Sample.Lists();
+            // Saved before scales had names: name them from the library.
+            foreach (var l in s.Data.Lists)
+                if (l.Scale.Length > 0 && l.ScaleName.Length == 0) l.ScaleName = Scales.NameFor(l.Scale);
             return s;
         }
 
@@ -153,16 +189,18 @@ namespace BusyBunny
         /// <summary>Call before any change: Undo puts every task back the way it was here.</summary>
         public void Remember(string what)
         {
-            _undo.Add((Data.Tasks.Select(t => t.Copy()).ToList(), what));
+            _undo.Add((Data.Tasks.Select(t => t.Copy()).ToList(),
+                Data.Lists.Select(l => new TaskList { Name = l.Name, Scale = l.Scale.ToArray(), ScaleName = l.ScaleName }).ToList(), what));
             if (_undo.Count > 100) _undo.RemoveAt(0);
         }
 
         public string? Undo()
         {
             if (_undo.Count == 0) return null;
-            var (tasks, what) = _undo[^1];
+            var (tasks, lists, what) = _undo[^1];
             _undo.RemoveAt(_undo.Count - 1);
             Data.Tasks = tasks;
+            Data.Lists = lists;
             Save();
             return what;
         }
@@ -262,15 +300,24 @@ namespace BusyBunny
     /// <summary>The six lists Morgan chose, in rank order, and fake tasks for the first try (spec 21.2).</summary>
     public static class Sample
     {
-        public static List<TaskList> Lists() => new()
+        public static List<TaskList> Lists()
         {
-            new TaskList { Name = "Homework", Scale = new[] { "Triple shot", "Double shot", "Single shot", "Decaf" } },
-            new TaskList { Name = "Academic", Scale = new[] { "Important", "Not immediate" } },
-            new TaskList { Name = "Meetings", Scale = new[] { "Required", "Optional" } },
-            new TaskList { Name = "Projects", Scale = new[] { "Launch", "Orbit", "Deep space" } },
-            new TaskList { Name = "Personal Immediate", Scale = Array.Empty<string>() },
-            new TaskList { Name = "Personal", Scale = new[] { "Front burner", "Back burner", "In the freezer" } },
-        };
+            TaskList L(string name, string scale) => new()
+            {
+                Name = name,
+                ScaleName = scale,
+                Scale = scale.Length == 0 ? Array.Empty<string>() : Scales.Library.First(s => s.Name == scale).Levels,
+            };
+            return new()
+            {
+                L("Homework", "Coffee"),
+                L("Academic", "Importance"),
+                L("Meetings", "Attendance"),
+                L("Projects", "Space"),
+                L("Personal Immediate", ""),
+                L("Personal", "Burner"),
+            };
+        }
 
         public static Data Make()
         {

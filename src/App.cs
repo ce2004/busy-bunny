@@ -54,8 +54,10 @@ namespace BusyBunny
             Splash.ShowThen(w, () =>
             {
                 // After an update, the changelog opens by itself so the new things are easy to find.
-                if (updated) w.Dispatcher.BeginInvoke(w.ShowChanges, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-                else if (settings.CheckForUpdatesAtStart) w.CheckForUpdates(quiet: true);
+                // Only what is new since the copy that did the update (older copies do not say which they were).
+                Version? from = updated && args.Length > 2 ? Updater.NormalizeTag(args[2]) : null;
+                if (updated) w.Dispatcher.BeginInvoke(() => w.ShowChanges(from), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                w.StartAutoUpdates();
             });
             int code = app.Run();
             only.ReleaseMutex();
@@ -120,6 +122,25 @@ namespace BusyBunny
                 Date("10/5/2026 at 3:00 pm", new DateTime(2026, 10, 5, 15, 0, 0), true);
                 Date("9/1/2026", new DateTime(2026, 9, 1), false);
 
+                // Updates: three versions newer, a draft and a pre-release left out, the newest one still without its files.
+                string releases = "[" +
+                    "{\"tag_name\":\"v9.0.0\",\"body\":\"building\",\"assets\":[]}," +
+                    "{\"tag_name\":\"v8.0.0\",\"draft\":true,\"body\":\"draft\",\"assets\":[]}," +
+                    "{\"tag_name\":\"v7.0.0-beta\",\"prerelease\":true,\"body\":\"beta\",\"assets\":[]}," +
+                    "{\"tag_name\":\"v0.5.0\",\"body\":\"Five\",\"assets\":[{\"name\":\"BusyBunny-x64.exe\",\"browser_download_url\":\"https://x/5\",\"digest\":\"sha256:ab\"}]}," +
+                    "{\"tag_name\":\"v0.4.0\",\"body\":\"Four\",\"assets\":[{\"name\":\"BusyBunny-x64.exe\",\"browser_download_url\":\"https://x/4\",\"digest\":\"sha256:cd\"}]}," +
+                    "{\"tag_name\":\"v0.3.0\",\"body\":\"Three\",\"assets\":[]}," +
+                    "{\"tag_name\":\"v0.2.0\",\"body\":\"Two\",\"assets\":[]}]";
+                var pick = Updater.Pick(Updater.ParseReleases(releases, "BusyBunny-x64.exe"), new Version(0, 2, 0));
+                if (pick == null || pick.Version != new Version(0, 5, 0) || pick.Missed.Count != 3 || pick.Missed[0].Notes != "Five" || pick.Missed[2].Version != new Version(0, 3, 0) || pick.Sha256 != "ab")
+                    throw new Exception("update check picked the wrong versions");
+                bool saidNotYet = false;
+                try { Updater.Pick(Updater.ParseReleases(releases, "BusyBunny-x64.exe"), new Version(0, 5, 0)); }
+                catch (InvalidOperationException) { saidNotYet = true; }
+                if (!saidNotYet) throw new Exception("a version still being built was not reported as not ready");
+                if (Updater.Pick(Updater.ParseReleases(releases, "BusyBunny-x64.exe"), new Version(9, 0, 0)) != null)
+                    throw new Exception("update check offered an update to the newest copy");
+
                 string file = Path.Combine(Path.GetTempPath(), "busybunny-selftest-" + Guid.NewGuid().ToString("N") + ".json");
                 try
                 {
@@ -129,6 +150,8 @@ namespace BusyBunny
                     if (urgent.Count == 0) throw new Exception("the sample has nothing urgent");
                     if (!store.DueSoon(urgent[0], DateTime.Now) && urgent.Any(t => store.DueSoon(t, DateTime.Now))) throw new Exception("due within 24 hours is not first");
                     if (store.Summary(DateTime.Now).Length == 0) throw new Exception("no summary");
+                    if (store.Data.Lists[0].TabName != "Homework (Coffee)") throw new Exception("tab name was " + store.Data.Lists[0].TabName);
+                    if (Scales.Rank(store.Data.Lists[0].Scale) != "1 Triple shot, 2 Double shot, 3 Single shot, 4 Decaf.") throw new Exception("scale rank reads wrong");
                     store.Remember("test");
                     store.Data.Tasks[0].Status = Status.Done;
                     store.Save();
