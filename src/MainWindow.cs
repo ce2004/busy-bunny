@@ -21,8 +21,9 @@ namespace BusyBunny
         private readonly Store _store;
         private readonly Settings _settings;
         private readonly TextBox _summary = new() { IsReadOnly = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 6, 8, 2) };
-        private readonly ProgressBar _day = new() { Height = 14, Margin = new Thickness(8, 2, 8, 2), Focusable = true, IsTabStop = true };
-        private readonly ProgressBar _week = new() { Height = 14, Margin = new Thickness(8, 2, 8, 6), Focusable = true, IsTabStop = true };
+        private readonly TextBox _progress = new() { IsReadOnly = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 2, 8, 2) };
+        private readonly QuietProgressBar _day = new() { Height = 10, Margin = new Thickness(8, 2, 8, 2), Focusable = false };
+        private readonly QuietProgressBar _week = new() { Height = 10, Margin = new Thickness(8, 2, 8, 6), Focusable = false };
         private readonly TabControl _tabs = new() { Margin = new Thickness(6, 0, 6, 0) };
         private readonly ComboBox _status = new() { Width = 240, Margin = new Thickness(0, 0, 16, 0) };
         private readonly ComboBox _move = new() { Width = 240 };
@@ -50,6 +51,7 @@ namespace BusyBunny
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
             AutomationProperties.SetName(_summary, "Summary");
+            AutomationProperties.SetName(_progress, "Progress");
             _urgent = NewList("today-urgent");
             _alsoToday = NewList("today-also");
             _focus = NewList("focus");
@@ -95,7 +97,8 @@ namespace BusyBunny
                 c.GotKeyboardFocus += (_, _) => SyncPickers();
                 c.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter && !c.IsDropDownOpen) { e.Handled = true; CommitPicker(c); } };
                 c.DropDownClosed += (_, _) => { if (c.IsKeyboardFocusWithin) CommitPicker(c); };
-                c.LostKeyboardFocus += (_, e) => { if (!c.IsKeyboardFocusWithin && !c.IsDropDownOpen) CommitPicker(c); };
+                // Leaving for another window (NewFocus is null then) is not a choice: only moving on inside Busy Bunny is.
+                c.LostKeyboardFocus += (_, e) => { if (e.NewFocus != null && !c.IsKeyboardFocusWithin && !c.IsDropDownOpen) CommitPicker(c); };
             }
             var pickers = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(8, 8, 8, 10) };
             pickers.Children.Add(new Label { Content = "Stat_us", Target = _status, VerticalAlignment = VerticalAlignment.Center });
@@ -103,18 +106,27 @@ namespace BusyBunny
             pickers.Children.Add(new Label { Content = "_Move to", Target = _move, VerticalAlignment = VerticalAlignment.Center });
             pickers.Children.Add(_move);
 
+            // Tab goes through these in this order, top to bottom: summary, progress, tabs, Status, Move to.
+            // The menu bar is left out of Tab (Alt opens it), or Tab after Move to wandered into File.
             var dock = new DockPanel();
             var menu = BuildMenu();
+            KeyboardNavigation.SetTabNavigation(menu, KeyboardNavigationMode.None);
+            KeyboardNavigation.SetIsTabStop(menu, false);
             DockPanel.SetDock(menu, Dock.Top);
             dock.Children.Add(menu);
-            foreach (var top in new FrameworkElement[] { _summary, _day, _week })
+            foreach (var top in new FrameworkElement[] { _summary, _progress, _day, _week })
             {
                 DockPanel.SetDock(top, Dock.Top);
                 dock.Children.Add(top);
             }
-            DockPanel.SetDock(pickers, Dock.Bottom);
-            dock.Children.Add(pickers);
-            dock.Children.Add(_tabs);
+            var body = new Grid();
+            body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+            body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(pickers, 1);
+            body.Children.Add(_tabs);
+            body.Children.Add(pickers);
+            dock.Children.Add(body);
+            KeyboardNavigation.SetTabNavigation(dock, KeyboardNavigationMode.Cycle);
             Content = dock;
 
             PreviewKeyDown += OnKeys;
@@ -293,10 +305,9 @@ namespace BusyBunny
             _summary.Text = _store.Summary(now, shortMode);
             var (done, total, pd, pt) = _store.Progress(now);
             _day.Value = pt == 0 ? 0 : pd * 100.0 / pt;
-            AutomationProperties.SetName(_day, "Today: " + done + " of " + total + " tasks, " + (int)_day.Value + " percent of the effort");
             var (wd, wt) = Week(now);
             _week.Value = wt == 0 ? 0 : wd * 100.0 / wt;
-            AutomationProperties.SetName(_week, "This week: " + (int)_week.Value + " percent of the effort");
+            _progress.Text = "Today: " + done + " of " + total + " tasks, " + (int)_day.Value + " percent of the effort. This week: " + (int)_week.Value + " percent.";
 
             if (focusKey != null && _lists.TryGetValue(focusKey, out var back))
             {
@@ -608,5 +619,14 @@ namespace BusyBunny
             }
             catch (Exception e) { Speech.Say(this, "Could not open it: " + e.Message, true); }
         }
+    }
+
+    /// <summary>
+    /// A progress bar for the eyes only. NVDA announced every change of a real one ("33 percent",
+    /// "0% complete") each time a task changed; the Progress line above says the same thing once, when asked.
+    /// </summary>
+    public sealed class QuietProgressBar : ProgressBar
+    {
+        protected override System.Windows.Automation.Peers.AutomationPeer? OnCreateAutomationPeer() => null;
     }
 }
