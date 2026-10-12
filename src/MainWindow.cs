@@ -166,6 +166,12 @@ namespace BusyBunny
             lb.GotKeyboardFocus += (_, _) => { _lastList = lb; ShowDetail(); };
             lb.SelectionChanged += (_, _) => { if (lb.IsKeyboardFocusWithin) { _lastList = lb; ShowDetail(); } };
             lb.ContextMenu = new ContextMenu();
+            // Start on the first item, so NVDA says Edit task at once instead of just "menu".
+            lb.ContextMenu.Opened += (s, _) =>
+            {
+                if (s is ContextMenu m && m.Items.Count > 0 && m.Items[0] is MenuItem first)
+                    m.Dispatcher.BeginInvoke(() => first.Focus(), System.Windows.Threading.DispatcherPriority.Input);
+            };
             lb.ContextMenuOpening += (_, e) => { if (!FillContextMenu(lb)) e.Handled = true; };
             _lists[key] = lb;
             return lb;
@@ -191,6 +197,8 @@ namespace BusyBunny
             file.Items.Add(Item("E_xit", Close, "Alt+F4"));
 
             var task = new MenuItem { Header = "_Task" };
+            task.Items.Add(Item("_Edit task...", EditTask, "F2"));
+            task.Items.Add(new Separator());
             task.Items.Add(Item("Mark _done", () => SetStatus(Status.Done), "Ctrl+D"));
             var statuses = new MenuItem { Header = "Set _status" };
             foreach (Status s in Enum.GetValues<Status>())
@@ -272,6 +280,7 @@ namespace BusyBunny
                 return;
             }
             if (mods == ModifierKeys.Shift && key == Key.F1) { e.Handled = true; ShowChanges(); return; }
+            if (mods == ModifierKeys.None && key == Key.F2) { e.Handled = true; EditTask(); return; }
             if (mods == ModifierKeys.None && key == Key.Delete && Keyboard.FocusedElement is ListBoxItem) { e.Handled = true; DeleteTask(); }
             if (mods == ModifierKeys.None && key == Key.Enter && Keyboard.FocusedElement is ListBoxItem { Tag: Guid })
             {
@@ -488,6 +497,35 @@ namespace BusyBunny
             WarnIfOverloaded();
         }
 
+        /// <summary>Edit task (F2): the Quick add form, filled in with the chosen task. Save changes it in place; Control Z undoes it.</summary>
+        private void EditTask()
+        {
+            if (CurrentOrSay() is not TaskItem t) return;
+            var back = _lastList;
+            if (QuickAdd.Show(this, _store, t.List, t.Status, t) is not TaskItem edited) { if (back != null) TextViewer.Select(back, Math.Max(0, back.SelectedIndex)); return; }
+            _store.Remember("editing " + t.Name);
+            if (edited.Status != t.Status) t.StatusSince = DateTime.Now;
+            t.Name = edited.Name;
+            t.List = edited.List;
+            t.Tag = edited.Tag;
+            t.Status = edited.Status;
+            t.Priority = edited.Priority;
+            t.Due = edited.Due;
+            t.DueHasTime = edited.DueHasTime;
+            t.Size = edited.Size;
+            t.IsMeeting = edited.IsMeeting;
+            Save();
+            Refresh();
+            // Back on the same task, wherever it now sits; if it moved off this list, the list keeps its place.
+            if (back != null && _lists.ContainsValue(back))
+            {
+                int at = IndexOf(back, t.Id);
+                TextViewer.Select(back, at >= 0 ? at : Math.Min(Math.Max(0, back.SelectedIndex), back.Items.Count - 1));
+            }
+            Speech.Say(this, "Saved " + t.Name + ".");
+            WarnIfOverloaded();
+        }
+
         private void SwapFocus()
         {
             if ((_focus.SelectedItem as ListBoxItem)?.Tag is not Guid id) { Speech.Say(this, "Nothing to swap.", true); return; }
@@ -538,6 +576,8 @@ namespace BusyBunny
                 m.Click += (_, _) => act();
                 return m;
             }
+            menu.Items.Add(Item("_Edit task...", EditTask, "F2"));
+            menu.Items.Add(new Separator());
             menu.Items.Add(Item("Mark _done", () => SetStatus(Status.Done), "Ctrl+D"));
             var st = new MenuItem { Header = "Set _status" };
             foreach (Status s in Enum.GetValues<Status>()) { var x = s; st.Items.Add(Item(Words.Of(s) + (s == t.Status ? ", now" : ""), () => SetStatus(x), "Ctrl+" + ((int)s + 1))); }
@@ -625,6 +665,7 @@ namespace BusyBunny
             "View the changelog: Shift F1",
             "Quick add a task: Control N",
             "Read the chosen task by character or word: Enter, then the arrows. Escape goes back to the list",
+            "Edit the chosen task, its name or anything else: F2",
             "Mark the chosen task done: Control D",
             "Set its status: Control 1 Today, 2 This week, 3 Next week, 4 Done not submitted, 5 Waiting on someone, 6 Done",
             "Undo: Control Z",

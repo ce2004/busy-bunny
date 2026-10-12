@@ -1,3 +1,6 @@
+0.2.2
+New feature: Edit task. Press F2 on a task, or choose Edit task from its menu (the Applications key or Shift F10) or from the Task menu. You can change its name, list, tag, status, priority, due date and size, then press Save. Control Z undoes it. Move to list and Set status are still their own items in the menu.
+Changed: a task's menu now starts on its first item, Edit task, so NVDA reads it right away instead of just saying menu.
 0.2.1
 Bug fixed: you could not read a task by character or by word, because tasks are list items. Now press Enter on a task to go to the Task field, where the arrows read it by character and Control with the arrows by word, on braille too. Escape goes back to the list, on the same task. The Task field is also just after the lists when you press Tab.
 Changed: the summary and progress lines show a cursor, so they read the same way.

@@ -10,13 +10,17 @@ using System.Windows.Input;
 
 namespace BusyBunny
 {
-    /// <summary>Quick add: a name, then pick menus for the rest. Enter adds it.</summary>
+    /// <summary>
+    /// Quick add: a name, then pick menus for the rest. Enter adds it. Given a task, the same form
+    /// edits it instead (Edit task, F2): everything filled in, and Save keeps the changes.
+    /// </summary>
     public static class QuickAdd
     {
-        public static TaskItem? Show(Window owner, Store store, string list, Status status)
+        public static TaskItem? Show(Window owner, Store store, string list, Status status, TaskItem? editing = null)
         {
-            var w = Layout.Dialog(owner, "Quick add");
-            var name = new TextBox();
+            if (editing != null) { list = editing.List; status = editing.Status; }
+            var w = Layout.Dialog(owner, editing == null ? "Quick add" : "Edit task");
+            var name = new TextBox { Text = editing?.Name ?? "" };
             var lists = new ComboBox { ItemsSource = store.Data.Lists.Select(l => l.Name).ToList(), SelectedItem = list };
             var tags = new ComboBox { IsEditable = true, ItemsSource = store.Data.Tasks.Select(t => t.Tag).Where(t => t.Length > 0).Distinct().OrderBy(t => t).ToList() };
             var statuses = new ComboBox { ItemsSource = Enum.GetValues<Status>().Where(s => s != Status.Done).Select(Words.Of).ToList(), SelectedIndex = (int)status };
@@ -32,6 +36,15 @@ namespace BusyBunny
             }
             lists.SelectionChanged += (_, _) => FillPriority();
             FillPriority();
+            if (editing != null)
+            {
+                tags.Text = editing.Tag;
+                if (editing.Priority < priority.Items.Count) priority.SelectedIndex = editing.Priority;
+                size.SelectedIndex = (int)editing.Size;
+                // With the year, so a date already past is not read as next year's.
+                if (editing.Due is DateTime d)
+                    due.Text = d.ToString("M/d/yyyy", CultureInfo.InvariantCulture) + (editing.DueHasTime ? " at " + d.ToString("h:mm tt", CultureInfo.InvariantCulture).ToLowerInvariant() : "");
+            }
 
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Layout.Row("Task _name", name));
@@ -41,7 +54,7 @@ namespace BusyBunny
             panel.Children.Add(Layout.Row("_Priority", priority));
             panel.Children.Add(Layout.Row("_Due", due));
             panel.Children.Add(Layout.Row("Si_ze", size));
-            var ok = Layout.Button("Add", isDefault: true);
+            var ok = Layout.Button(editing == null ? "Add" : "Save", isDefault: true);
             var cancel = Layout.Button("Cancel", isCancel: true);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
             buttons.Children.Add(ok);
@@ -71,7 +84,7 @@ namespace BusyBunny
                 };
                 w.DialogResult = true;
             };
-            w.Loaded += (_, _) => name.Focus();
+            w.Loaded += (_, _) => { name.Focus(); name.SelectAll(); };
             return w.ShowDialog() == true ? made : null;
         }
     }

@@ -116,6 +116,9 @@ namespace BusyBunny
                 Date("tomorrow 10:15 am", new DateTime(2026, 10, 13, 10, 15, 0), true);
                 Date("wed", new DateTime(2026, 10, 14), false);
                 Date("oct 20", new DateTime(2026, 10, 20), false);
+                // Edit task writes dates this way; a past one must keep its year.
+                Date("10/5/2026 at 3:00 pm", new DateTime(2026, 10, 5, 15, 0, 0), true);
+                Date("9/1/2026", new DateTime(2026, 9, 1), false);
 
                 string file = Path.Combine(Path.GetTempPath(), "busybunny-selftest-" + Guid.NewGuid().ToString("N") + ".json");
                 try
