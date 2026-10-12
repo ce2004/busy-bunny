@@ -1,0 +1,11 @@
+0.1.0
+First try of Busy Bunny: the Today tab with sample tasks, to try with NVDA and a braille display before anything else gets built.
+New feature: tabs for Today, Focus, Upcoming and each of your six lists. Control Tab and Control Shift Tab move between them.
+New feature: the summary line at the top, like 3 of 8 done today, test Friday, next meeting at 2, a Hop to it day. Control R reads it from anywhere in Busy Bunny.
+New feature: progress for today and this week, by effort, not just by count.
+New feature: the Status and Move to pick menus under the tabs change the task you chose. Nothing changes until you press Enter or leave the menu.
+New feature: Quick add with Control N.
+New feature: Undo with Control Z, for anything.
+New feature: sounds on real piano and real strings. Options, Sounds lets you pick each one, and you hear each sound as you arrow to it.
+New feature: Help, Check for updates downloads and installs a new version and keeps all your tasks.
+New feature: your tasks are saved after every change, with a copy kept each day for 30 days.
