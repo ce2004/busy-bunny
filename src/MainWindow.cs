@@ -82,7 +82,14 @@ namespace BusyBunny
                 panel.Children.Add(lb);
                 _tabs.Items.Add(new TabItem { Header = l.Name, Content = new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, Tag = l.Name });
             }
-            _tabs.SelectionChanged += (s, e) => { if (e.Source == _tabs) Dispatcher.BeginInvoke(() => FocusTab(announce: false)); };
+            // Left and Right Arrow on the tab row move through the tabs and stay there, like any tab
+            // control; Control Tab and Control Page Down jump straight into the new tab's tasks.
+            _tabs.SelectionChanged += (s, e) =>
+            {
+                if (e.Source != _tabs || !_jumpIntoTab) return;
+                _jumpIntoTab = false;
+                Dispatcher.BeginInvoke(() => FocusTab(announce: false));
+            };
 
             // The pick menus for the chosen task. Arrowing through them changes nothing until Enter or
             // leaving the menu, so passing over Done on the way to Waiting never hides a task by accident.
@@ -137,6 +144,7 @@ namespace BusyBunny
         }
 
         private DateTime _shownDate;
+        private bool _jumpIntoTab;
 
         private ListBox NewList(string key)
         {
@@ -201,7 +209,7 @@ namespace BusyBunny
 
             var help = new MenuItem { Header = "_Help" };
             help.Items.Add(Item("Check for _updates...", () => CheckForUpdates(quiet: false)));
-            help.Items.Add(Item("What's _new...", ShowChanges));
+            help.Items.Add(Item("View the _changelog...", ShowChanges, "Shift+F1"));
             help.Items.Add(Item("_Keyboard shortcuts...", () => TextViewer.Show(this, "Keyboard shortcuts", Shortcuts())));
             help.Items.Add(new Separator());
             help.Items.Add(Item("_About Busy Bunny...", () => TextViewer.Show(this, "About Busy Bunny", About())));
@@ -219,11 +227,14 @@ namespace BusyBunny
             var mods = Keyboard.Modifiers;
             Key key = e.Key == Key.System ? e.SystemKey : e.Key;
             bool inText = Keyboard.FocusedElement is TextBox tb && !tb.IsReadOnly;
-            if (mods == ModifierKeys.Control && key == Key.Tab || mods == (ModifierKeys.Control | ModifierKeys.Shift) && key == Key.Tab)
+            bool next = mods == ModifierKeys.Control && (key == Key.Tab || key == Key.PageDown);
+            bool back = mods == (ModifierKeys.Control | ModifierKeys.Shift) && key == Key.Tab || mods == ModifierKeys.Control && key == Key.PageUp;
+            if (next || back)
             {
                 e.Handled = true;
                 int n = _tabs.Items.Count;
-                _tabs.SelectedIndex = (_tabs.SelectedIndex + (mods.HasFlag(ModifierKeys.Shift) ? n - 1 : 1)) % n;
+                _jumpIntoTab = true;
+                _tabs.SelectedIndex = (_tabs.SelectedIndex + (back ? n - 1 : 1)) % n;
                 return;
             }
             if (mods == ModifierKeys.Control)
@@ -247,6 +258,7 @@ namespace BusyBunny
                 Speech.Say(this, _settings.ShortMode ? "Short mode on." : "Short mode off.", true);
                 return;
             }
+            if (mods == ModifierKeys.Shift && key == Key.F1) { e.Handled = true; ShowChanges(); return; }
             if (mods == ModifierKeys.None && key == Key.Delete && Keyboard.FocusedElement is ListBoxItem) { e.Handled = true; DeleteTask(); }
         }
 
@@ -563,7 +575,8 @@ namespace BusyBunny
 
         // ---- Help ----
 
-        private void ShowChanges()
+        /// <summary>Every change, a line each, under Version headings (Control Down and Up jump between them). Opens by itself after an update.</summary>
+        public void ShowChanges()
         {
             var lines = new List<string>();
             foreach (var raw in App.Resource("CHANGES.txt").Split('\n'))
@@ -572,13 +585,15 @@ namespace BusyBunny
                 if (line.Length == 0) continue;
                 lines.Add(Version.TryParse(line, out _) ? "Version " + line + (line == Updater.Current.ToString() ? ", this one" : "") : line);
             }
-            TextViewer.Show(this, "What's new", lines, l => l.StartsWith("Version "));
+            TextViewer.Show(this, "Busy Bunny changelog", lines, l => l.StartsWith("Version "));
         }
 
         private static List<string> Shortcuts() => new()
         {
             "Open the menus: Alt",
-            "Next tab: Control Tab. Previous tab: Control Shift Tab",
+            "Next tab: Control Tab or Control Page Down. Previous tab: Control Shift Tab or Control Page Up. Both go straight to the tab's tasks",
+            "The tab row: Shift Tab from a tab's first list, then Left and Right Arrow move through the tabs",
+            "View the changelog: Shift F1",
             "Quick add a task: Control N",
             "Mark the chosen task done: Control D",
             "Set its status: Control 1 Today, 2 This week, 3 Next week, 4 Done not submitted, 5 Waiting on someone, 6 Done",

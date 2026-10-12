@@ -52,9 +52,9 @@ namespace BusyBunny
             TaskItem? made = null;
             ok.Click += (_, _) =>
             {
-                if (name.Text.Trim().Length == 0) { Speech.Say(name, "Type a name for the task first.", true); name.Focus(); return; }
+                if (name.Text.Trim().Length == 0) { Speech.Say(w, "Type a name for the task first.", true); name.Focus(); return; }
                 var (when, hasTime) = Dates.Parse(due.Text, DateTime.Now);
-                if (due.Text.Trim().Length > 0 && when == null) { Speech.Say(due, "Busy Bunny did not understand that date. Try tomorrow, Friday, or 10/20.", true); due.Focus(); return; }
+                if (due.Text.Trim().Length > 0 && when == null) { Speech.Say(w, "Busy Bunny did not understand that date. Try tomorrow, Friday, or 10/20.", true); due.Focus(); return; }
                 string listName = lists.SelectedItem as string ?? list;
                 made = new TaskItem
                 {
@@ -84,6 +84,8 @@ namespace BusyBunny
             string t = text.Trim().ToLowerInvariant();
             if (t.Length == 0) return (null, false);
             int? hour = null, minute = null;
+            // A space in front, so a time on its own (3pm, at 3) is found the same way as after a day.
+            t = " " + t;
             var m = Regex.Match(t, @"\s(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s?(am|pm|a\.m\.|p\.m\.)?$");
             if (m.Success && (t.Contains(" at ") || m.Groups[2].Success || m.Groups[3].Success))
             {
@@ -95,8 +97,9 @@ namespace BusyBunny
                 else if (ap.Length == 0 && h >= 1 && h <= 7) h += 12; // at 3 means 3 in the afternoon for a student
                 if (h > 23 || minute > 59) return (null, false);
                 hour = h;
-                t = t[..m.Index].Trim();
+                t = t[..m.Index];
             }
+            t = t.Trim();
             DateTime? day = null;
             if (t is "today" or "tonight") day = now.Date;
             else if (t is "tomorrow" or "tmrw") day = now.Date.AddDays(1);
@@ -196,7 +199,15 @@ namespace BusyBunny
         {
             var w = Layout.Dialog(owner, title);
             w.ResizeMode = ResizeMode.CanResize;
-            var list = new ListBox { ItemsSource = lines, Width = 720, Height = 420 };
+            // Each line its own item: plain strings that repeat (two "Bug fixed" lines alike) made the arrows jump back to the first one.
+            var list = new ListBox { Width = 720, Height = 420 };
+            foreach (var l in lines)
+            {
+                var item = new ListBoxItem { Content = new TextBlock { Text = l, TextWrapping = TextWrapping.Wrap, MaxWidth = 680 } };
+                AutomationProperties.SetName(item, l);
+                list.Items.Add(item);
+            }
+            ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
             AutomationProperties.SetName(list, title);
             list.PreviewKeyDown += (_, e) =>
             {
@@ -205,7 +216,7 @@ namespace BusyBunny
                 int step = e.Key == Key.Down ? 1 : -1;
                 for (int i = list.SelectedIndex + step; i >= 0 && i < lines.Count; i += step)
                     if (heading(lines[i])) { Select(list, i); return; }
-                Speech.Say(list, step > 0 ? "No more headings." : "This is the first heading.", true);
+                Speech.Say(w, step > 0 ? "No more headings." : "This is the first heading.", true);
             };
             var ok = Layout.Button("OK", isDefault: true, isCancel: true);
             ok.Click += (_, _) => w.Close();

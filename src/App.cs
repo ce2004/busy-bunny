@@ -11,8 +11,20 @@ namespace BusyBunny
         public static int Main(string[] args)
         {
             if (args.Length > 0 && args[0] == "--selftest") return SelfTest();
-            if (args.Length > 1 && args[0] == "--after-update" && int.TryParse(args[1], out int pid)) Updater.FinishUpdate(pid);
+            if (args.Length > 1 && args[0] == "--write-icon") { Logo.WriteIcon(args[1]); return 0; }
+            if (args.Length > 2 && args[0] == "--write-sound") { File.WriteAllBytes(args[2], Sounds.WavOf(args[1]) ?? Array.Empty<byte>()); return 0; }
+            bool updated = args.Length > 1 && args[0] == "--after-update" && int.TryParse(args[1], out int pid);
+            if (updated) Updater.FinishUpdate(int.Parse(args[1])); // waits for the old copy to close first
             else Updater.CleanLeftovers();
+
+            // One copy at a time: two would each save over the other's changes. Opening it again
+            // brings the open one to the front instead.
+            using var only = new System.Threading.Mutex(false, @"Local\BusyBunny.Running");
+            using var show = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, @"Local\BusyBunny.Show");
+            bool mine;
+            try { mine = only.WaitOne(updated ? 15000 : 0); }
+            catch (System.Threading.AbandonedMutexException) { mine = true; }
+            if (!mine) { show.Set(); return 0; }
 
             var app = new App { ShutdownMode = ShutdownMode.OnMainWindowClose };
             app.DispatcherUnhandledException += (_, e) =>
@@ -25,9 +37,29 @@ namespace BusyBunny
             settings.Apply();
             Sounds.Warm();
             var store = Store.Load();
-            var w = new MainWindow(store, settings);
-            if (settings.CheckForUpdatesAtStart) w.Loaded += (_, _) => w.CheckForUpdates(quiet: true);
-            return app.Run(w);
+            var w = new MainWindow(store, settings) { Icon = Logo.Image() };
+            app.MainWindow = w;
+            new System.Threading.Thread(() =>
+            {
+                while (true)
+                {
+                    show.WaitOne();
+                    app.Dispatcher.BeginInvoke(() =>
+                    {
+                        if (w.WindowState == WindowState.Minimized) w.WindowState = WindowState.Normal;
+                        w.Activate();
+                    });
+                }
+            }) { IsBackground = true }.Start();
+            Splash.ShowThen(w, () =>
+            {
+                // After an update, the changelog opens by itself so the new things are easy to find.
+                if (updated) w.Dispatcher.BeginInvoke(w.ShowChanges, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                else if (settings.CheckForUpdatesAtStart) w.CheckForUpdates(quiet: true);
+            });
+            int code = app.Run();
+            only.ReleaseMutex();
+            return code;
         }
 
         public static string LogPath => Path.Combine(Store.Folder, "error-log.txt");
@@ -79,6 +111,11 @@ namespace BusyBunny
                 Date("today at 9:30 am", new DateTime(2026, 10, 12, 9, 30, 0), true);
                 Date("next monday", new DateTime(2026, 10, 19), false);
                 Date("blorp", null, false);
+                Date("3pm", new DateTime(2026, 10, 12, 15, 0, 0), true);
+                Date("at 3", new DateTime(2026, 10, 12, 15, 0, 0), true);
+                Date("tomorrow 10:15 am", new DateTime(2026, 10, 13, 10, 15, 0), true);
+                Date("wed", new DateTime(2026, 10, 14), false);
+                Date("oct 20", new DateTime(2026, 10, 20), false);
 
                 string file = Path.Combine(Path.GetTempPath(), "busybunny-selftest-" + Guid.NewGuid().ToString("N") + ".json");
                 try

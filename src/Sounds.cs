@@ -21,10 +21,11 @@ namespace BusyBunny
     /// </summary>
     public static class Sounds
     {
-        public enum Event { TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning }
+        public enum Event { Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning }
 
         public static string Label(Event e) => e switch
         {
+            Event.Startup => "Start_up",
             Event.TaskDone => "_Task done",
             Event.DailyGoal => "_Daily goal reached",
             Event.PersonalRecord => "_Personal record broken",
@@ -89,13 +90,14 @@ namespace BusyBunny
         public static IReadOnlyList<string> All => _all.Value;
         private static readonly Lazy<List<string>> _all = new(() =>
         {
-            var names = new List<string> { NoSound };
+            var names = new List<string> { NoSound, Angelic };
             foreach (var i in Instruments) foreach (var p in Patterns) names.Add(i.Name + ", " + p.Name);
             return names;
         });
 
         public static string Default(Event e) => e switch
         {
+            Event.Startup => Angelic,
             Event.TaskDone => "Piano, two up",
             Event.DailyGoal => "Piano and strings, rising",
             Event.PersonalRecord => "Piano and strings, sparkle",
@@ -193,6 +195,8 @@ namespace BusyBunny
         });
 
         /// <summary>For the self-test: makes a sound and says how long it is in seconds (0 if it could not be made).</summary>
+        public static byte[]? WavOf(string name) => Get(name, Key, 100);
+
         public static double Length(string name) => Get(name, Key, 100) is byte[] wav ? (wav.Length - 44) / 4.0 / Rate : 0;
 
         private static byte[]? Get(string name, int key, int volume)
@@ -221,8 +225,48 @@ namespace BusyBunny
             }
         }
 
+        public const string Angelic = "Angelic welcome";
+
+        /// <summary>
+        /// The startup sound: high bowed strings swell in on an open major chord, a harp sweeps up
+        /// through it, and a glockenspiel shimmers at the top, all in a big airy room. About three seconds.
+        /// </summary>
+        private static (double[] L, double[] R) AngelicWelcome(int key)
+        {
+            int home = 54 + ((key - 54 % 12) % 12 + 12) % 12 + 12; // the octave above the patterns: airy, not heavy
+            int length = (int)(4.6 * Rate);
+            var left = new double[length];
+            var right = new double[length];
+            void Mix((double[] L, double[] R) note, double at, double gain, double pan, double swell)
+            {
+                int start = (int)(at * Rate), rise = Math.Max(1, (int)(swell * Rate));
+                double gl = Math.Sqrt(0.5 * (1 - pan)) * 1.414, gr = Math.Sqrt(0.5 * (1 + pan)) * 1.414;
+                for (int i = 0; i < note.L.Length && start + i < length; i++)
+                {
+                    double g = gain * (i < rise ? Math.Sin(i / (double)rise * Math.PI / 2) : 1);
+                    left[start + i] += note.L[i] * g * gl;
+                    right[start + i] += note.R[i] * g * gr;
+                }
+            }
+            // Strings: root, fifth, octave, tenth and the ninth above, swelling in slowly, spread wide.
+            int[] chord = { 0, 7, 12, 16, 14 };
+            for (int k = 0; k < chord.Length; k++)
+                Mix(Note("strings", home + chord[k], 1.15, 0.8), 0.04 * k, 0.55, -0.5 + k / (double)(chord.Length - 1), 0.7);
+            // Harp: a sweep up through the chord, two octaves.
+            int[] sweep = { 0, 4, 7, 11, 12, 16, 19, 23, 24 };
+            for (int k = 0; k < sweep.Length; k++)
+                Mix(Note("harp", home + sweep[k], 1.1, 0.8), 0.18 + 0.085 * k, 0.5, -0.4 + 0.8 * k / (sweep.Length - 1), 0.004);
+            // Glockenspiel: a soft shimmer at the top as the sweep lands.
+            int[] shimmer = { 12, 16, 19, 24 };
+            for (int k = 0; k < shimmer.Length; k++)
+                Mix(Note("glockenspiel", home + shimmer[k], 0.9, 0.8), 0.95 + 0.11 * k, 0.22, k % 2 == 0 ? -0.35 : 0.35, 0.004);
+            Room(left, right, 0.38);
+            return (left, right);
+        }
+
         private static (double[]? L, double[]? R) Make(string name, int key)
         {
+            if (name == Angelic) return AngelicWelcome(key);
             int comma = name.IndexOf(", ", StringComparison.Ordinal);
             if (comma < 0) return (null, null);
             var inst = Instruments.FirstOrDefault(i => i.Name == name[..comma]);

@@ -1,3 +1,12 @@
+0.2.0
+New feature: a startup picture with the Busy Bunny logo, and a startup sound on real strings, harp and glockenspiel. Options, Sounds, Startup changes it or turns it off.
+New feature: Busy Bunny has its own bunny icon in the taskbar and on the exe.
+New feature: Help, View the changelog, or Shift F1, shows every change, a line each. Control Down and Control Up jump between versions. It also opens by itself after an update, so you can see what is new.
+New feature: Control Page Down and Control Page Up switch tabs too, like Control Tab.
+Bug fixed: if you arrowed left or right on the tab row, Busy Bunny jumped into the tab's list after the first arrow, so you could not keep arrowing through the tabs. Now the arrows stay on the tab row.
+Bug fixed: if you opened Busy Bunny a second time, two copies ran and could save over each other's changes. Now the copy that is already open just comes to the front.
+Bug fixed: if you typed a due time on its own in Quick add, like 3pm, Busy Bunny said it did not understand. Now it means today at 3pm.
+Bug fixed: in the changelog and other lists you read, Control Down past the last version said nothing. Now it says No more headings.
 0.1.0
 First try of Busy Bunny: the Today tab with sample tasks, to try with NVDA and a braille display before anything else gets built.
 New feature: tabs for Today, Focus, Upcoming and each of your six lists. Control Tab and Control Shift Tab move between them.
