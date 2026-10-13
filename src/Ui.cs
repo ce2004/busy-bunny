@@ -20,6 +20,13 @@ namespace BusyBunny
         public bool ShuffleMode { get; set; }
         public bool CheckForUpdatesAtStart { get; set; } = true;
         public int UrgentWarnAbove { get; set; } = 5;
+        public bool KeepInTray { get; set; } = true;
+        public bool TrayHintShown { get; set; }
+        public bool HotkeyQuickAdd { get; set; } = true;
+        public bool HotkeyRead { get; set; } = true;
+        public int FollowUpDays { get; set; } = 3;
+        /// <summary>The last day each nudge was given, so each comes once a day.</summary>
+        public Dictionary<string, string> NudgeDates { get; set; } = new();
 
         public static string FilePath => Path.Combine(Store.Folder, "settings.json");
 
