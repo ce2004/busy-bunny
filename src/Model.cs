@@ -328,6 +328,28 @@ namespace BusyBunny
             if (_undo.Count > 100) _undo.RemoveAt(0);
         }
 
+        /// <summary>Reads a data file for a restore: null when it is not Busy Bunny data.</summary>
+        public static Data? ReadFile(string path)
+        {
+            try
+            {
+                var d = JsonSerializer.Deserialize<Data>(File.ReadAllText(path), Json);
+                return d != null && d.Lists.Count > 0 ? d : null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>Swaps in other data, as a restore does. Call Remember first so it can be undone.</summary>
+        public void ReplaceData(Data d)
+        {
+            Data = d;
+            foreach (var l in Data.Lists)
+                if (l.Scale.Length > 0 && l.ScaleName.Length == 0) l.ScaleName = Scales.NameFor(l.Scale);
+            foreach (var tag in Data.Tasks.Select(t => t.Tag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+                if (!Data.Tags.Any(x => x.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) Data.Tags.Add(new TagInfo { Name = tag });
+            Save();
+        }
+
         public string? Undo()
         {
             if (_undo.Count == 0) return null;
