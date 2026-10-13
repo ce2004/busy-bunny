@@ -16,7 +16,7 @@ namespace BusyBunny
     /// the tabs, two pick menus act on the task chosen in whichever list was used last: Status and
     /// Move to list. Everything else is in the menus (Alt).
     /// </summary>
-    public sealed class MainWindow : Window
+    public sealed partial class MainWindow : Window
     {
         private readonly Store _store;
         private readonly Settings _settings;
@@ -145,13 +145,102 @@ namespace BusyBunny
 
             PreviewKeyDown += OnKeys;
             Loaded += (_, _) => { Refresh(); FocusTab(announce: false); };
-            Activated += (_, _) => { if (DateTime.Now.Date != _shownDate) Refresh(); };
+            Activated += (_, _) => CheckNewDay();
+            var minute = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+            minute.Tick += (_, _) => { CheckNewDay(); MinuteTick?.Invoke(); };
+            minute.Start();
+            Closed += (_, _) => minute.Stop();
+            foreach (var f in Features.All) f.Attach(this);
             Refresh();
             _urgentBefore = _store.Today(DateTime.Now).Urgent.Count;
         }
 
         private DateTime _shownDate;
         private bool _jumpIntoTab;
+
+        // ---- For features (see Features.cs) ----
+
+        public Store Store => _store;
+        public Settings AppSettings => _settings;
+        /// <summary>The task chosen in the list used last, or null.</summary>
+        public TaskItem? ChosenTask => Current();
+        public void Say(string text, bool interrupt = false) => Speech.Say(this, text, interrupt);
+        /// <summary>Saves, then rebuilds every list.</summary>
+        public void SaveAndRefresh() { Save(); Refresh(); }
+        /// <summary>Changes a task's status as Control 1 to 6 would, with its sounds and words.</summary>
+        public void SetTaskStatus(TaskItem t, Status s) { _lastChosen = t; try { SetStatus(s); } finally { _lastChosen = null; } }
+        private TaskItem? _lastChosen;
+
+        /// <summary>A task changed status: the task, then its old status. Raised after saving.</summary>
+        public event Action<TaskItem, Status>? StatusChanged;
+        /// <summary>A task was added, by Quick add or any feature calling AddTask.</summary>
+        public event Action<TaskItem>? TaskAdded;
+        /// <summary>Every list was rebuilt: fill feature lists here.</summary>
+        public event Action? Refreshed;
+        /// <summary>The window is up after the startup picture: the place for the first-run guide or morning check-in.</summary>
+        public event Action? Started;
+        /// <summary>Once a minute, for reminders, timers and nudges.</summary>
+        public event Action? MinuteTick;
+        /// <summary>The date changed since the lists were last shown (overnight, or waking the laptop).</summary>
+        public event Action<DateTime>? NewDay;
+
+        public void OnStarted() => Started?.Invoke();
+
+        /// <summary>Adds a task as Quick add does: undoable, saved, announced.</summary>
+        public void AddTask(TaskItem t, bool announce = true)
+        {
+            _store.Remember("adding " + t.Name);
+            _store.Data.Tasks.Add(t);
+            Save();
+            Refresh();
+            if (announce) Speech.Say(this, "Added " + t.Name + " to " + t.List + ".");
+            TaskAdded?.Invoke(t);
+            WarnIfOverloaded();
+        }
+
+        private readonly Dictionary<string, MenuItem> _menus = new();
+        /// <summary>Adds an item to a top menu: File, Task, View, Fun, Options or Help.</summary>
+        public MenuItem AddMenuItem(string menu, string header, Action act, string gesture = "")
+        {
+            var m = new MenuItem { Header = header, InputGestureText = gesture };
+            m.Click += (_, _) => act();
+            var top = _menus[menu];
+            top.Items.Add(m);
+            top.Visibility = Visibility.Visible;
+            return m;
+        }
+
+        private readonly List<(ModifierKeys Mods, Key Key, Action Act)> _keys = new();
+        private readonly List<string> _keyHelp = new();
+        /// <summary>A key anywhere in the main window, with its line for Help, Keyboard shortcuts.</summary>
+        public void AddKey(ModifierKeys mods, Key key, Action act, string help)
+        {
+            _keys.Add((mods, key, act));
+            _keyHelp.Add(help);
+        }
+
+        private readonly Dictionary<TabItem, Func<ListBox?>> _firstLists = new();
+        /// <summary>A tab after Upcoming. first gives the list Control Tab should land on.</summary>
+        public TabItem AddTab(string header, UIElement content, Func<ListBox?> first)
+        {
+            var tab = new TabItem { Header = header, Content = content };
+            int at = _tabs.Items.OfType<TabItem>().TakeWhile(t => t.Tag is not string).Count();
+            _tabs.Items.Insert(at, tab);
+            _firstLists[tab] = first;
+            return tab;
+        }
+
+        /// <summary>A task list that works like the others: Enter, F2, the pick menus and the task menu all act on its chosen task.</summary>
+        public ListBox NewTaskList(string key) => NewList(key);
+        /// <summary>Fills a task list: name is its spoken name, empty what it says with no tasks.</summary>
+        public void FillTasks(ListBox lb, IEnumerable<TaskItem> tasks, string name, string empty) => Fill(lb, tasks, name, empty);
+
+        private void CheckNewDay()
+        {
+            if (DateTime.Now.Date == _shownDate) return;
+            Refresh();
+            NewDay?.Invoke(DateTime.Now.Date);
+        }
 
         private ListBox NewList(string key)
         {
@@ -238,8 +327,10 @@ namespace BusyBunny
             help.Items.Add(Item("Open the Busy Bunny _website", () => Open(Updater.Website)));
             help.Items.Add(Item("_Report a problem", () => Open(Updater.Website + "/issues/new")));
 
+            var fun = new MenuItem { Header = "F_un", Visibility = Visibility.Collapsed };
             var bar = new Menu();
-            foreach (var m in new[] { file, task, view, options, help }) bar.Items.Add(m);
+            foreach (var m in new[] { file, task, view, fun, options, help }) bar.Items.Add(m);
+            _menus["File"] = file; _menus["Task"] = task; _menus["View"] = view; _menus["Fun"] = fun; _menus["Options"] = options; _menus["Help"] = help;
             return bar;
         }
 
@@ -279,6 +370,8 @@ namespace BusyBunny
                 Speech.Say(this, _settings.ShortMode ? "Short mode on." : "Short mode off.", true);
                 return;
             }
+            foreach (var (m, k, act) in _keys)
+                if (m == mods && k == key) { e.Handled = true; act(); return; }
             if (mods == ModifierKeys.Shift && key == Key.F1) { e.Handled = true; ShowChanges(); return; }
             if (mods == ModifierKeys.None && key == Key.F2) { e.Handled = true; EditTask(); return; }
             if (mods == ModifierKeys.Control && key == Key.OemComma) { e.Handled = true; OpenSettings(null); return; }
@@ -342,7 +435,7 @@ namespace BusyBunny
                 _upcoming.Children.Add(lb);
             }
 
-            foreach (var l in _store.Data.Lists)
+            foreach (var l in _store.ActiveLists.Where(l => _lists.ContainsKey("list-" + l.Name)))
             {
                 var tasks = _store.Data.Tasks.Where(t => t.List == l.Name && t.Status != Status.Done)
                     .OrderBy(t => t.Status).ThenBy(t => t.Priority == 0 ? 9 : t.Priority).ThenBy(t => t.Due ?? DateTime.MaxValue);
@@ -354,6 +447,7 @@ namespace BusyBunny
             _day.Value = pt == 0 ? 0 : pd * 100.0 / pt;
             var (wd, wt) = Week(now);
             _week.Value = wt == 0 ? 0 : wd * 100.0 / wt;
+            Refreshed?.Invoke();
             _progress.Text = "Today: " + done + " of " + total + " tasks, " + (int)_day.Value + " percent of the effort. This week: " + (int)_week.Value + " percent.";
 
             if (focusKey != null && _lists.TryGetValue(focusKey, out var back))
@@ -401,6 +495,7 @@ namespace BusyBunny
                 0 => _urgent,
                 1 => _focus,
                 2 => _upcoming.Children.OfType<ListBox>().FirstOrDefault(),
+                _ when _firstLists.TryGetValue(tab, out var f) => f(),
                 _ => _lists.TryGetValue("list-" + tab.Tag, out var lb) ? lb : null,
             };
             if (first != null) TextViewer.Select(first, Math.Max(0, first.SelectedIndex));
@@ -410,6 +505,7 @@ namespace BusyBunny
 
         private TaskItem? Current()
         {
+            if (_lastChosen != null) return _lastChosen;
             var lb = _lastList;
             if (lb == null || (lb.SelectedItem as ListBoxItem)?.Tag is not Guid id) return null;
             return _store.Data.Tasks.FirstOrDefault(t => t.Id == id);
@@ -445,7 +541,9 @@ namespace BusyBunny
             var now = DateTime.Now;
             int doneBefore = _store.Progress(now).Done;
             _store.Remember((s == Status.Done ? "marking " : "changing the status of ") + t.Name);
+            var old = t.Status;
             t.Status = s;
+            t.TouchedAt = now;
             t.StatusSince = now;
             t.DoneAt = s == Status.Done ? now : null;
             Save();
@@ -465,6 +563,7 @@ namespace BusyBunny
                 }
             }
             else Speech.Say(this, t.Name + ": " + Words.Of(s) + ".");
+            StatusChanged?.Invoke(t, old);
             WarnIfOverloaded();
         }
 
@@ -503,12 +602,7 @@ namespace BusyBunny
             string list = _tabs.SelectedItem is TabItem { Tag: string l } ? l : "Homework";
             var status = _tabs.SelectedIndex <= 1 ? Status.Today : Status.ThisWeek;
             if (QuickAdd.Show(this, _store, list, status) is not TaskItem t) return;
-            _store.Remember("adding " + t.Name);
-            _store.Data.Tasks.Add(t);
-            Save();
-            Refresh();
-            Speech.Say(this, "Added " + t.Name + " to " + t.List + ".");
-            WarnIfOverloaded();
+            AddTask(t);
         }
 
         /// <summary>Edit task (F2): the Quick add form, filled in with the chosen task. Save changes it in place; Control Z undoes it.</summary>
@@ -566,13 +660,13 @@ namespace BusyBunny
         /// </summary>
         private void SyncListTabs()
         {
-            var names = _store.Data.Lists.Select(l => l.Name).ToList();
+            var names = _store.ActiveLists.Where(l => l.Parent.Length == 0).Select(l => l.Name).ToList();
             var tabs = _tabs.Items.OfType<TabItem>().Where(t => t.Tag is string).ToList();
             if (tabs.Select(t => (string)t.Tag).SequenceEqual(names) && _moveMenu.Items.Count == names.Count) return;
             object? selectedTag = (_tabs.SelectedItem as TabItem)?.Tag;
             int selectedIndex = _tabs.SelectedIndex;
             foreach (var t in tabs) { _tabs.Items.Remove(t); _lists.Remove("list-" + t.Tag); }
-            foreach (var l in _store.Data.Lists)
+            foreach (var l in _store.ActiveLists.Where(l => l.Parent.Length == 0))
             {
                 var lb = NewList("list-" + l.Name);
                 var panel = new StackPanel { Margin = new Thickness(6) };
@@ -778,7 +872,7 @@ namespace BusyBunny
             TextViewer.Show(this, since == null ? "Busy Bunny changelog" : "What's new since " + since, lines, l => l.StartsWith("Version "));
         }
 
-        private static List<string> Shortcuts() => new()
+        private List<string> Shortcuts() => new List<string>
         {
             "Open the menus: Alt",
             "Next tab: Control Tab or Control Page Down. Previous tab: Control Shift Tab or Control Page Up. Both go straight to the tab's tasks",
@@ -795,8 +889,7 @@ namespace BusyBunny
             "Read my day: Control R",
             "Short mode on or off: Control Shift S",
             "Task menu for the chosen task: the Applications key or Shift F10",
-            "These shortcuts are a first try. Tell Conner which ones feel wrong.",
-        };
+        }.Concat(_keyHelp).Append("These shortcuts are a first try. Tell Conner which ones feel wrong.").ToList();
 
         private static List<string> About() => new()
         {

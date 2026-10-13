@@ -32,6 +32,8 @@ namespace BusyBunny
         public static bool Show(Window owner, Store store, Settings settings, string? startList = null)
         {
             var w = Layout.Dialog(owner, "Settings");
+            var pages = Features.All.SelectMany(f => f.SettingsPages(store, settings)).ToList();
+            int P = pages.Count;
             var lists = store.Data.Lists.Select(l => new Pending { Original = l.Name, Name = l.Name, ScaleName = l.Scale.Length == 0 ? "" : l.ScaleName, Levels = l.Scale }).ToList();
 
             // ---- General ----
@@ -73,7 +75,7 @@ namespace BusyBunny
             Pending? current = null;
             bool loading = false;
 
-            List<string> SectionNames() => new[] { GeneralName }.Concat(lists.Select(l => l.Name + " list")).Append(AddName).ToList();
+            List<string> SectionNames() => new[] { GeneralName }.Concat(pages.Select(p => p.Name)).Concat(lists.Select(l => l.Name + " list")).Append(AddName).ToList();
             void FillSections(int select)
             {
                 loading = true;
@@ -106,6 +108,8 @@ namespace BusyBunny
             {
                 int i = section.SelectedIndex;
                 if (i <= 0) { current = null; body.Content = general; return; }
+                if (i <= P) { current = null; body.Content = pages[i - 1].Content; return; }
+                i -= P;
                 if (i > lists.Count)
                 {
                     // Add a new list: made at once, at the end, and its section opened on the name.
@@ -113,7 +117,7 @@ namespace BusyBunny
                     while (lists.Any(l => l.Name.Equals("New list " + n, StringComparison.OrdinalIgnoreCase))) n++;
                     var p = new Pending { Name = "New list " + n };
                     lists.Add(p);
-                    FillSections(lists.Count);
+                    FillSections(lists.Count + P);
                     LoadList(p);
                     body.Content = listPanel;
                     Speech.Say(w, "Added " + p.Name + ". Type its name, then choose its settings. It is made when you press OK.", true);
@@ -123,17 +127,18 @@ namespace BusyBunny
                 LoadList(lists[i - 1]);
                 body.Content = listPanel;
             }
+            int ListSection(Pending p) => lists.IndexOf(p) + 1 + P;
             section.SelectionChanged += (_, _) => { if (!loading) ShowSection(); };
 
             name.TextChanged += (_, _) => { if (!loading && current != null) current.Name = name.Text.Trim(); };
             // The section menu shows the new name once you move on, not on every letter.
-            name.LostKeyboardFocus += (_, _) => { if (current != null) FillSections(lists.IndexOf(current) + 1); };
+            name.LostKeyboardFocus += (_, _) => { if (current != null) FillSections(ListSection(current)); };
             position.SelectionChanged += (_, _) =>
             {
                 if (loading || current == null || position.SelectedIndex < 0) return;
                 lists.Remove(current);
                 lists.Insert(position.SelectedIndex, current);
-                FillSections(lists.IndexOf(current) + 1);
+                FillSections(ListSection(current));
             };
             scales.SelectionChanged += (_, _) =>
             {
@@ -176,11 +181,20 @@ namespace BusyBunny
                         : p.ScaleName.Length > 0 && p.Levels.Length == 0 ? p.Name + " has a custom scale with no levels. Type them in Levels, separated by commas, or choose None."
                         : null;
                     if (problem == null) continue;
-                    FillSections(i + 1);
+                    FillSections(i + 1 + P);
                     LoadList(p);
                     body.Content = listPanel;
                     Speech.Say(w, problem, true);
                     (p.Name.Length == 0 || problem.StartsWith("Two") ? name : levels).Focus();
+                    return;
+                }
+
+                for (int i = 0; i < P; i++)
+                {
+                    if (pages[i].Validate() is not string problem) continue;
+                    FillSections(i + 1);
+                    body.Content = pages[i].Content;
+                    Speech.Say(w, problem, true);
                     return;
                 }
 
@@ -207,10 +221,12 @@ namespace BusyBunny
                     made.Add(list);
                 }
                 store.Data.Lists = made;
+                foreach (var page in pages) page.Apply();
+                settings.Save();
                 w.DialogResult = true;
             };
 
-            int start = startList == null ? 0 : lists.FindIndex(l => l.Name == startList) + 1;
+            int start = startList == null ? 0 : lists.FindIndex(l => l.Name == startList) + 1 + P;
             FillSections(Math.Max(0, start));
             ShowSection();
             w.Loaded += (_, _) => section.Focus();

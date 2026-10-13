@@ -60,7 +60,87 @@ namespace BusyBunny
         public string ScaleName { get; set; } = "";
 
         /// <summary>The tab's name: Homework (Coffee), or just the name when there is no scale.</summary>
-        public string TabName => Scale.Length > 0 && ScaleName.Length > 0 ? Name + " (" + ScaleName + ")" : Name;
+        [JsonIgnore] public string TabName => Scale.Length > 0 && ScaleName.Length > 0 ? Name + " (" + ScaleName + ")" : Name;
+
+        /// <summary>The list this one sits under (spec 4.9, at most two levels), or empty for a top-level list with its own tab.</summary>
+        public string Parent { get; set; } = "";
+        /// <summary>Sections inside the list, like one per class (spec 4.9), in order.</summary>
+        public List<string> Sections { get; set; } = new();
+        /// <summary>The status new tasks on this list start with.</summary>
+        public Status DefaultStatus { get; set; } = Status.ThisWeek;
+        /// <summary>Whether its tasks can show in Today and Focus.</summary>
+        public bool InToday { get; set; } = true;
+        /// <summary>Archived lists keep their tasks but have no tab and show nowhere.</summary>
+        public bool Archived { get; set; }
+        /// <summary>A sound name for finishing its tasks, or empty for the usual Task done sound.</summary>
+        public string FinishSound { get; set; } = "";
+        /// <summary>Task types this list uses; empty means all of them.</summary>
+        public List<TaskType> Types { get; set; } = new();
+    }
+
+    /// <summary>Task types (spec 8.2): each shows only the fields it needs.</summary>
+    public enum TaskType { General, Assignment, Test, Meeting, Event, PersonalGoal }
+
+    /// <summary>Energy tags (spec 19.2): low-energy mode and Burrow nap days use them.</summary>
+    public enum Energy { Unset, Easy, BrainHeavy }
+
+    public sealed class Subtask
+    {
+        public string Name { get; set; } = "";
+        public bool Done { get; set; }
+    }
+
+    public sealed class Comment
+    {
+        public DateTime When { get; set; }
+        public string Text { get; set; } = "";
+    }
+
+    /// <summary>A tag Morgan made, like PSY (spec 7.1). Tasks hold the name; this holds what goes with it.</summary>
+    public sealed class TagInfo
+    {
+        public string Name { get; set; } = "";
+        /// <summary>The class's full name, like Intro to Psychology, if it is a class.</summary>
+        public string Description { get; set; } = "";
+    }
+
+    /// <summary>A class meeting time (spec 19.5), entered once a semester.</summary>
+    public sealed class ClassTime
+    {
+        public string Tag { get; set; } = "";
+        public List<DayOfWeek> Days { get; set; } = new();
+        public TimeSpan Start { get; set; }
+        public TimeSpan End { get; set; }
+        public string Where { get; set; } = "";
+    }
+
+    /// <summary>Something that happened, for points, records, time per class and Semester Wrapped.</summary>
+    public sealed class LogEntry
+    {
+        public DateTime When { get; set; }
+        /// <summary>Done, DidAThing, Sprint, WorkedOn, Badge, Level and so on.</summary>
+        public string Kind { get; set; } = "";
+        public string Text { get; set; } = "";
+        public string Tag { get; set; } = "";
+        public string List { get; set; } = "";
+        public int Points { get; set; }
+        public int Minutes { get; set; }
+        public Guid? TaskId { get; set; }
+    }
+
+    public enum DayMode { Normal, Vacation, RoughDay }
+
+    /// <summary>What Morgan set for one day: the kind of day, her hours, vacation or a rough day.</summary>
+    public sealed class DayInfo
+    {
+        /// <summary>A Bunny set name she chose for the day (spec 6.2f), or empty to let the app pick.</summary>
+        public string DayType { get; set; } = "";
+        /// <summary>Hours available that day (spec 10.4), or 0 for the usual.</summary>
+        public double Hours { get; set; }
+        public DayMode Mode { get; set; }
+        /// <summary>From the morning check-in: low, medium, high, or empty.</summary>
+        public string Energy { get; set; } = "";
+        public bool CheckedIn { get; set; }
     }
 
     /// <summary>The library of priority scales (spec section 18 and 6.2), highest level first.</summary>
@@ -107,7 +187,30 @@ namespace BusyBunny
         public DateTime? DoneAt { get; set; }
         public DateTime? StatusSince { get; set; }
 
-        public TaskItem Copy() => (TaskItem)MemberwiseClone();
+        public TaskType Type { get; set; } = TaskType.General;
+        /// <summary>The day she plans to do it, apart from when it is due (spec 8.3). On that day it shows in Today.</summary>
+        public DateTime? DoDate { get; set; }
+        /// <summary>A repeat rule in plain words, like every Monday, or empty.</summary>
+        public string Repeat { get; set; } = "";
+        public DateTime? RemindAt { get; set; }
+        /// <summary>A repeat rule for the reminder, like every day, or empty.</summary>
+        public string RemindRepeat { get; set; } = "";
+        public Energy Energy { get; set; }
+        /// <summary>How much it counts toward the grade, in percent (spec 22.2), or 0.</summary>
+        public int GradeWeight { get; set; }
+        /// <summary>The section of its list, or empty.</summary>
+        public string Section { get; set; } = "";
+        public string Notes { get; set; } = "";
+        public List<Comment> Comments { get; set; } = new();
+        public List<Subtask> Subtasks { get; set; } = new();
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+        /// <summary>Last time it was changed, for the backlog sweep.</summary>
+        public DateTime TouchedAt { get; set; } = DateTime.Now;
+        /// <summary>How many times it has been pushed back (spec 15.6).</summary>
+        public int Snoozes { get; set; }
+
+        /// <summary>A full copy, lists inside included.</summary>
+        public TaskItem Copy() => Store.Clone(this);
     }
 
     public sealed class Data
@@ -116,6 +219,21 @@ namespace BusyBunny
         public List<TaskList> Lists { get; set; } = new();
         public List<TaskItem> Tasks { get; set; } = new();
         public double HoursAvailable { get; set; } = 5;
+        public List<TagInfo> Tags { get; set; } = new();
+        public List<ClassTime> Classes { get; set; } = new();
+        public List<LogEntry> Log { get; set; } = new();
+        /// <summary>Per-day settings, keyed by yyyy-MM-dd.</summary>
+        public Dictionary<string, DayInfo> Days { get; set; } = new();
+        public List<TaskItem> Templates { get; set; } = new();
+        /// <summary>The parking lot (spec 15.5): stray thoughts caught during focus.</summary>
+        public List<string> Parking { get; set; } = new();
+
+        public DayInfo Day(DateTime d)
+        {
+            string k = d.ToString("yyyy-MM-dd");
+            if (!Days.TryGetValue(k, out var info)) Days[k] = info = new DayInfo();
+            return info;
+        }
     }
 
     /// <summary>
@@ -131,9 +249,23 @@ namespace BusyBunny
 
         private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
 
+        /// <summary>A deep copy of anything saved in the data file.</summary>
+        public static T Clone<T>(T x) => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(x, Json), Json)!;
+
         public Data Data { get; private set; } = new();
-        // Undo history, newest last, at most 100 steps.
-        private readonly List<(List<TaskItem> Tasks, List<TaskList> Lists, string What)> _undo = new();
+        // Undo history, newest last, at most 100 steps: the whole data file as it was.
+        private readonly List<(string Data, string What)> _undo = new();
+
+        /// <summary>
+        /// Features add rules here to keep tasks off Today and Focus, like vacation or low-energy mode.
+        /// A task is hidden when any rule says true.
+        /// </summary>
+        public readonly List<Func<TaskItem, DateTime, bool>> HideFromToday = new();
+        /// <summary>Features add parts to the summary line here, like time until the next class. Given now and short mode; null adds nothing.</summary>
+        public readonly List<Func<DateTime, bool, string?>> SummaryParts = new();
+
+        public IEnumerable<TaskList> ActiveLists => Data.Lists.Where(l => !l.Archived);
+        public string Key(DateTime d) => d.ToString("yyyy-MM-dd");
 
         public string? PathOverride { get; init; }
         private string MyFile => PathOverride ?? FilePath;
@@ -158,6 +290,9 @@ namespace BusyBunny
             // Saved before scales had names: name them from the library.
             foreach (var l in s.Data.Lists)
                 if (l.Scale.Length > 0 && l.ScaleName.Length == 0) l.ScaleName = Scales.NameFor(l.Scale);
+            // Every tag on a task is a known tag.
+            foreach (var tag in s.Data.Tasks.Select(t => t.Tag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+                if (!s.Data.Tags.Any(x => x.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) s.Data.Tags.Add(new TagInfo { Name = tag });
             return s;
         }
 
@@ -189,18 +324,16 @@ namespace BusyBunny
         /// <summary>Call before any change: Undo puts every task back the way it was here.</summary>
         public void Remember(string what)
         {
-            _undo.Add((Data.Tasks.Select(t => t.Copy()).ToList(),
-                Data.Lists.Select(l => new TaskList { Name = l.Name, Scale = l.Scale.ToArray(), ScaleName = l.ScaleName }).ToList(), what));
+            _undo.Add((JsonSerializer.Serialize(Data, Json), what));
             if (_undo.Count > 100) _undo.RemoveAt(0);
         }
 
         public string? Undo()
         {
             if (_undo.Count == 0) return null;
-            var (tasks, lists, what) = _undo[^1];
+            var (data, what) = _undo[^1];
             _undo.RemoveAt(_undo.Count - 1);
-            Data.Tasks = tasks;
-            Data.Lists = lists;
+            Data = JsonSerializer.Deserialize<Data>(data, Json)!;
             Save();
             return what;
         }
@@ -222,15 +355,28 @@ namespace BusyBunny
             .ThenBy(t => DueSoon(t, now) ? t.Due : null)
             .ThenBy(Rank);
 
-        /// <summary>Today pulls from every list: anything urgent, plus anything done but not submitted.</summary>
+        /// <summary>Whether a task may show in Today and Focus: its list allows it, it is not archived, and no feature hides it.</summary>
+        public bool CanShowToday(TaskItem t, DateTime now)
+        {
+            var l = Data.Lists.FirstOrDefault(x => x.Name == t.List);
+            if (l != null && (!l.InToday || l.Archived)) return false;
+            foreach (var hide in HideFromToday) if (hide(t, now)) return false;
+            return true;
+        }
+
+        /// <summary>Today pulls from every list: anything urgent, plus anything done but not submitted or planned for today (its do date).</summary>
         public (List<TaskItem> Urgent, List<TaskItem> Others) Today(DateTime now)
         {
-            var open = Data.Tasks.Where(t => t.Status != Status.Done).ToList();
+            var open = Data.Tasks.Where(t => t.Status != Status.Done && CanShowToday(t, now)).ToList();
             var urgent = UrgentOrder(open.Where(t => IsUrgent(t, now)), now).ToList();
-            var rest = open.Where(t => !IsUrgent(t, now) && t.Status == Status.DoneNotSubmitted)
+            var rest = open.Where(t => !IsUrgent(t, now) && (t.Status == Status.DoneNotSubmitted || t.DoDate?.Date <= now.Date && t.Status != Status.Waiting))
                 .OrderBy(Rank).ToList();
             return (urgent, rest);
         }
+
+        /// <summary>Hours available today: what she set for the day, or her usual.</summary>
+        public double HoursToday(DateTime now) =>
+            Data.Days.TryGetValue(Key(now), out var d) && d.Hours > 0 ? d.Hours : Data.HoursAvailable;
 
         /// <summary>What counts toward today: everything on Today plus what was finished today.</summary>
         public (int Done, int Total, int PointsDone, int PointsTotal) Progress(DateTime now)
@@ -246,11 +392,13 @@ namespace BusyBunny
         /// <summary>The Bunny set for the day as a whole (spec 6.2f), worked out from urgent tasks and hours of work.</summary>
         public string DayType(DateTime now)
         {
+            if (Data.Days.TryGetValue(Key(now), out var set) && set.DayType.Length > 0) return set.DayType;
             var (urgent, rest) = Today(now);
             double hours = urgent.Concat(rest).Where(t => t.Status != Status.DoneNotSubmitted).Sum(t => Words.Hours(t.Size));
             int dueSoon = urgent.Count(t => DueSoon(t, now));
-            if (hours > Data.HoursAvailable || dueSoon >= 3 || urgent.Count > 5) return "Fox at the door";
-            if (hours > Data.HoursAvailable / 2) return "Hop to it";
+            double available = HoursToday(now);
+            if (hours > available || dueSoon >= 3 || urgent.Count > 5) return "Fox at the door";
+            if (hours > available / 2) return "Hop to it";
             if (hours > 0) return "Nibble on it";
             return "Burrow nap";
         }
@@ -271,6 +419,8 @@ namespace BusyBunny
                 string when = md.Date == now.Date ? "at " + Words.Time(md) : Words.Day(md, now) + " at " + Words.Time(md);
                 parts.Add("next meeting " + when + (md.Date == now.Date && !shortMode ? ", in " + Gap(gap) : ""));
             }
+            foreach (var part in SummaryParts)
+                if (part(now, shortMode) is string p && p.Length > 0) parts.Add(p);
             if (!shortMode) parts.Add("a " + DayType(now) + " day");
             return string.Join(", ", parts) + ".";
         }
