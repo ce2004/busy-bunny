@@ -168,14 +168,14 @@ namespace BusyBunny
         }
 
         /// <summary>Downloads, checks and swaps in the new exe, then starts it. The caller saves and closes.</summary>
-        public static async Task InstallAsync(Release r)
+        public static async Task InstallAsync(Release r, IProgress<double>? progress = null)
         {
             string exe = Environment.ProcessPath!;
             string fresh = exe + ".new", old = exe + ".old";
             if (r.Sha256 == null) throw new InvalidOperationException("GitHub gave no checksum for the download, so it was not installed. Try again later.");
             try
             {
-                await DownloadAsync(r.Url, fresh, r.Sha256);
+                await DownloadAsync(r.Url, fresh, r.Sha256, progress);
                 if (!TryDelete(old)) old = exe + ".old-" + DateTime.Now.ToString("yyyyMMddHHmmss");
                 ClearReadOnly(exe);
                 // A virus scan often opens a brand new file for a moment: that clears by itself, so try a few times.
@@ -205,7 +205,7 @@ namespace BusyBunny
             }
         }
 
-        private static async Task DownloadAsync(string url, string fresh, string sha256)
+        private static async Task DownloadAsync(string url, string fresh, string sha256, IProgress<double>? progress)
         {
             using var h = Http();
             using var stall = new System.Threading.CancellationTokenSource(StallLimit);
@@ -221,12 +221,15 @@ namespace BusyBunny
                 {
                     byte[] buf = new byte[1 << 16];
                     int n;
+                    long total = resp.Content.Headers.ContentLength ?? 0, got = 0;
                     stall.CancelAfter(StallLimit);
                     while ((n = await src.ReadAsync(buf, stall.Token)) > 0)
                     {
                         stall.CancelAfter(StallLimit); // something arrived: the minute starts again
                         hash.AppendData(buf, 0, n);
                         await dst.WriteAsync(buf.AsMemory(0, n), stall.Token);
+                        got += n;
+                        if (total > 0) progress?.Report((double)got / total);
                     }
                 }
                 if (!Convert.ToHexString(hash.GetHashAndReset()).Equals(sha256, StringComparison.OrdinalIgnoreCase))

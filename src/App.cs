@@ -26,6 +26,7 @@ namespace BusyBunny
             catch (System.Threading.AbandonedMutexException) { mine = true; }
             if (!mine) { show.Set(); return 0; }
 
+            SpaceAsTyping();
             var app = new App { ShutdownMode = ShutdownMode.OnMainWindowClose };
             app.DispatcherUnhandledException += (_, e) =>
             {
@@ -66,7 +67,41 @@ namespace BusyBunny
             return code;
         }
 
-        public static string LogPath => Path.Combine(Store.Folder, "error-log.txt");
+        /// <summary>
+        /// WPF text boxes type a space themselves when the key goes down, so Windows never makes the
+        /// typed-character message NVDA listens for: NVDA said each letter but never the word, with
+        /// speak typed words on. So Space in a text box posts that message itself, and the space goes
+        /// in when it arrives, like any letter. NVDA then hears it as it does in Notepad.
+        /// </summary>
+        public static void SpaceAsTyping()
+        {
+            EventManager.RegisterClassHandler(typeof(System.Windows.Controls.TextBox), System.Windows.Input.Keyboard.PreviewKeyDownEvent,
+                new System.Windows.Input.KeyEventHandler((s, e) =>
+                {
+                    if (e.Key != System.Windows.Input.Key.Space || s is not System.Windows.Controls.TextBox tb || tb.IsReadOnly) return;
+                    var mods = System.Windows.Input.Keyboard.Modifiers;
+                    if (mods != System.Windows.Input.ModifierKeys.None && mods != System.Windows.Input.ModifierKeys.Shift) return;
+                    if (System.Windows.Input.InputMethod.Current?.ImeState == System.Windows.Input.InputMethodState.On) return;
+                    if (PresentationSource.FromVisual(tb) is not System.Windows.Interop.HwndSource src) return;
+                    e.Handled = true;
+                    PostMessage(src.Handle, 0x0102, (IntPtr)' ', (IntPtr)1); // WM_CHAR
+                }));
+            EventManager.RegisterClassHandler(typeof(System.Windows.Controls.TextBox), System.Windows.Input.TextCompositionManager.PreviewTextInputEvent,
+                new System.Windows.Input.TextCompositionEventHandler((s, e) =>
+                {
+                    if (e.Text != " " || s is not System.Windows.Controls.TextBox tb || tb.IsReadOnly) return;
+                    e.Handled = true;
+                    if (tb.MaxLength > 0 && tb.Text.Length - tb.SelectionLength >= tb.MaxLength) return;
+                    int at = tb.SelectionStart;
+                    tb.SelectedText = " ";
+                    tb.Select(at + 1, 0);
+                }));
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+        public static string LogPath =>Path.Combine(Store.Folder, "error-log.txt");
 
         private static void Log(Exception e)
         {

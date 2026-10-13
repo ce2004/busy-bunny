@@ -2,7 +2,7 @@ Busy Bunny
 
 A to-do app for Windows, made for NVDA and braille displays first. Easy to start, hard to get overwhelmed by, forgiving when you fall behind.
 
-This is an early version: the Today tab with sample tasks, so the main screen can be tried and adjusted before the rest is built.
+Everything in the plan is built except sync between laptops and the phone page. The first time it starts, a short setup guide offers the things worth setting up; File, Setup guide brings it back.
 
 
 Getting it
@@ -13,7 +13,7 @@ On any other Windows laptop, download BusyBunny-x64.exe.
 Put it somewhere of your own, like your Documents folder, and open it. Nothing else needs installing.
 If Windows SmartScreen says it does not recognise the app, choose More info, then Run anyway.
 
-To update: Help menu, Check for updates. Busy Bunny shows what is new in every version you are missing, then downloads the new one, restarts, and keeps all your tasks. It also checks quietly every 30 seconds and as soon as the internet comes back, and tells you once when there is a new version and how many versions behind you are. Options, Check for updates automatically turns that off.
+To update: Help menu, Check for updates. Windows shows a notification when a new version is out, and while it downloads a random instrument climbs a scale, softly. Busy Bunny shows what is new in every version you are missing, then downloads the new one, restarts, and keeps all your tasks. It also checks quietly every 30 seconds and as soon as the internet comes back, and tells you once when there is a new version and how many versions behind you are. Options, Check for updates automatically turns that off.
 
 
 Settings
@@ -29,7 +29,7 @@ The main screen
 From the top:
 The summary line, like: 3 of 8 done today, test Friday, next meeting at 2, a Hop to it day.
 Today's progress and this week's progress, by effort.
-The tabs: Today, Focus, Upcoming, then Homework, Academic, Meetings, Projects, Personal Immediate and Personal.
+The tabs, in a list down the left side: Today, Focus, Upcoming, Board, then each of your lists. Up and Down Arrow move through them.
 Under the tabs, two pick menus for the task you chose: Status and Move to. Arrow to what you want and press Enter. Nothing changes until you press Enter or leave the menu.
 
 Each task reads as one line, most important first: tag, name, status, priority, due date. For example: PSY, chapter 4 reading, Today, Triple shot 1, due Thursday.
@@ -39,7 +39,7 @@ Keys
 
 Alt opens the menus.
 Control Tab and Control Shift Tab, or Control Page Down and Control Page Up: next and previous tab, straight to its tasks.
-The tab row: Shift Tab from a tab's first list, then Left and Right Arrow move through the tabs.
+The tab list: Shift Tab from a tab's first list, then Up and Down Arrow move through the tabs.
 Shift F1: view the changelog.
 Control N: quick add a task.
 Enter on a task: go to the Task field, to read it by character or by word with the arrows. Escape goes back to the list.
@@ -51,6 +51,20 @@ Delete: delete the chosen task. Control Z brings it back.
 Control R: read my day.
 Control Shift S: short mode on or off.
 The Applications key or Shift F10 on a task: everything you can do to it.
+Control Shift N: add several tasks, one per line.
+Control Shift V: paste tasks, for example from a Claude chat.
+Control Shift P: push the chosen task back a day.
+Control Shift F: filter and sort. Control Shift W: weekly review.
+Control Shift M: morning check-in. Control Shift Y: the kind of day.
+Control Shift I: I did a thing. Control Shift K: park a thought.
+Control Shift G: scoreboard.
+Control Shift T: start a sprint, or hear the time left.
+Control Shift U: pick one for me. Control Shift Q: quick wins. Control Shift O: everything is too much.
+Control Shift L: low-energy mode.
+From any program: Control Alt Shift A adds a task, Control Alt Shift R reads your day.
+Help, Keyboard shortcuts lists them all.
+
+The Fun menu has the game (scoreboard, badges, your bunny, challenges, Semester Wrapped), sprints, quick wins, rough day, vacation mode and the parking lot. File has the importers and exports: Paste tasks, Import my braille lists, Import a syllabus, Export as plain text, Export a backup and Restore from a backup.
 
 
 Sounds

@@ -24,6 +24,7 @@ namespace BusyBunny
         public bool ShuffleMode { get; set; }
         public bool CheckForUpdatesAtStart { get; set; } = true;
         public int UrgentWarnAbove { get; set; } = 5;
+        public bool SetupGuideShown { get; set; }
         public bool MorningCheckIn { get; set; } = true;
         public string EndOfDay { get; set; } = "week";
         public string LastResetDay { get; set; } = "";

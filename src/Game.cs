@@ -7,7 +7,7 @@ namespace BusyBunny
     /// <summary>Everything the game remembers (spec 12.4, 10.5, 19.9, 19.10, 12.6). Points themselves live in Data.Log.</summary>
     public sealed class GameState
     {
-        /// <summary>The bunny's name (spec 21.6: chosen later, changed in Options, Settings, Fun).</summary>
+        /// <summary>The bunny's name (spec 21.6: chosen later, changed in Options, Settings, Bunny and goals).</summary>
         public string BunnyName { get; set; } = "Bun";
         /// <summary>Daily goal in points, or 0 to work it out from her hours.</summary>
         public int DailyGoal { get; set; }

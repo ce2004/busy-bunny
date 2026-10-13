@@ -434,7 +434,8 @@ namespace BusyBunny
                 w.DialogResult = true;
             };
 
-            int start = startList == null ? 0 : lists.FindIndex(l => l.Name == startList) + 1 + P;
+            int pageAt = startList == null ? -1 : pages.FindIndex(p => p.Name == startList);
+            int start = startList == null ? 0 : pageAt >= 0 ? pageAt + 1 : lists.FindIndex(l => l.Name == startList) + 1 + P;
             FillSections(Math.Max(0, start));
             ShowSection();
             w.Loaded += (_, _) => section.Focus();

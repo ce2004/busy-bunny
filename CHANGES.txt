@@ -1,3 +1,38 @@
+0.5.0
+New feature: the rest of the plan is built, everything except sync between laptops and the phone page. Help, Keyboard shortcuts lists every key.
+New feature: a setup guide the first time you start: tags, class times, weekday plans, the morning check-in, how hard Busy Bunny roasts you, your bunny, and reminders. File, Setup guide brings it back.
+New feature: the tabs are a list down the left side, one under another, so they never wrap into rows. Up and Down Arrow move through them.
+New feature: the task form has a task type (assignment, test, meeting, event, personal goal) that shows only the fields it needs, plus a do date apart from the due date, repeat, reminder, energy, grade weight, section, notes, steps and comments.
+New feature: tasks can repeat in plain words, like every Monday and Wednesday or every 2 weeks. Mark one done and the next one appears.
+New feature: a heavy grade weight suggests a higher priority.
+New feature: Task, Add several tasks (Control Shift N), Save as template and New from template.
+New feature: Options, Settings has a Tags page: add, rename, describe and delete tags. Deleting one that is in use asks what to do with its tasks.
+New feature: each list's settings have a default status, whether it shows in Today and Focus, its own finishing sound, which task types it uses, sections inside it, and a list it sits inside. Lists can be merged, archived or deleted, and Control Z undoes it.
+New feature: a Board tab, one list per status.
+New feature: View, Filter and sort (Control Shift F), and Clear filter.
+New feature: View, Weekly review (Control Shift W) walks through next week one task at a time. View, Backlog sweep goes through tasks nobody has touched in 3 weeks.
+New feature: the morning check-in (Control Shift M) asks your energy, your hours and anything new. Weekday plans suggest the day's tasks from your plan for that day.
+New feature: Fun, Set the kind of day (Control Shift Y), Vacation mode and Rough day. Rough day moves the not-urgent things along and protects your streak.
+New feature: unfinished Today tasks from yesterday go back to This week overnight, so nothing piles up as overdue. Settings can keep them on Today or turn this off.
+New feature: reminders as Windows notifications, repeating ones too. Busy Bunny can keep running in the notification area when you close it, so reminders still come. File, Exit really quits.
+New feature: Control Alt Shift A adds a task from any program, and Control Alt Shift R reads your day from any program.
+New feature: Task, Push back a day (Control Shift P). The third time, it asks whether to break the task down, change it or drop it.
+New feature: gentle nudges for work done but not submitted for over a day, and for anyone you have been waiting on for 3 days.
+New feature: File, Paste tasks (Control Shift V) turns a list from a Claude chat into tasks, with a preview first. There is a button that copies the format for Claude.
+New feature: File, Import my braille lists, Import a syllabus, Export as plain text in your braille list style, Export a backup and Restore from a backup.
+New feature: after each finished task, a line of encouragement, more than 150 of them, dry or warm. Options, Settings, Fun sets the roast level from Gentle to Savage, or off, and emoji at big moments.
+New feature: surprise rewards now and then: a fun fact, a roast, or something new unlocked. Finals week mode and holiday lines too.
+New feature: Fun, I did a thing (Control Shift I) counts something that was never on a list. Fun, Park a thought (Control Shift K) catches a stray thought without leaving what you are doing.
+New feature: points for every finished task, more for bigger and higher priority ones, with levels, a daily and weekly goal, streaks that vacation and rough days never break, and a comeback bonus.
+New feature: Fun, Scoreboard (Control Shift G), Badges, Visit your bunny, Challenges and Semester Wrapped.
+New feature: Fun, Start a sprint (Control Shift T), Pick one for me (Control Shift U), Quick wins (Control Shift Q), Everything is too much (Control Shift O) and Time per class. View, Low-energy mode (Control Shift L) and Shuffle mode.
+New feature: big tasks with steps are bosses. Each step does damage, and beating one plays a sound.
+New feature: Options, Settings, Classes for your class times, so the summary says how long until the next class. A test within 2 weeks shows as a countdown, like PSY midterm in 6 days, 3 study tasks left.
+New feature: Options, Settings, Accessibility keeps a checklist of accommodations per class, with a reminder for anything still to ask.
+New feature: Options, Sounds can turn any single sound off, use your own sound files, and switch sound packs: Classic, Bunny, Halloween, Winter holidays and Valentine's.
+New feature: a notification from Windows when a new version of Busy Bunny is out.
+New feature: while an update downloads, a random instrument climbs a scale at half volume, so you can hear it working.
+Bug fixed: with NVDA set to speak typed words, typing in any Busy Bunny text box said each letter but never the word. Now it reads words like it does in Notepad.
 0.4.0
 New feature: Options, Settings, or Control Comma. Pick a section at the top. General has sounds, short mode, automatic update checks, how many hours you have on a typical day, and when to warn you about too many urgent tasks. Then each list has its own section: its name, its place among the tabs, and its priority scale.
 New feature: add your own lists. In Settings, choose Add a new list from the Section menu, type its name and choose its settings. It gets its own tab when you press OK.

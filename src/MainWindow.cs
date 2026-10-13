@@ -24,7 +24,8 @@ namespace BusyBunny
         private readonly TextBox _progress = new() { IsReadOnly = true, IsReadOnlyCaretVisible = true, BorderThickness = new Thickness(0), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 2, 8, 2) };
         private readonly QuietProgressBar _day = new() { Height = 10, Margin = new Thickness(8, 2, 8, 2), Focusable = false };
         private readonly QuietProgressBar _week = new() { Height = 10, Margin = new Thickness(8, 2, 8, 6), Focusable = false };
-        private readonly TabControl _tabs = new() { Margin = new Thickness(6, 0, 6, 0) };
+        // The tabs sit in a list down the left side, one under another, so many lists never wrap into a grid.
+        private readonly TabControl _tabs = new() { Margin = new Thickness(6, 0, 6, 0), TabStripPlacement = Dock.Left };
         // The chosen task as text, to read by character or word with the arrows (and on braille): a list item can't be.
         private readonly TextBox _detail = new() { IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, Margin = new Thickness(8, 8, 8, 0), MinHeight = 28 };
         private readonly ComboBox _status = new() { Width = 240, Margin = new Thickness(0, 0, 16, 0) };
@@ -667,6 +668,9 @@ namespace BusyBunny
             OpenSettings(list);
         }
 
+        /// <summary>Opens Settings at a page by its name (like Tags) or at a list by its name.</summary>
+        public void OpenSettingsAt(string? name) => OpenSettings(name);
+
         private void OpenSettings(string? list)
         {
             if (!SettingsWindow.Show(this, _store, _settings, list)) { FocusTab(false); return; }
@@ -859,6 +863,7 @@ namespace BusyBunny
                 {
                     _announced = r.Version;
                     Speech.Say(this, "Busy Bunny " + r.Version + " is out. " + Behind(r) + " Help menu, Install version " + r.Version + " shows what's new and installs it.");
+                    Reminders.Notify("Busy Bunny " + r.Version + " is out", Behind(r) + " In Busy Bunny, Help menu, Install version " + r.Version + ".");
                 }
             }
             catch { } // offline or GitHub unhappy: try again at the next tick or when the connection comes back
@@ -887,7 +892,24 @@ namespace BusyBunny
                 if (!UpdateDialog.Show(this, r, Behind(r))) return;
                 Speech.Say(this, "Downloading the update.", true);
                 Save();
-                await Updater.InstallAsync(r);
+                // A random instrument climbs the scale as it downloads, at half volume: a progress bar to hear.
+                var names = Sounds.InstrumentNames;
+                string instrument = names[new Random().Next(names.Count)];
+                int played = -1;
+                var lastNote = DateTime.MinValue;
+                Sounds.PlayScaleNote(instrument, 0, 0.5);
+                played = 0;
+                var progress = new Progress<double>(p =>
+                {
+                    int degree = Math.Min(7, (int)(p * 7));
+                    if (degree <= played || (DateTime.Now - lastNote).TotalMilliseconds < 220) return;
+                    played++; // one step at a time, so no note of the scale is skipped
+                    lastNote = DateTime.Now;
+                    Sounds.PlayScaleNote(instrument, played, 0.5);
+                });
+                await Updater.InstallAsync(r, progress);
+                while (played < 7) { await System.Threading.Tasks.Task.Delay(220); Sounds.PlayScaleNote(instrument, ++played, 0.5); }
+                await System.Threading.Tasks.Task.Delay(500);
                 Application.Current.Shutdown();
             }
             catch (Exception e)

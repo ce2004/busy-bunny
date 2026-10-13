@@ -158,11 +158,28 @@ namespace BusyBunny
         }
 
         /// <summary>Plays a sound by name in the background (the Sounds window previews with it, even when sounds are off).</summary>
-        public static void PlayNamed(string name)
+        public static void PlayNamed(string name) => PlayNamed(name, Volume);
+
+        /// <summary>The instruments by name, for picking one at random.</summary>
+        public static IReadOnlyList<string> InstrumentNames => Instruments.Select(i => i.Name).ToArray();
+
+        /// <summary>
+        /// One note of the major scale (0 is the key's home note, 7 an octave up) on an instrument, at a
+        /// share of the usual volume: the update download climbs the scale with these. Silent when sounds are off.
+        /// </summary>
+        public static void PlayScaleNote(string instrument, int degree, double share)
+        {
+            if (!Enabled) return;
+            int[] major = { 0, 2, 4, 5, 7, 9, 11, 12 };
+            int step = major[Math.Clamp(degree, 0, 7)];
+            PlayNamed(instrument + ", note " + step, Math.Max(1, (int)(Volume * share)));
+        }
+
+        private static void PlayNamed(string name, int volume)
         {
             lock (SlotGate)
             {
-                _next = (name, Key, Volume);
+                _next = (name, Key, volume);
                 if (_soundThread == null)
                 {
                     _soundThread = new System.Threading.Thread(SoundLoop) { IsBackground = true, Name = "Busy Bunny sounds" };
@@ -396,6 +413,8 @@ namespace BusyBunny
             int comma = name.IndexOf(", ", StringComparison.Ordinal);
             if (comma < 0) return (null, null);
             var inst = Instruments.FirstOrDefault(i => i.Name == name[..comma]);
+            if (inst != null && name[(comma + 2)..].StartsWith("note ") && int.TryParse(name[(comma + 7)..], out int step))
+                return PatternSound(inst, new[] { (step, 0.0) }, key);
             int pattern = Array.FindIndex(Patterns, p => p.Name == name[(comma + 2)..]);
             if (inst == null || pattern < 0) return (null, null);
             return PatternSound(inst, Patterns[pattern].Notes, key);

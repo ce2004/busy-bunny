@@ -125,7 +125,7 @@ namespace BusyBunny
                 G.BunnyName + " is " + Engine.BunnyStage(level) + ", level " + level + ": " + Engine.LevelName(level) + ".",
                 Mood(S, now),
                 (Engine.Threshold(level + 1) - total) + " more points to level " + (level + 1) + ", when " + G.BunnyName + " grows a little.",
-                "Rename your bunny in Options, Settings, Fun.",
+                "Rename your bunny in Options, Settings, Bunny and goals.",
             };
             TextViewer.Show(_w, G.BunnyName, lines);
         }
@@ -254,7 +254,7 @@ namespace BusyBunny
                 _panel.Children.Add(Layout.Row("_Weekly goal in points, 0 for five usual days", _weekly, 120));
             }
 
-            public string Name => "Fun";
+            public string Name => "Bunny and goals";
             public FrameworkElement Content => _panel;
 
             public string? Validate()
