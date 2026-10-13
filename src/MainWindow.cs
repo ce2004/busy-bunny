@@ -170,6 +170,10 @@ namespace BusyBunny
         /// <summary>Changes a task's status as Control 1 to 6 would, with its sounds and words.</summary>
         public void SetTaskStatus(TaskItem t, Status s) { _lastChosen = t; try { SetStatus(s); } finally { _lastChosen = null; } }
         private TaskItem? _lastChosen;
+        /// <summary>The list tab's task list for a list name, or null.</summary>
+        public ListBox? ListBoxOf(string listName) => _lists.TryGetValue("list-" + listName, out var lb) ? lb : null;
+        /// <summary>Features add a short line for the Task field here, like 2 of 5 steps done; null adds nothing.</summary>
+        public readonly List<Func<TaskItem, string?>> DetailNotes = new();
 
         /// <summary>A task changed status: the task, then its old status. Raised after saving.</summary>
         public event Action<TaskItem, Status>? StatusChanged;
@@ -523,6 +527,7 @@ namespace BusyBunny
                 if (list.Scale.Length > 0)
                     text += " Priority: " + (t.Priority > 0 && t.Priority <= list.Scale.Length ? list.Scale[t.Priority - 1] + ", " + t.Priority + " of " + list.Scale.Length : "none")
                         + ", on the " + list.ScaleName + " scale: " + Scales.Rank(list.Scale);
+                foreach (var note in DetailNotes) if (note(t) is string n && n.Length > 0) text += " " + n;
             }
             if (_detail.Text != text) _detail.Text = text;
         }
