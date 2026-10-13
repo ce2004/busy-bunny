@@ -38,7 +38,7 @@ namespace BusyBunny
         };
 
         private const int Rate = 48000;
-        public const string NoSound = "None";
+        public const string NoSound = "Off";
         public const string DefaultName = "Default";
         public const string RandomName = "Random sound";
 
@@ -65,6 +65,8 @@ namespace BusyBunny
             new("Harp", "harp", false, 0, 0.5, 0.25),
             new("Glockenspiel", "glockenspiel", false, 24, 0.42, 0.22),
             new("Marimba", "marimba", false, 0, 0.42, 0.22),
+            new("Low strings", "strings", false, -12, 0.9, 0.5),
+            new("Bells", "glockenspiel", false, 12, 0.8, 0.45),
         };
 
         // Patterns: semitones above the key's home note, and when (seconds). Every one is in the major key.
@@ -82,6 +84,12 @@ namespace BusyBunny
             ("single", new[] { (12, 0.0) }),
             ("bounce", new[] { (7, 0.0), (12, 0.06), (7, 0.12) }),
             ("sparkle", new[] { (9, 0.0), (11, 0.035), (12, 0.07), (14, 0.105), (16, 0.14) }),
+            // Minor figures, for the Halloween pack.
+            ("minor rising", new[] { (0, 0.0), (3, 0.06), (7, 0.12), (12, 0.18) }),
+            ("minor falling", new[] { (7, 0.0), (3, 0.08), (0, 0.16) }),
+            ("minor chord", new[] { (0, 0.0), (3, 0.0), (7, 0.0) }),
+            ("creep", new[] { (0, 0.0), (3, 0.14), (6, 0.28) }),
+            ("minor sigh", new[] { (3, 0.0), (2, 0.14) }),
         };
 
         private static readonly Lazy<string[]> Resources = new(() => typeof(Sounds).Assembly.GetManifestResourceNames().Where(n => n.StartsWith("snd.")).ToArray());
@@ -117,6 +125,7 @@ namespace BusyBunny
 
         public static string Resolve(Event e, string choice)
         {
+            if (choice == "None") return NoSound;
             if (choice == DefaultName) return Default(e);
             if (choice != RandomName) return choice;
             lock (Last)
@@ -211,9 +220,18 @@ namespace BusyBunny
                     CacheOrder.AddFirst(have);
                     return have.Value.Wav;
                 }
-                var (l, r) = Make(name, key);
-                if (l == null) return null;
-                byte[] wav = Wav(l, r!, volume);
+                byte[] wav;
+                if (name.StartsWith(MinePrefix, StringComparison.Ordinal))
+                {
+                    if (Mine(name, volume) is not byte[] mine) return null;
+                    wav = mine;
+                }
+                else
+                {
+                    var (l, r) = Make(name, key);
+                    if (l == null) return null;
+                    wav = Wav(l, r!, volume);
+                }
                 Cache[cacheKey] = CacheOrder.AddFirst((cacheKey, wav));
                 while (Cache.Count > CacheMax)
                 {
@@ -224,6 +242,114 @@ namespace BusyBunny
                 return wav;
             }
         }
+
+        // ---- Her own sounds (spec 12b.3): WAV files copied into AppData, Busy Bunny, Sounds ----
+
+        public const string MinePrefix = "My sound, ";
+        public static string MyFolder => Path.Combine(Store.Folder, "Sounds");
+
+        /// <summary>The sounds she imported, as names to pick (My sound, file name).</summary>
+        public static List<string> Imported()
+        {
+            try
+            {
+                if (!Directory.Exists(MyFolder)) return new();
+                return Directory.GetFiles(MyFolder, "*.wav").Select(f => MinePrefix + Path.GetFileNameWithoutExtension(f)).OrderBy(n => n, StringComparer.OrdinalIgnoreCase).ToList();
+            }
+            catch { return new(); }
+        }
+
+        /// <summary>Every sound she can pick: the built-in ones, then her own.</summary>
+        public static List<string> Choices() => All.Skip(1).Concat(Imported()).ToList();
+
+        /// <summary>Copies a WAV file into her Sounds folder. Returns the name to pick, or null with a problem in error.</summary>
+        public static string? Import(string path, out string error)
+        {
+            error = "";
+            try
+            {
+                var head = new byte[12];
+                using (var f = File.OpenRead(path)) if (f.Read(head, 0, 12) < 12) { error = "That file is empty."; return null; }
+                if (!(head[0] == 'R' && head[1] == 'I' && head[2] == 'F' && head[3] == 'F' && head[8] == 'W' && head[9] == 'A' && head[10] == 'V' && head[11] == 'E'))
+                { error = "That is not a WAV file. Only WAV files play."; return null; }
+                Directory.CreateDirectory(MyFolder);
+                string name = Path.GetFileNameWithoutExtension(path);
+                File.Copy(path, Path.Combine(MyFolder, name + ".wav"), true);
+                lock (Cache) { Cache.Clear(); CacheOrder.Clear(); }
+                return MinePrefix + name;
+            }
+            catch (Exception e) { error = "Could not add it: " + e.Message; return null; }
+        }
+
+        private static byte[]? Mine(string name, int volume)
+        {
+            try
+            {
+                string file = Path.Combine(MyFolder, name[MinePrefix.Length..] + ".wav");
+                return File.Exists(file) ? ScaleWav(File.ReadAllBytes(file), volume) : null;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>Scales 16-bit PCM WAV samples by the volume (100 percent leaves them as they are). Anything else plays as is.</summary>
+        public static byte[] ScaleWav(byte[] wav, int volume)
+        {
+            try
+            {
+                if (volume >= 100 || wav.Length < 44) return wav;
+                int pos = 12, bits = 0, format = 0;
+                while (pos + 8 <= wav.Length)
+                {
+                    string id = System.Text.Encoding.ASCII.GetString(wav, pos, 4);
+                    int size = BitConverter.ToInt32(wav, pos + 4);
+                    if (id == "fmt " && pos + 24 <= wav.Length) { format = BitConverter.ToUInt16(wav, pos + 8); bits = BitConverter.ToUInt16(wav, pos + 22); }
+                    if (id == "data")
+                    {
+                        if (format != 1 || bits != 16) return wav;
+                        var copy = (byte[])wav.Clone();
+                        int end = (int)Math.Min((long)copy.Length, (long)pos + 8 + (uint)size);
+                        double gain = Math.Clamp(volume, 10, 100) / 100.0;
+                        for (int i = pos + 8; i + 1 < end; i += 2)
+                        {
+                            short v = (short)(copy[i] | copy[i + 1] << 8);
+                            v = (short)Math.Round(v * gain);
+                            copy[i] = (byte)(v & 0xff); copy[i + 1] = (byte)((v >> 8) & 0xff);
+                        }
+                        return copy;
+                    }
+                    if (size < 0) break;
+                    pos += 8 + size + (size & 1);
+                }
+            }
+            catch { }
+            return wav;
+        }
+
+        // ---- Sound packs (spec 12b.3 and 19.11): a pack sets the choice for every event ----
+
+        public const string Classic = "Classic";
+        public static readonly string[] PackNames = { Classic, "Bunny pack", "Halloween", "Winter holidays", "Valentine's" };
+
+        private static readonly Dictionary<string, string[]> PackSounds = new()
+        {
+            // In Event order: Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning.
+            ["Bunny pack"] = new[] { "Marimba, rising", "Pizzicato strings, two up", "Marimba, sparkle", "Glockenspiel, sparkle", "Marimba, four up",
+                "Glockenspiel, rising", "Marimba, chord high", "Pizzicato strings, bounce", "Glockenspiel, bounce", "Pizzicato strings, sigh" },
+            ["Halloween"] = new[] { "Low strings, creep", "Harp, minor rising", "Low strings, minor chord", "Harp, creep", "Harp, minor rising",
+                "Strings, minor chord", "Low strings, minor chord", "Harp, minor falling", "Harp, creep", "Low strings, minor sigh" },
+            ["Winter holidays"] = new[] { "Bells, rising", "Glockenspiel, two up", "Bells, sparkle", "Bells, sparkle", "Glockenspiel, four up",
+                "Bells, chord high", "Bells, rising", "Glockenspiel, bounce", "Glockenspiel, sparkle", "Bells, sigh" },
+            ["Valentine's"] = new[] { "Piano and strings, rising", "Soft piano, two up", "Piano and strings, rising", "Soft piano, sparkle", "Soft piano, four up",
+                "Strings, chord high", "Piano and strings, chord high", "Soft piano, bounce", "Soft piano, sparkle", "Soft piano, sigh" },
+        };
+
+        /// <summary>What a pack picks for an event: Default for Classic, otherwise a sound name.</summary>
+        public static string PackChoice(string pack, Event e) =>
+            PackSounds.TryGetValue(pack, out var s) ? s[(int)e] : DefaultName;
+
+        /// <summary>The holiday pack that fits this date, or null: Halloween in October, Winter holidays in December, Valentine's in the first half of February.</summary>
+        public static string? SeasonPack(DateTime d) =>
+            d.Month == 10 ? "Halloween" : d.Month == 12 ? "Winter holidays" : d.Month == 2 && d.Day <= 14 ? "Valentine's" : null;
 
         public const string Angelic = "Angelic welcome";
 

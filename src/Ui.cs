@@ -15,6 +15,10 @@ namespace BusyBunny
         public int SoundVolume { get; set; } = 80;
         public int SoundKey { get; set; } = 10;
         public Dictionary<string, string> SoundChoices { get; set; } = new();
+        /// <summary>The sound pack last picked in the Sounds window (Classic, Bunny pack and so on).</summary>
+        public string SoundPack { get; set; } = "Classic";
+        /// <summary>The seasonal pack hint already spoken, like Halloween 2026.</summary>
+        public string PackHinted { get; set; } = "";
         public bool ShortMode { get; set; }
         public bool LowEnergy { get; set; }
         public bool ShuffleMode { get; set; }

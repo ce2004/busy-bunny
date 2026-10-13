@@ -127,19 +127,50 @@ namespace BusyBunny
             panel.Children.Add(on);
             panel.Children.Add(Layout.Row("_Volume", volume));
             panel.Children.Add(Layout.Row("_Key", key));
+            var pack = new ComboBox { ItemsSource = Sounds.PackNames };
+            pack.SelectedIndex = Math.Max(0, Array.IndexOf(Sounds.PackNames, settings.SoundPack));
+            panel.Children.Add(Layout.Row("Sound pac_k (sets every sound below)", pack));
+            var add = Layout.Button("Add my own sound _file...");
+            add.HorizontalAlignment = HorizontalAlignment.Left;
+            panel.Children.Add(add);
             var lists = new Dictionary<Sounds.Event, ComboBox>();
+            bool settingPack = false;
             foreach (Sounds.Event e in Enum.GetValues<Sounds.Event>())
             {
-                var items = new List<string> { Sounds.DefaultName, Sounds.RandomName };
-                items.AddRange(Sounds.All);
+                var items = new System.Collections.ObjectModel.ObservableCollection<string>(new[] { Sounds.DefaultName, Sounds.RandomName, Sounds.NoSound }.Concat(Sounds.Choices()));
                 var list = new ComboBox { ItemsSource = items };
-                int at = settings.SoundChoices.TryGetValue(e.ToString(), out var c) ? items.IndexOf(c) : -1;
+                string? c = settings.SoundChoices.TryGetValue(e.ToString(), out var saved0) ? saved0 : null;
+                if (c == "None") c = Sounds.NoSound;
+                int at = c == null ? -1 : items.IndexOf(c);
                 list.SelectedIndex = at < 0 ? 0 : at;
                 var ev = e;
-                list.SelectionChanged += (_, _) => { if (ready && list.SelectedItem is string s) Sounds.PlayNamed(Sounds.Resolve(ev, s)); };
+                list.SelectionChanged += (_, _) => { if (ready && !settingPack && list.SelectedItem is string s) Sounds.PlayNamed(Sounds.Resolve(ev, s)); };
                 panel.Children.Add(Layout.Row(Sounds.Label(e), list));
                 lists[e] = list;
             }
+            pack.SelectionChanged += (_, _) =>
+            {
+                if (!ready || pack.SelectedItem is not string p) return;
+                settingPack = true;
+                foreach (var (e, list) in lists)
+                {
+                    int at = list.Items.IndexOf(Sounds.PackChoice(p, e));
+                    list.SelectedIndex = at < 0 ? 0 : at;
+                }
+                settingPack = false;
+                Sounds.PlayNamed(Sounds.Resolve(Sounds.Event.TaskDone, (string)lists[Sounds.Event.TaskDone].SelectedItem));
+                Speech.Say(w, p + " pack picked. OK keeps it.");
+            };
+            add.Click += (_, _) =>
+            {
+                var dlg = new Microsoft.Win32.OpenFileDialog { Title = "Add my own sound", Filter = "WAV sound files (*.wav)|*.wav" };
+                if (dlg.ShowDialog(w) != true) return;
+                var name = Sounds.Import(dlg.FileName, out var problem);
+                if (name == null) { Speech.Say(w, problem, true); return; }
+                foreach (var list in lists.Values)
+                    if (list.ItemsSource is System.Collections.ObjectModel.ObservableCollection<string> oc && !oc.Contains(name)) oc.Add(name);
+                Speech.Say(w, "Added " + name["My sound, ".Length..] + ". Pick it from any sound's menu.", true);
+            };
             var ok = Layout.Button("OK", isDefault: true);
             var cancel = Layout.Button("Cancel", isCancel: true);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
@@ -153,6 +184,7 @@ namespace BusyBunny
                 settings.SoundsOn = on.IsChecked == true;
                 settings.SoundVolume = 100 - volume.SelectedIndex * 10;
                 settings.SoundKey = key.SelectedIndex;
+                settings.SoundPack = pack.SelectedItem as string ?? Sounds.Classic;
                 settings.SoundChoices = new Dictionary<string, string>();
                 foreach (var (e, list) in lists)
                     if (list.SelectedItem is string s && s != Sounds.DefaultName) settings.SoundChoices[e.ToString()] = s;

@@ -223,6 +223,9 @@ namespace BusyBunny
         public double HoursAvailable { get; set; } = 5;
         public List<TagInfo> Tags { get; set; } = new();
         public List<ClassTime> Classes { get; set; } = new();
+        /// <summary>Accessibility requests per class tag (spec 19.6), and which nudges were already spoken.</summary>
+        public List<AccessRequest> AccessRequests { get; set; } = new();
+        public List<string> AccessNudges { get; set; } = new();
         public List<LogEntry> Log { get; set; } = new();
         /// <summary>Per-day settings, keyed by yyyy-MM-dd.</summary>
         public Dictionary<string, DayInfo> Days { get; set; } = new();
@@ -446,9 +449,6 @@ namespace BusyBunny
             var (done, total, pd, pt) = Progress(now);
             var parts = new List<string> { done + " of " + total + " done today" };
             if (!shortMode && pt > 0) parts.Add(pd * 100 / pt + " percent of today's effort");
-            static bool IsTest(TaskItem t) => t.Name.Contains("test", StringComparison.OrdinalIgnoreCase) || t.Name.Contains("exam", StringComparison.OrdinalIgnoreCase) || t.Name.Contains("quiz", StringComparison.OrdinalIgnoreCase);
-            var test = Data.Tasks.Where(t => t.Status != Status.Done && t.Due >= now.Date && IsTest(t)).OrderBy(t => t.Due).FirstOrDefault();
-            if (test?.Due is DateTime td) parts.Add("test " + Words.Day(td, now));
             var meeting = Data.Tasks.Where(t => t.IsMeeting && t.Status != Status.Done && t.Due > now).OrderBy(t => t.Due).FirstOrDefault();
             if (meeting?.Due is DateTime md)
             {
