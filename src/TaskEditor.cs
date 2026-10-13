@@ -306,6 +306,15 @@ namespace BusyBunny
             newComment.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter && newComment.Text.Trim().Length > 0) { e.Handled = true; AddComment(); } };
 
             var ok = Layout.Button(editing == null ? "Add" : "Save", isDefault: true);
+            // Control Enter saves from anywhere in the form, Notes and the subtask boxes included.
+            AutomationProperties.SetAcceleratorKey(ok, "Control+Enter");
+            w.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.Control) return;
+                e.Handled = true;
+                ok.Focus(); // so a field being typed in hands over its text first
+                ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            };
             var cancel = Layout.Button("Cancel", isCancel: true);
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
             buttons.Children.Add(ok);
