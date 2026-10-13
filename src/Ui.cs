@@ -20,6 +20,10 @@ namespace BusyBunny
         public bool ShuffleMode { get; set; }
         public bool CheckForUpdatesAtStart { get; set; } = true;
         public int UrgentWarnAbove { get; set; } = 5;
+        public bool MorningCheckIn { get; set; } = true;
+        public string EndOfDay { get; set; } = "week";
+        public string LastResetDay { get; set; } = "";
+        public string LastRhythmDay { get; set; } = "";
         public bool KeepInTray { get; set; } = true;
         public bool TrayHintShown { get; set; }
         public bool HotkeyQuickAdd { get; set; } = true;

@@ -190,9 +190,6 @@ namespace BusyBunny
         public ListBox? ListBoxOf(string listName) => _lists.TryGetValue("list-" + listName, out var lb) ? lb : null;
         /// <summary>Features add a short line for the Task field here, like 2 of 5 steps done; null adds nothing.</summary>
         public readonly List<Func<TaskItem, string?>> DetailNotes = new();
-        /// <summary>Changes a task's status as Control 1 to 6 would, with its sounds and words.</summary>
-        public void SetTaskStatus(TaskItem t, Status s) { _lastChosen = t; try { SetStatus(s); } finally { _lastChosen = null; } }
-        private TaskItem? _lastChosen;
 
         /// <summary>A task changed status: the task, then its old status. Raised after saving.</summary>
         public event Action<TaskItem, Status>? StatusChanged;

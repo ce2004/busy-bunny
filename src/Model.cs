@@ -229,6 +229,8 @@ namespace BusyBunny
         public List<TaskItem> Templates { get; set; } = new();
         /// <summary>The parking lot (spec 15.5): stray thoughts caught during focus.</summary>
         public List<string> Parking { get; set; } = new();
+        /// <summary>Weekday plans (spec 11): weekday name to plan lines, like morning PSY reading.</summary>
+        public Dictionary<string, string> WeekdayPlans { get; set; } = new();
         /// <summary>The Monday of the week the backlog sweep was last offered (spec 19.8), or null.</summary>
         public DateTime? SweepOfferedWeek { get; set; }
 
