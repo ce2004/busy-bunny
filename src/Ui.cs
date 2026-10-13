@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Automation;
@@ -77,6 +78,8 @@ namespace BusyBunny
             Sounds.Enabled = SoundsOn;
             Sounds.Volume = Math.Clamp(SoundVolume, 10, 100);
             Sounds.Key = Math.Clamp(SoundKey, 0, 11);
+            // Choices saved before Busy Bunny had its own instruments move to the nearest one.
+            foreach (var k in SoundChoices.Keys.ToList()) SoundChoices[k] = Sounds.Migrate(SoundChoices[k]);
             Sounds.Choice = e => SoundChoices.TryGetValue(e.ToString(), out var c) ? c : Sounds.DefaultName;
             UiSounds.UpdateMusic();
         }

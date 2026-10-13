@@ -13,7 +13,7 @@ On any other Windows laptop, download BusyBunny-x64.exe.
 Put it somewhere of your own, like your Documents folder, and open it. Nothing else needs installing.
 If Windows SmartScreen says it does not recognise the app, choose More info, then Run anyway.
 
-To update: Help menu, Check for updates. Windows shows a notification when a new version is out, and while it downloads a random instrument climbs a scale, softly. Busy Bunny shows what is new in every version you are missing, then downloads the new one, restarts, and keeps all your tasks. It also checks quietly every 30 seconds and as soon as the internet comes back, and tells you once when there is a new version and how many versions behind you are. Options, Check for updates automatically turns that off.
+Updates look after themselves: when a new version is out, Busy Bunny downloads it, then shows what is new with Install now and Later. Later installs it by itself the next time Busy Bunny closes or starts. You can also use Help, Check for updates. Windows shows a notification when a new version is out, and while it downloads a random instrument climbs a scale, softly. Busy Bunny shows what is new in every version you are missing, then downloads the new one, restarts, and keeps all your tasks. It also checks quietly every 30 seconds and as soon as the internet comes back, and tells you once when there is a new version and how many versions behind you are. Options, Check for updates automatically turns that off.
 
 
 Settings
@@ -69,7 +69,7 @@ The Fun menu has the game (scoreboard, badges, your bunny, challenges, Semester 
 
 Sounds
 
-Sounds play on real instruments: a Steinway piano, bowed strings, plucked strings, harp, glockenspiel and marimba. Options, Sounds picks a sound for each event, with its own volume apart from NVDA's. You hear each sound as you arrow to it. Options, Sounds on turns them all off.
+Sounds play on Busy Bunny's own real instruments: an upright piano, bowed strings, plucked violas, cello, singing bells, a quiet organ, flute and xylophone. While Busy Bunny is in front, quiet background music plays, made from the same instruments; Options, Sounds turns it off. Options, Sounds picks a sound for each event, with its own volume apart from NVDA's. You hear each sound as you arrow to it. Options, Sounds on turns them all off.
 
 
 Your tasks

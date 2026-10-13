@@ -180,8 +180,8 @@ namespace BusyBunny
 
         /// <summary>
         /// The piece: twenty slow chords, nine seconds each, in the sound key. Strings hold each chord,
-        /// in two overlapping layers so it never thins out; a harp picks through it; a soft piano sings
-        /// two notes over each chord; a glockenspiel glints every fourth chord. The last chord leads back
+        /// in two overlapping layers so it never thins out; singing bells ring through it; a soft piano sings
+        /// two notes over each chord; a flute breathes a long note every fourth chord. The last chord leads back
         /// to the first, so the loop has no seam.
         /// </summary>
         private static List<Event> Compose(int key)
@@ -210,7 +210,8 @@ namespace BusyBunny
                 foreach (double layer in new[] { 0.0, span / 2 })
                 {
                     double g = layer == 0 ? 1 : 0.8;
-                    e.Add(new(t + layer, "strings", home - 12 + bass, 0.30 * g, 0, span * 0.75, span * 0.45, 2.6));
+                    e.Add(new(t + layer, "cello", home - 12 + bass, 0.30 * g, 0, span * 0.75, span * 0.45, 2.6));
+                    e.Add(new(t + layer + 0.5, "organ", home + bass + 12, 0.07 * g, 0.2, span * 0.7, span * 0.45, 3.0));
                     for (int k = 0; k < tones.Length; k++)
                         e.Add(new(t + layer + 0.3 * k, "strings", home + tones[k], 0.15 * g, -0.55 + 0.55 * k, span * 0.7, span * 0.45, 2.8));
                 }
@@ -220,11 +221,12 @@ namespace BusyBunny
                 for (int k = 0; k < pick.Length; k++)
                 {
                     if ((c + k) % 5 == 4) continue; // a gap now and then, so it breathes
-                    e.Add(new(t + when[k], "harp", home + pick[(k + c) % pick.Length], 0.11, k % 2 == 0 ? -0.35 : 0.35, 2.4, 2.0, 0.01));
+                    if (k % 2 == 1) continue; // the bells ring long: three to a chord is plenty
+                    e.Add(new(t + when[k], "bells", home + 12 + pick[(k + c) % pick.Length], 0.07, k % 4 == 0 ? -0.4 : 0.4, 3.4, 2.4, 0.01));
                 }
                 e.Add(new(t + 1.4, "piano", home + tune[c][0], 0.075, 0.15, 3.0, 2.6, 0.02));
                 e.Add(new(t + 5.6, "piano", home + tune[c][1], 0.065, -0.15, 2.8, 2.6, 0.02));
-                if (c % 4 == 2) e.Add(new(t + 3.1, "glockenspiel", home + 24 + tones[2] % 12, 0.045, 0.45, 1.2, 1.6, 0.01));
+                if (c % 4 == 2) e.Add(new(t + 3.1, "flute", home + 12 + tones[2], 0.05, 0.45, 3.0, 2.4, 1.2));
             }
             return e.OrderBy(x => x.At).ToList();
         }

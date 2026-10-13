@@ -1,7 +1,5 @@
-Busy Bunny's sounds are played on real instruments.
+Busy Bunny's sounds are played on real instruments, its own set.
 
-Piano: Steinway concert grand recordings from the University of Iowa Electronic Music Studios, Musical Instrument Samples (theremin.music.uiowa.edu). Free to use for any project, without restriction.
+Upright piano, bowed violin and viola sections, viola section pizzicato, cello section, Nepalese singing bells, quiet pipe organ, flute and xylophone: Versilian Studios Chamber Orchestra 2, Community Edition (github.com/sgossner/VSCO-2-CE), released into the public domain under CC0 1.0.
 
-Strings (bowed violin and viola sections), violin section pizzicato, harp, glockenspiel and marimba: Versilian Studios Chamber Orchestra 2, Community Edition (github.com/sgossner/VSCO-2-CE), released into the public domain under CC0 1.0.
-
-The recordings were shortened, faded and re-encoded as Opus for Busy Bunny. The way sounds are built from them comes from Kova (github.com/ce2004/kova).
+The recordings were shortened, faded and re-encoded as Opus for Busy Bunny, which builds every sound and the background music from them.

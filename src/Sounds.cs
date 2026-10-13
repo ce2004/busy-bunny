@@ -74,16 +74,17 @@ namespace BusyBunny
 
         private static readonly Instrument[] Instruments =
         {
-            new("Piano", "piano", false, 0, 0.42, 0.22),
-            new("Soft piano", "piano", true, 0, 0.42, 0.22),
+            // Busy Bunny's own instruments, all from VSCO 2 CE (see Sounds-CREDITS.txt).
+            new("Piano", "piano", false, 0, 0.5, 0.3),
+            new("Soft piano", "piano", true, 0, 0.5, 0.3),
             new("Strings", "strings", false, 0, 0.85, 0.45),
             new("Piano and strings", "piano", false, 0, 0.55, 0.3, Under: "strings"),
-            new("Pizzicato strings", "pizzicato", false, 12, 0.42, 0.22),
-            new("Harp", "harp", false, 0, 0.5, 0.25),
-            new("Glockenspiel", "glockenspiel", false, 24, 0.42, 0.22),
-            new("Marimba", "marimba", false, 0, 0.42, 0.22),
-            new("Low strings", "strings", false, -12, 0.9, 0.5),
-            new("Bells", "glockenspiel", false, 12, 0.8, 0.45),
+            new("Pizzicato strings", "pizzicato", false, 0, 0.45, 0.25),
+            new("Cello", "cello", false, -12, 0.9, 0.5),
+            new("Singing bells", "bells", true, 12, 1.0, 0.8),
+            new("Organ", "organ", true, 0, 0.7, 0.4),
+            new("Flute", "flute", true, 12, 0.7, 0.4),
+            new("Xylophone", "xylo", false, 12, 0.4, 0.25),
         };
 
         // Patterns: semitones above the key's home note, and when (seconds). Every one is in the major key.
@@ -130,20 +131,20 @@ namespace BusyBunny
             Event.LevelUp => "Strings, chord high",
             Event.BossDefeated => "Piano and strings, chord high",
             Event.SprintFinished => "Pizzicato strings, bounce",
-            Event.SurpriseReward => "Harp, sparkle",
-            Event.TaskAdded => "Marimba, rising",
-            Event.TaskSaved => "Harp, two up",
-            Event.MenuOpened => "Harp, two up",
-            Event.SubmenuOpened => "Harp, single",
-            Event.MenuClosed => "Harp, two down",
-            Event.WindowOpened => "Soft piano, two up",
-            Event.WindowClosed => "Soft piano, two down",
-            Event.TabSwitched => "Marimba, single",
+            Event.SurpriseReward => "Singing bells, sparkle",
+            Event.TaskAdded => "Xylophone, rising",
+            Event.TaskSaved => "Singing bells, two up",
+            Event.MenuOpened => "Soft piano, two up",
+            Event.SubmenuOpened => "Soft piano, single",
+            Event.MenuClosed => "Soft piano, two down",
+            Event.WindowOpened => "Singing bells, two up",
+            Event.WindowClosed => "Singing bells, two down",
+            Event.TabSwitched => "Xylophone, single",
             Event.CheckedOn => "Pizzicato strings, two up",
             Event.CheckedOff => "Pizzicato strings, two down",
-            Event.PickOpened => "Marimba, two up",
-            Event.PickClosed => "Marimba, two down",
-            Event.MovedField => "Glockenspiel, single",
+            Event.PickOpened => "Organ, two up",
+            Event.PickClosed => "Organ, two down",
+            Event.MovedField => "Flute, single",
             _ => "Soft piano, sigh",
         };
 
@@ -404,12 +405,12 @@ namespace BusyBunny
         private static readonly Dictionary<string, string[]> PackSounds = new()
         {
             // In Event order: Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning.
-            ["Bunny pack"] = new[] { "Marimba, rising", "Pizzicato strings, two up", "Marimba, sparkle", "Glockenspiel, sparkle", "Marimba, four up",
-                "Glockenspiel, rising", "Marimba, chord high", "Pizzicato strings, bounce", "Glockenspiel, bounce", "Pizzicato strings, sigh" },
-            ["Halloween"] = new[] { "Low strings, creep", "Harp, minor rising", "Low strings, minor chord", "Harp, creep", "Harp, minor rising",
-                "Strings, minor chord", "Low strings, minor chord", "Harp, minor falling", "Harp, creep", "Low strings, minor sigh" },
-            ["Winter holidays"] = new[] { "Bells, rising", "Glockenspiel, two up", "Bells, sparkle", "Bells, sparkle", "Glockenspiel, four up",
-                "Bells, chord high", "Bells, rising", "Glockenspiel, bounce", "Glockenspiel, sparkle", "Bells, sigh" },
+            ["Bunny pack"] = new[] { "Xylophone, rising", "Pizzicato strings, two up", "Xylophone, sparkle", "Singing bells, sparkle", "Xylophone, four up",
+                "Singing bells, rising", "Xylophone, chord high", "Pizzicato strings, bounce", "Singing bells, bounce", "Pizzicato strings, sigh" },
+            ["Halloween"] = new[] { "Cello, creep", "Singing bells, minor rising", "Cello, minor chord", "Singing bells, creep", "Singing bells, minor rising",
+                "Strings, minor chord", "Cello, minor chord", "Singing bells, minor falling", "Singing bells, creep", "Cello, minor sigh" },
+            ["Winter holidays"] = new[] { "Singing bells, rising", "Singing bells, two up", "Singing bells, sparkle", "Singing bells, sparkle", "Singing bells, four up",
+                "Singing bells, chord high", "Singing bells, rising", "Singing bells, bounce", "Singing bells, sparkle", "Singing bells, sigh" },
             ["Valentine's"] = new[] { "Piano and strings, rising", "Soft piano, two up", "Piano and strings, rising", "Soft piano, sparkle", "Soft piano, four up",
                 "Strings, chord high", "Piano and strings, chord high", "Soft piano, bounce", "Soft piano, sparkle", "Soft piano, sigh" },
         };
@@ -422,16 +423,27 @@ namespace BusyBunny
         public static string? SeasonPack(DateTime d) =>
             d.Month == 10 ? "Halloween" : d.Month == 12 ? "Winter holidays" : d.Month == 2 && d.Day <= 14 ? "Valentine's" : null;
 
-        public const string Angelic = "Angelic welcome";
+        public const string Angelic = "Drone welcome";
+
+        /// <summary>A sound name saved before Busy Bunny had its own instruments, as the nearest one now.</summary>
+        public static string Migrate(string name)
+        {
+            if (name == "Angelic welcome") return Angelic;
+            foreach (var (from, to) in new[] { ("Harp, ", "Singing bells, "), ("Glockenspiel, ", "Singing bells, "), ("Bells, ", "Singing bells, "), ("Marimba, ", "Xylophone, "), ("Low strings, ", "Cello, ") })
+                if (name.StartsWith(from, StringComparison.Ordinal)) return to + name[from.Length..];
+            return name;
+        }
 
         /// <summary>
-        /// The startup sound: high bowed strings swell in on an open major chord, a harp sweeps up
-        /// through it, and a glockenspiel shimmers at the top, all in a big airy room. About three seconds.
+        /// The startup sound, drone-zone style: a low cello and a quiet organ breathe in on the key's
+        /// root and fifth, strings swell up through an open ninth chord above them, two singing bells are
+        /// struck softly and ring out, and a flute floats one long note over the top, all in a big room.
+        /// About five seconds, slow and settling.
         /// </summary>
         private static (double[] L, double[] R) AngelicWelcome(int key)
         {
-            int home = 54 + ((key - 54 % 12) % 12 + 12) % 12 + 12; // the octave above the patterns: airy, not heavy
-            int length = (int)(4.6 * Rate);
+            int home = 54 + ((key - 54 % 12) % 12 + 12) % 12;
+            int length = (int)(6.2 * Rate);
             var left = new double[length];
             var right = new double[length];
             void Mix((double[] L, double[] R) note, double at, double gain, double pan, double swell)
@@ -445,19 +457,21 @@ namespace BusyBunny
                     right[start + i] += note.R[i] * g * gr;
                 }
             }
-            // Strings: root, fifth, octave, tenth and the ninth above, swelling in slowly, spread wide.
-            int[] chord = { 0, 7, 12, 16, 14 };
+            // The drone: cello root and fifth, an organ an octave up, breathing in over a second and a half.
+            Mix(Note("cello", home - 12, 3.0, 1.6), 0, 0.42, -0.25, 1.5);
+            Mix(Note("cello", home - 5, 3.0, 1.6), 0.15, 0.3, 0.25, 1.5);
+            Mix(Note("organ", home, 2.8, 1.8), 0.25, 0.22, -0.1, 1.6);
+            Mix(Note("organ", home + 7, 2.8, 1.8), 0.35, 0.18, 0.1, 1.6);
+            // Strings swell up through an open chord: octave, ninth, fifth above, the tenth last.
+            int[] chord = { 12, 14, 19, 16 };
             for (int k = 0; k < chord.Length; k++)
-                Mix(Note("strings", home + chord[k], 1.15, 0.8), 0.04 * k, 0.55, -0.5 + k / (double)(chord.Length - 1), 0.7);
-            // Harp: a sweep up through the chord, two octaves.
-            int[] sweep = { 0, 4, 7, 11, 12, 16, 19, 23, 24 };
-            for (int k = 0; k < sweep.Length; k++)
-                Mix(Note("harp", home + sweep[k], 1.1, 0.8), 0.18 + 0.085 * k, 0.5, -0.4 + 0.8 * k / (sweep.Length - 1), 0.004);
-            // Glockenspiel: a soft shimmer at the top as the sweep lands.
-            int[] shimmer = { 12, 16, 19, 24 };
-            for (int k = 0; k < shimmer.Length; k++)
-                Mix(Note("glockenspiel", home + shimmer[k], 0.9, 0.8), 0.95 + 0.11 * k, 0.22, k % 2 == 0 ? -0.35 : 0.35, 0.004);
-            Room(left, right, 0.38);
+                Mix(Note("strings", home + chord[k], 2.4, 1.6), 0.6 + 0.35 * k, 0.24, -0.6 + 1.2 * k / (chord.Length - 1), 1.2);
+            // Two singing bells, struck softly, ringing out across the room.
+            Mix(Note("bells", home + 24, 3.2, 2.0), 1.1, 0.22, -0.45, 0.01);
+            Mix(Note("bells", home + 31, 3.0, 2.0), 2.3, 0.16, 0.45, 0.01);
+            // A flute floats one long note on top, the ninth, as everything settles.
+            Mix(Note("flute", home + 26, 2.0, 1.4), 2.0, 0.12, 0.2, 0.8);
+            Room(left, right, 0.5);
             return (left, right);
         }
 
@@ -500,15 +514,15 @@ namespace BusyBunny
                 for (int k = 0; k < chords[c].Length; k++)
                     Mix(Note(inst.Bank, home + chords[c][k], ring, release), at + 0.04 * k, (0.34 + 0.03 * c) * soft, -0.45 + 0.9 * k / Math.Max(1, chords[c].Length - 1), 0.006);
                 // Soft strings underneath: the chord's root an octave down, swelling in.
-                Mix(Note("strings", home - 12 + chords[c][0], step + 0.5, 0.6), at, 0.22, 0, 0.18);
+                Mix(Note("cello", home - 12 + chords[c][0], step + 0.5, 0.6), at, 0.24, 0, 0.18);
             }
             for (int k = 0; k < landing.Length; k++)
                 Mix(Note(inst.Bank, home + landing[k], 1.6, 1.4), end + 0.035 * k, 0.4 * soft, -0.6 + 1.2 * k / (landing.Length - 1), 0.006);
-            Mix(Note("strings", home - 12, 2.0, 1.2), end, 0.3, -0.3, 0.12);
+            Mix(Note("cello", home - 12, 2.0, 1.2), end, 0.32, -0.3, 0.12);
             Mix(Note("strings", home - 5, 2.0, 1.2), end, 0.24, 0.3, 0.12);
             int[] shimmer = { 24, 28, 31, 36 };
             for (int k = 0; k < shimmer.Length; k++)
-                Mix(Note("glockenspiel", home - inst.Up + shimmer[k], 0.9, 0.9), end + 0.25 + 0.09 * k, 0.16, k % 2 == 0 ? -0.4 : 0.4, 0.004);
+                Mix(Note("bells", home - inst.Up + shimmer[k], 1.4, 1.2), end + 0.25 + 0.12 * k, 0.12, k % 2 == 0 ? -0.4 : 0.4, 0.004);
             Room(left, right, 0.42);
             return (left, right);
         }
