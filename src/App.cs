@@ -58,6 +58,7 @@ namespace BusyBunny
                 Version? from = updated && args.Length > 2 ? Updater.NormalizeTag(args[2]) : null;
                 if (updated) w.Dispatcher.BeginInvoke(() => w.ShowChanges(from), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 w.StartAutoUpdates();
+                w.OnStarted();
             });
             int code = app.Run();
             only.ReleaseMutex();
@@ -163,6 +164,14 @@ namespace BusyBunny
                     var w = new MainWindow(store, new Settings { CheckForUpdatesAtStart = false });
                     w.Refresh();
                     w.Close();
+
+                    foreach (var f in Features.All)
+                    {
+                        string other = Path.Combine(Path.GetTempPath(), "busybunny-selftest-" + Guid.NewGuid().ToString("N") + ".json");
+                        try { f.SelfTest(Store.Load(other)); }
+                        catch (Exception e) { throw new Exception(f.GetType().Name + ": " + e.Message, e); }
+                        finally { try { File.Delete(other); } catch { } }
+                    }
                 }
                 finally { try { File.Delete(file); } catch { } }
                 result = "ok, version " + Updater.Current + ", " + (Sounds.All.Count - 1) + " sounds";
