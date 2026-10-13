@@ -164,6 +164,8 @@ namespace BusyBunny
         public Settings AppSettings => _settings;
         /// <summary>The task chosen in the list used last, or null.</summary>
         public TaskItem? ChosenTask => Current();
+        /// <summary>The list whose tab is open, or the first list when Today, Focus or Upcoming is.</summary>
+        public string CurrentListName => _tabs.SelectedItem is TabItem { Tag: string l } ? l : _store.ActiveLists.FirstOrDefault()?.Name ?? "Homework";
         public void Say(string text, bool interrupt = false) => Speech.Say(this, text, interrupt);
         /// <summary>Saves, then rebuilds every list.</summary>
         public void SaveAndRefresh() { Save(); Refresh(); }
@@ -639,15 +641,7 @@ namespace BusyBunny
             if (QuickAdd.Show(this, _store, t.List, t.Status, t) is not TaskItem edited) { if (back != null) TextViewer.Select(back, Math.Max(0, back.SelectedIndex)); return; }
             _store.Remember("editing " + t.Name);
             if (edited.Status != t.Status) t.StatusSince = DateTime.Now;
-            t.Name = edited.Name;
-            t.List = edited.List;
-            t.Tag = edited.Tag;
-            t.Status = edited.Status;
-            t.Priority = edited.Priority;
-            t.Due = edited.Due;
-            t.DueHasTime = edited.DueHasTime;
-            t.Size = edited.Size;
-            t.IsMeeting = edited.IsMeeting;
+            QuickAdd.Apply(edited, t);
             Save();
             Refresh();
             // Back on the same task, wherever it now sits; if it moved off this list, the list keeps its place.
