@@ -426,7 +426,9 @@ namespace BusyBunny
             var all = urgent.Concat(rest).Concat(finished).ToList();
             // Done but not submitted earns half (spec 5.4).
             int pointsDone = finished.Sum(t => Words.Points(t.Size)) + rest.Concat(urgent).Where(t => t.Status == Status.DoneNotSubmitted).Sum(t => Words.Points(t.Size)) / 2;
-            return (finished.Count, all.Count, pointsDone, all.Sum(t => Words.Points(t.Size)));
+            // I did a thing (spec 12.12): things logged today count as done items and points.
+            var things = Data.Log.Where(l => l.Kind == "DidAThing" && l.When.Date == now.Date).ToList();
+            return (finished.Count + things.Count, all.Count + things.Count, pointsDone + things.Sum(l => l.Points), all.Sum(t => Words.Points(t.Size)) + things.Sum(l => l.Points));
         }
 
         /// <summary>The Bunny set for the day as a whole (spec 6.2f), worked out from urgent tasks and hours of work.</summary>

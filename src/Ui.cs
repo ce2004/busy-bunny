@@ -35,6 +35,17 @@ namespace BusyBunny
         public int FollowUpDays { get; set; } = 3;
         /// <summary>The last day each nudge was given, so each comes once a day.</summary>
         public Dictionary<string, string> NudgeDates { get; set; } = new();
+        /// <summary>The roast dial (spec 12.2): 0 off, 1 gentle, 2 teasing, 3 spicy, 4 savage.</summary>
+        public int RoastLevel { get; set; } = 2;
+        /// <summary>Emoji at big moments only (spec 12.3).</summary>
+        public bool EmojisOn { get; set; } = true;
+        public bool FinalsMode { get; set; }
+        /// <summary>The season the finals offer was last made for, like 2026-12, so it is made once.</summary>
+        public string FinalsOffered { get; set; } = "";
+        /// <summary>Phrases and facts already used, by group, so they do not repeat until most have been.</summary>
+        public Dictionary<string, List<int>> PhraseUsed { get; set; } = new();
+        /// <summary>Surprise unlocks: Set:Drama, Emoji:Animals and so on.</summary>
+        public List<string> Unlocked { get; set; } = new();
 
         public static string FilePath => Path.Combine(Store.Folder, "settings.json");
 
