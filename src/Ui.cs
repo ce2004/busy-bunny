@@ -24,6 +24,10 @@ namespace BusyBunny
         public bool ShuffleMode { get; set; }
         public bool CheckForUpdatesAtStart { get; set; } = true;
         public int UrgentWarnAbove { get; set; } = 5;
+        /// <summary>The quiet background music while Busy Bunny is in front.</summary>
+        public bool MusicOn { get; set; } = true;
+        /// <summary>Its volume in percent, 10 by default.</summary>
+        public int MusicVolume { get; set; } = 10;
         public bool SetupGuideShown { get; set; }
         public bool MorningCheckIn { get; set; } = true;
         public string EndOfDay { get; set; } = "week";
@@ -74,6 +78,7 @@ namespace BusyBunny
             Sounds.Volume = Math.Clamp(SoundVolume, 10, 100);
             Sounds.Key = Math.Clamp(SoundKey, 0, 11);
             Sounds.Choice = e => SoundChoices.TryGetValue(e.ToString(), out var c) ? c : Sounds.DefaultName;
+            UiSounds.UpdateMusic();
         }
     }
 

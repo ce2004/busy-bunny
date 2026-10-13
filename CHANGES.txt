@@ -1,3 +1,13 @@
+0.5.3
+New feature: quiet background music while Busy Bunny is the window in front: a three-minute piece that loops, with soft strings, a harp, a little piano and a glockenspiel, at 10 percent volume. It fades out the moment you go to another program and back in when you return. Options, Sounds turns it off or changes its volume, and so does Options, Settings, General.
+New feature: sounds for moving around: menus opening and closing, submenus, windows opening and closing, changing tabs, checking and unchecking check boxes, pick menus opening and closing, and Tab to the next field. They are softer than the other sounds, and each can be changed or turned off in Options, Sounds.
+New feature: a sound when you add a task, and another when you save one after editing.
+New feature: sounds now play over each other instead of cutting each other off.
+New feature: Busy Bunny understands typing mistakes in dates and repeats, like tuesda, tomorow, wensday or evry tuesday, and many more ways of saying them: in 3 days, a week from friday, next tues, end of the month, the 20th, noon, tomorrow morning, biweekly, every other tuesday, mondays and more.
+New feature: in Quick add, a date or repeat at the end of the name fills itself in. call grandma tomorrow at 3 becomes call grandma, due tomorrow at 3 pm, and Busy Bunny says what it took.
+New feature: Paste tasks understands misspelled field names, statuses, task types and list names.
+Changed: the update sound is now rising chords on a random instrument that fade into each other and land on a big chord, instead of single notes that cut off. Busy Bunny waits for it to finish before restarting.
+Bug fixed: if Busy Bunny closed for an update while the setup guide was open, it showed an error that something went wrong. Now it just closes.
 0.5.2
 New feature: in Quick add and Edit task, Control Enter adds or saves the task from any field, even Notes. The Add and Save buttons are still there too.
 0.5.1

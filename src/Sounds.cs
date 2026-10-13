@@ -21,7 +21,11 @@ namespace BusyBunny
     /// </summary>
     public static class Sounds
     {
-        public enum Event { Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning, TaskAdded, TaskSaved }
+        public enum Event { Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning, TaskAdded, TaskSaved,
+            MenuOpened, SubmenuOpened, MenuClosed, WindowOpened, WindowClosed, TabSwitched, CheckedOn, CheckedOff, PickOpened, PickClosed, MovedField }
+
+        /// <summary>Sounds for moving around the app, played softer than the ones for things happening.</summary>
+        public static bool IsUi(Event e) => e >= Event.MenuOpened;
 
         public static string Label(Event e) => e switch
         {
@@ -36,6 +40,17 @@ namespace BusyBunny
             Event.SurpriseReward => "Surprise _reward",
             Event.TaskAdded => "Task a_dded",
             Event.TaskSaved => "Task sa_ved after editing",
+            Event.MenuOpened => "Menu opens",
+            Event.SubmenuOpened => "Submenu opens",
+            Event.MenuClosed => "Menu closes",
+            Event.WindowOpened => "Window opens",
+            Event.WindowClosed => "Window closes",
+            Event.TabSwitched => "Tab changes",
+            Event.CheckedOn => "Check box checked",
+            Event.CheckedOff => "Check box unchecked",
+            Event.PickOpened => "Pick menu opens",
+            Event.PickClosed => "Pick menu closes",
+            Event.MovedField => "Tab to the next field",
             _ => "_Overload warning",
         };
 
@@ -118,6 +133,17 @@ namespace BusyBunny
             Event.SurpriseReward => "Harp, sparkle",
             Event.TaskAdded => "Marimba, rising",
             Event.TaskSaved => "Harp, two up",
+            Event.MenuOpened => "Harp, two up",
+            Event.SubmenuOpened => "Harp, single",
+            Event.MenuClosed => "Harp, two down",
+            Event.WindowOpened => "Soft piano, two up",
+            Event.WindowClosed => "Soft piano, two down",
+            Event.TabSwitched => "Marimba, single",
+            Event.CheckedOn => "Pizzicato strings, two up",
+            Event.CheckedOff => "Pizzicato strings, two down",
+            Event.PickOpened => "Marimba, two up",
+            Event.PickClosed => "Marimba, two down",
+            Event.MovedField => "Glockenspiel, single",
             _ => "Soft piano, sigh",
         };
 
@@ -158,7 +184,29 @@ namespace BusyBunny
         public static void Play(Event e)
         {
             if (!Enabled) return;
-            PlayNamed(Resolve(e, Choice(e)));
+            string name = Resolve(e, Choice(e));
+            int volume = IsUi(e) ? Math.Max(10, Volume * 55 / 100) : Volume;
+            int key = Key;
+            System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    if (Get(name, key, volume) is byte[] wav && !Mixer.Play(wav, exclusive: false)) PlayNamed(name, volume);
+                }
+                catch { }
+            });
+        }
+
+        public static int SampleRate => Rate;
+
+        /// <summary>The recording nearest a note on an instrument's bank, and the note it was recorded at, for the music.</summary>
+        public static (double[] L, double[] R, int Midi) RecordingFor(string bank, int midi)
+        {
+            var have = Resources.Value.Where(r => r.StartsWith("snd." + bank + "."))
+                .Select(r => int.Parse(r["snd.".Length..^".opus".Length][(bank.Length + 1)..])).ToArray();
+            int nearest = have.OrderBy(m => Math.Abs(m - midi)).First();
+            var (l, r) = Recording("snd." + bank + "." + nearest + ".opus");
+            return (l, r, nearest);
         }
 
         /// <summary>Plays a sound by name in the background (the Sounds window previews with it, even when sounds are off).</summary>
@@ -208,6 +256,8 @@ namespace BusyBunny
                 {
                     if (Get(want.Name, want.Key, want.Volume) is not byte[] wav) continue;
                     lock (SlotGate) if (_next != null) continue;
+                    if (Mixer.Play(wav, exclusive: true)) continue;
+                    // No mixer (no sound device it could open): Windows' own player, one sound at a time.
                     var player = new SoundPlayer(new MemoryStream(wav));
                     player.Play();
                     var before = _current;

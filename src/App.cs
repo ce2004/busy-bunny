@@ -12,6 +12,7 @@ namespace BusyBunny
         {
             if (args.Length > 0 && args[0] == "--selftest") return SelfTest();
             if (args.Length > 1 && args[0] == "--write-icon") { Logo.WriteIcon(args[1]); return 0; }
+            if (args.Length > 2 && args[0] == "--write-music") { MusicLoop.WriteWav(args[1], double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture)); return 0; }
             if (args.Length > 2 && args[0] == "--write-sound") { File.WriteAllBytes(args[2], Sounds.WavOf(args[1]) ?? Array.Empty<byte>()); return 0; }
             bool updated = args.Length > 1 && args[0] == "--after-update" && int.TryParse(args[1], out int pid);
             if (updated) Updater.FinishUpdate(int.Parse(args[1])); // waits for the old copy to close first
@@ -35,7 +36,9 @@ namespace BusyBunny
                 e.Handled = true;
             };
             var settings = Settings.Load();
+            UiSounds.Hook(app, settings);
             settings.Apply();
+            Mixer.Start();
             Sounds.Warm();
             var store = Store.Load();
             var w = new MainWindow(store, settings) { Icon = Logo.Image() };
@@ -129,7 +132,7 @@ namespace BusyBunny
         /// </summary>
         private static int SelfTest()
         {
-            string result;
+            string result, musicLevel = "";
             try
             {
                 foreach (string s in Sounds.All.Skip(1))
@@ -159,6 +162,10 @@ namespace BusyBunny
                 Date("10/5/2026 at 3:00 pm", new DateTime(2026, 10, 5, 15, 0, 0), true);
                 Date("9/1/2026", new DateTime(2026, 9, 1), false);
                 Language.SelfTest();
+                var (peak, rms) = MusicLoop.Measure(40);
+                if (peak < 0.02 || rms < 0.002) throw new Exception("the background music is silent: peak " + peak + ", average " + rms);
+                if (peak > 0.99) throw new Exception("the background music clips: peak " + peak);
+                musicLevel = " music peak " + peak.ToString("0.00") + " average " + rms.ToString("0.000");
                 foreach (string inst in Sounds.InstrumentNames)
                     if (Sounds.Length(Sounds.ClimbPrefix + inst) < 5) throw new Exception("update climb did not build on " + inst);
 
@@ -213,7 +220,7 @@ namespace BusyBunny
                     }
                 }
                 finally { try { File.Delete(file); } catch { } }
-                result = "ok, version " + Updater.Current + ", " + (Sounds.All.Count - 1) + " sounds";
+                result = "ok, version " + Updater.Current + ", " + (Sounds.All.Count - 1) + " sounds," + musicLevel;
             }
             catch (Exception e) { result = "FAIL: " + e; }
             File.WriteAllText(Path.Combine(Path.GetTempPath(), "busybunny-selftest.txt"), result);

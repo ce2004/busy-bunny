@@ -98,6 +98,8 @@ namespace BusyBunny
             general.Children.Add(soundsButton);
             general.Children.Add(shortMode);
             general.Children.Add(autoUpdate);
+            var music = new CheckBox { Content = "Background _music while Busy Bunny is in front", IsChecked = settings.MusicOn, Margin = new Thickness(0, 4, 0, 4) };
+            general.Children.Add(music);
             general.Children.Add(Layout.Row("Hours _available on a typical day", hours));
             general.Children.Add(Layout.Row("_Warn me when urgent tasks are", warn));
 
@@ -386,6 +388,7 @@ namespace BusyBunny
                 }
 
                 settings.SoundsOn = soundsOn.IsChecked == true;
+                settings.MusicOn = music.IsChecked == true;
                 settings.ShortMode = shortMode.IsChecked == true;
                 settings.CheckForUpdatesAtStart = autoUpdate.IsChecked == true;
                 settings.UrgentWarnAbove = warn.SelectedIndex <= 0 ? 0 : warn.SelectedIndex + 2;

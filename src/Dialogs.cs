@@ -79,6 +79,11 @@ namespace BusyBunny
             panel.Children.Add(on);
             panel.Children.Add(Layout.Row("_Volume", volume));
             panel.Children.Add(Layout.Row("_Key", key));
+            var music = new CheckBox { Content = "Background _music while Busy Bunny is in front", IsChecked = settings.MusicOn, Margin = new Thickness(0, 6, 0, 4) };
+            var musicVolume = new ComboBox { ItemsSource = new[] { 3, 5, 10, 15, 20, 30 }.Select(v => v + " percent").ToList() };
+            musicVolume.SelectedIndex = Math.Max(0, Array.IndexOf(new[] { 3, 5, 10, 15, 20, 30 }, settings.MusicVolume) is int mi && mi >= 0 ? mi : 2);
+            panel.Children.Add(music);
+            panel.Children.Add(Layout.Row("Music v_olume", musicVolume));
             var pack = new ComboBox { ItemsSource = Sounds.PackNames };
             pack.SelectedIndex = Math.Max(0, Array.IndexOf(Sounds.PackNames, settings.SoundPack));
             panel.Children.Add(Layout.Row("Sound pac_k (sets every sound below)", pack));
@@ -134,6 +139,8 @@ namespace BusyBunny
             ok.Click += (_, _) =>
             {
                 settings.SoundsOn = on.IsChecked == true;
+                settings.MusicOn = music.IsChecked == true;
+                settings.MusicVolume = new[] { 3, 5, 10, 15, 20, 30 }[Math.Max(0, musicVolume.SelectedIndex)];
                 settings.SoundVolume = 100 - volume.SelectedIndex * 10;
                 settings.SoundKey = key.SelectedIndex;
                 settings.SoundPack = pack.SelectedItem as string ?? Sounds.Classic;
