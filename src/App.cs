@@ -27,6 +27,12 @@ namespace BusyBunny
             catch (System.Threading.AbandonedMutexException) { mine = true; }
             if (!mine) { show.Set(); return 0; }
 
+            // An update downloaded earlier and not yet installed (she chose Later, or Busy Bunny closed
+            // first): install it now, before anything opens, and start the new copy.
+            if (!updated && Updater.ApplyReadyQuietly(restart: true)) { only.ReleaseMutex(); return 0; }
+            // Installed while closing last time: show what is new this time.
+            Version? closedFrom = updated ? null : Updater.TakeUpdatedMarker();
+
             SpaceAsTyping();
             var app = new App { ShutdownMode = ShutdownMode.OnMainWindowClose };
             app.DispatcherUnhandledException += (_, e) =>
@@ -60,11 +66,13 @@ namespace BusyBunny
             {
                 // After an update, the changelog opens by itself so the new things are easy to find.
                 // Only what is new since the copy that did the update (older copies do not say which they were).
-                Version? from = updated && args.Length > 2 ? Updater.NormalizeTag(args[2]) : null;
-                if (updated) w.Dispatcher.BeginInvoke(() => w.ShowChanges(from), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                Version? from = updated && args.Length > 2 ? Updater.NormalizeTag(args[2]) : closedFrom;
+                if (updated || closedFrom != null) w.Dispatcher.BeginInvoke(() => w.ShowChanges(from), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 w.StartAutoUpdates();
                 w.OnStarted();
             });
+            // Closing with an update ready (she chose Later): install it now, quietly, for next time.
+            app.Exit += (_, _) => Updater.ApplyReadyQuietly(restart: false);
             int code = app.Run();
             only.ReleaseMutex();
             return code;

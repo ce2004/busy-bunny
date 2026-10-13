@@ -149,10 +149,10 @@ namespace BusyBunny
             Activated += (_, _) =>
             {
                 CheckNewDay();
-                if (_unheard is string say) { _unheard = null; Dispatcher.BeginInvoke(() => Speech.Say(this, say), System.Windows.Threading.DispatcherPriority.ApplicationIdle); }
+                Dispatcher.BeginInvoke(OfferUpdate, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             };
             var minute = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
-            minute.Tick += (_, _) => { CheckNewDay(); MinuteTick?.Invoke(); };
+            minute.Tick += (_, _) => { CheckNewDay(); MinuteTick?.Invoke(); OfferUpdate(); };
             minute.Start();
             Closed += (_, _) => { _closing = true; minute.Stop(); };
             foreach (var f in Features.All) f.Attach(this);
@@ -873,13 +873,15 @@ namespace BusyBunny
         }
 
         private DateTime _checkStarted;
-        private string? _unheard;
+        private bool _preparing, _offering, _installing;
+        private Updater.Release? _ready;
+        private DateTime _offerAfter = DateTime.MinValue;
 
         private async void BackgroundCheck()
         {
             // A check that somehow never came back must not stop every check after it.
             if (_backgroundChecking && DateTime.Now - _checkStarted < TimeSpan.FromMinutes(2)) return;
-            if (_manualChecking || !_settings.CheckForUpdatesAtStart) return;
+            if (_manualChecking || _installing || !_settings.CheckForUpdatesAtStart) return;
             _backgroundChecking = true;
             _checkStarted = DateTime.Now;
             try
@@ -890,41 +892,60 @@ namespace BusyBunny
                 if (r != null && r.Version != _announced)
                 {
                     _announced = r.Version;
-                    string say = "Busy Bunny " + r.Version + " is out. " + Behind(r) + " Help menu, Install version " + r.Version + " shows what's new and installs it.";
-                    // NVDA only speaks Busy Bunny's announcements while it is the window in front: if it
-                    // is not, the line waits until she comes back to it. The notification shows either way.
-                    if (IsActive) Speech.Say(this, say); else _unheard = say;
-                    Reminders.Notify("Busy Bunny " + r.Version + " is out", Behind(r) + " In Busy Bunny, Help menu, Install version " + r.Version + ".");
+                    Reminders.Notify("Busy Bunny " + r.Version + " is out", Behind(r) + " It is getting ready, and opens in Busy Bunny when you are there.");
                 }
+                if (r != null) Prepare(r);
             }
             catch { } // offline or GitHub unhappy: try again at the next tick or when the connection comes back
             finally { _backgroundChecking = false; }
         }
 
-        private static string Behind(Updater.Release r) =>
-            "You're " + r.Missed.Count + (r.Missed.Count == 1 ? " version" : " versions") + " out of date.";
-
-        public async void CheckForUpdates()
+        /// <summary>Downloads the update in the background, then offers it. A failed download tries again at the next check.</summary>
+        private async void Prepare(Updater.Release r)
         {
-            if (_manualChecking) return;
-            _manualChecking = true;
+            if (_preparing || _ready?.Version == r.Version) return;
+            _preparing = true;
             try
             {
-                Speech.Say(this, "Checking for updates.", true);
-                var r = await Updater.CheckAsync();
-                _available = r;
-                _updateMenu.Header = r == null ? "Check for _updates..." : "_Install version " + r.Version + "...";
-                if (r == null)
-                {
-                    MessageBox.Show(this, "You have the newest Busy Bunny, version " + Updater.Current + ".", "Check for updates", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-                _announced = r.Version;
-                if (!UpdateDialog.Show(this, r, Behind(r))) return;
-                Speech.Say(this, "Downloading the update.", true);
+                await Updater.PrepareAsync(r);
+                _ready = r;
+                _offerAfter = DateTime.MinValue;
+                OfferUpdate();
+            }
+            catch { }
+            finally { _preparing = false; }
+        }
+
+        /// <summary>
+        /// Puts the update window in front of her when Busy Bunny is open, in front and not in another
+        /// window of its own; otherwise it waits for that. Later asks again in an hour, and the update
+        /// installs by itself the next time Busy Bunny closes or starts, so forgetting cannot leave her behind.
+        /// </summary>
+        private async void OfferUpdate()
+        {
+            if (_ready == null || _offering || _installing || _manualChecking || DateTime.Now < _offerAfter) return;
+            if (!IsVisible || !IsActive || OwnedWindows.Count > 0 || _closing) return;
+            _offering = true;
+            bool install;
+            try { install = UpdateDialog.Show(this, _ready, Behind(_ready)); }
+            finally { _offering = false; }
+            if (install) { await InstallNow(_ready); return; }
+            _offerAfter = DateTime.Now.AddHours(1);
+            Speech.Say(this, "Okay. It installs by itself the next time Busy Bunny closes or starts.");
+            FocusTab(false);
+        }
+
+        /// <summary>Downloads if needed (with the climbing chords), swaps in the new copy and restarts.</summary>
+        private async System.Threading.Tasks.Task InstallNow(Updater.Release r)
+        {
+            if (_installing) return;
+            _installing = true;
+            try
+            {
+                Speech.Say(this, "Updating Busy Bunny.", true);
                 Save();
-                // A random instrument climbs in chords as it downloads, at half volume, and Busy Bunny
-                // waits for it to land before restarting, so it is never cut off.
+                // A random instrument climbs in chords at half volume, and Busy Bunny waits for it to
+                // land before restarting, so it is never cut off.
                 var names = Sounds.InstrumentNames;
                 Sounds.PlayUpdateClimb(names[new Random().Next(names.Count)], 0.5);
                 var started = DateTime.Now;
@@ -932,13 +953,48 @@ namespace BusyBunny
                 var left = TimeSpan.FromSeconds(Sounds.ClimbSeconds) - (DateTime.Now - started);
                 if (_settings.SoundsOn && left > TimeSpan.Zero) await System.Threading.Tasks.Task.Delay(left);
                 _closing = true;
+                Reminders.Quitting = true;
                 Application.Current.Shutdown();
             }
             catch (Exception e)
             {
-                MessageBox.Show(this, e.Message, "Check for updates", MessageBoxButton.OK, MessageBoxImage.Warning);
+                _installing = false;
+                MessageBox.Show(this, e.Message + " Busy Bunny will try again by itself.", "Update", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
-            finally { _manualChecking = false; }
+        }
+
+        private static string Behind(Updater.Release r) =>
+            "You're " + r.Missed.Count + (r.Missed.Count == 1 ? " version" : " versions") + " out of date.";
+
+        public async void CheckForUpdates()
+        {
+            if (_manualChecking || _installing) return;
+            _manualChecking = true;
+            Updater.Release? r;
+            try
+            {
+                Speech.Say(this, "Checking for updates.", true);
+                r = await Updater.CheckAsync();
+            }
+            catch (Exception e)
+            {
+                _manualChecking = false;
+                MessageBox.Show(this, e.Message, "Check for updates", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            _available = r;
+            _updateMenu.Header = r == null ? "Check for _updates..." : "_Install version " + r.Version + "...";
+            if (r == null)
+            {
+                _manualChecking = false;
+                MessageBox.Show(this, "You have the newest Busy Bunny, version " + Updater.Current + ".", "Check for updates", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            _announced = r.Version;
+            bool install = UpdateDialog.Show(this, r, Behind(r));
+            _manualChecking = false;
+            if (install) await InstallNow(r);
+            else { _offerAfter = DateTime.Now.AddHours(1); Prepare(r); }
         }
 
         // ---- Help ----

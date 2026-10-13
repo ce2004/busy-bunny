@@ -211,45 +211,125 @@ namespace BusyBunny
                 missed.Where(p => p.Version <= newest.Version).Select(p => (p.Version, p.Notes)).ToList());
         }
 
-        /// <summary>Downloads, checks and swaps in the new exe, then starts it. The caller saves and closes.</summary>
-        public static async Task InstallAsync(Release r, IProgress<double>? progress = null)
+        // ---- Ready copies: downloaded and checked ahead, installed with no waiting ----
+        // Morgan forgets to update, so it must not depend on her: an update found while Busy Bunny is
+        // open is downloaded at once, offered in a window, and if she says Later (or never answers) it
+        // installs by itself the next time Busy Bunny closes or starts.
+
+        private static string Exe => Environment.ProcessPath!;
+        private static string ReadyFile => Exe + ".ready";
+        private static string ReadyInfo => Exe + ".ready.txt";
+        private static string Marker => Exe + ".updated-from.txt";
+
+        /// <summary>The version of the ready copy, when there is one newer than this copy; stale ones are cleared.</summary>
+        public static Version? ReadyVersion()
         {
-            string exe = Environment.ProcessPath!;
-            string fresh = exe + ".new", old = exe + ".old";
-            if (r.Sha256 == null) throw new InvalidOperationException("GitHub gave no checksum for the download, so it was not installed. Try again later.");
             try
             {
-                await DownloadAsync(r.Url, fresh, r.Sha256, progress);
-                if (!TryDelete(old)) old = exe + ".old-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-                ClearReadOnly(exe);
-                // A virus scan often opens a brand new file for a moment: that clears by itself, so try a few times.
-                for (int attempt = 1; ; attempt++)
-                {
-                    if (!File.Exists(exe) && File.Exists(fresh)) { File.Move(fresh, exe); break; }
-                    try { File.Replace(fresh, exe, old, ignoreMetadataErrors: true); break; }
-                    catch (IOException) when (attempt < 5) { await Task.Delay(500); }
-                }
+                if (!File.Exists(ReadyFile) || !File.Exists(ReadyInfo)) return null;
+                var v = NormalizeTag(File.ReadAllLines(ReadyInfo).FirstOrDefault());
+                if (v != null && v > Current) return v;
+                TryDelete(ReadyFile);
+                TryDelete(ReadyInfo);
             }
-            catch (Exception e)
-            {
-                try { if (!File.Exists(exe) && File.Exists(old)) File.Move(old, exe); } catch { }
-                try { ClearReadOnly(fresh); File.Delete(fresh); } catch { }
-                if (e is UnauthorizedAccessException)
-                    throw new InvalidOperationException("Nothing was changed. Busy Bunny could not replace itself in " + Path.GetDirectoryName(exe) +
-                        ". If it is in Program Files, move it to your Documents folder and try again.", e);
-                throw;
-            }
-            try
-            {
-                Process.Start(new ProcessStartInfo(exe, "--after-update " + Environment.ProcessId + " " + Current) { UseShellExecute = false });
-            }
-            catch (Exception e)
-            {
-                throw new InvalidOperationException("Updated to version " + r.Version + ", but it could not restart by itself. Please start Busy Bunny again.", e);
-            }
+            catch { }
+            return null;
         }
 
-        private static async Task DownloadAsync(string url, string fresh, string sha256, IProgress<double>? progress)
+        /// <summary>Downloads the release next to the exe as the ready copy, checked against GitHub's checksum. Does nothing when it is already there.</summary>
+        public static async Task PrepareAsync(Release r)
+        {
+            if (ReadyVersion() == r.Version) return;
+            if (r.Sha256 == null) throw new InvalidOperationException("GitHub gave no checksum for the download, so it was not installed. Try again later.");
+            string part = Exe + ".part";
+            try
+            {
+                await DownloadAsync(r.Url, part, r.Sha256);
+                TryDelete(ReadyFile);
+                File.Move(part, ReadyFile);
+                File.WriteAllText(ReadyInfo, r.Version + "\n" + r.Sha256);
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                TryDelete(part);
+                throw new InvalidOperationException("Nothing was changed. Busy Bunny could not save the update in " + Path.GetDirectoryName(Exe) +
+                    ". If it is in Program Files, move it to your Documents folder and try again.", e);
+            }
+            catch { TryDelete(part); throw; }
+        }
+
+        /// <summary>
+        /// Swaps the ready copy in for this exe (a running exe can be renamed, not overwritten). restart:
+        /// start the new copy, which shows what is new; otherwise the next start shows it. False when there
+        /// is no ready copy. Throws when the swap fails; nothing is changed then.
+        /// </summary>
+        public static bool ApplyReady(bool restart)
+        {
+            if (ReadyVersion() is not Version v) return false;
+            var lines = File.ReadAllLines(ReadyInfo);
+            string sha = lines.Length > 1 ? lines[1].Trim() : "";
+            using (var f = File.OpenRead(ReadyFile))
+                if (!Convert.ToHexString(SHA256.HashData(f)).Equals(sha, StringComparison.OrdinalIgnoreCase))
+                {
+                    TryDelete(ReadyFile);
+                    TryDelete(ReadyInfo);
+                    return false;
+                }
+            string exe = Exe, old = exe + ".old";
+            if (!TryDelete(old)) old = exe + ".old-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+            ClearReadOnly(exe);
+            for (int attempt = 1; ; attempt++)
+            {
+                // A virus scan often opens a brand new file for a moment: that clears by itself, so try a few times.
+                try { File.Replace(ReadyFile, exe, old, ignoreMetadataErrors: true); break; }
+                catch (IOException) when (attempt < 6) { System.Threading.Thread.Sleep(500); }
+                catch (UnauthorizedAccessException e)
+                {
+                    throw new InvalidOperationException("Nothing was changed. Busy Bunny could not replace itself in " + Path.GetDirectoryName(exe) +
+                        ". If it is in Program Files, move it to your Documents folder and try again.", e);
+                }
+            }
+            TryDelete(ReadyInfo);
+            if (restart)
+            {
+                try { Process.Start(new ProcessStartInfo(exe, "--after-update " + Environment.ProcessId + " " + Current) { UseShellExecute = false })?.Dispose(); }
+                catch (Exception e) { throw new InvalidOperationException("Updated to version " + v + ", but it could not restart by itself. Please start Busy Bunny again.", e); }
+            }
+            else
+            {
+                try { File.WriteAllText(Marker, Current.ToString()); } catch { }
+            }
+            return true;
+        }
+
+        /// <summary>ApplyReady that never throws, for starting and closing: a failure waits for the next time.</summary>
+        public static bool ApplyReadyQuietly(bool restart)
+        {
+            try { return ApplyReady(restart); }
+            catch { return false; }
+        }
+
+        /// <summary>The version this copy was updated from when it was installed while closing, once; null otherwise.</summary>
+        public static Version? TakeUpdatedMarker()
+        {
+            try
+            {
+                if (!File.Exists(Marker)) return null;
+                var v = NormalizeTag(File.ReadAllText(Marker));
+                TryDelete(Marker);
+                return v;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>Downloads (if not ready already), swaps in the new exe, and starts it. The caller saves and closes.</summary>
+        public static async Task InstallAsync(Release r)
+        {
+            await PrepareAsync(r);
+            if (!ApplyReady(restart: true)) throw new InvalidOperationException("The download was damaged. Nothing was changed. Try again.");
+        }
+
+        private static async Task DownloadAsync(string url, string fresh, string sha256, IProgress<double>? progress = null)
         {
             using var h = Http();
             using var stall = new System.Threading.CancellationTokenSource(StallLimit);
@@ -307,6 +387,7 @@ namespace BusyBunny
                 string exe = Environment.ProcessPath!;
                 foreach (string f in Directory.GetFiles(Path.GetDirectoryName(exe)!, Path.GetFileName(exe) + ".old"))
                     all &= TryDelete(f);
+                TryDelete(exe + ".part"); // a download that was cut off
                 foreach (string f in Directory.GetFiles(Path.GetDirectoryName(exe)!))
                     if (Path.GetFileName(f).StartsWith(Path.GetFileName(exe) + ".old-", StringComparison.OrdinalIgnoreCase)) all &= TryDelete(f);
             }

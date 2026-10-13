@@ -43,10 +43,17 @@ namespace BusyBunny
             buttons.Children.Add(later);
             var panel = new StackPanel { Margin = new Thickness(12) };
             panel.Children.Add(list);
-            panel.Children.Add(new TextBlock { Text = "Busy Bunny restarts by itself and keeps all your tasks.", Margin = new Thickness(0, 8, 0, 0) });
+            var note = new TextBox
+            {
+                Text = "Busy Bunny restarts by itself and keeps all your tasks. If you choose Later, it installs by itself the next time Busy Bunny closes or starts.",
+                IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Width = 380, Margin = new Thickness(0, 8, 0, 0),
+            };
+            AutomationProperties.SetName(note, "About installing");
+            panel.Children.Add(note);
             panel.Children.Add(buttons);
             w.Content = panel;
             w.Loaded += (_, _) => TextViewer.Select(list, 0);
+            Sounds.Play(Sounds.Event.SurpriseReward);
             return w.ShowDialog() == true;
         }
     }
