@@ -167,6 +167,22 @@ namespace BusyBunny
         public void Say(string text, bool interrupt = false) => Speech.Say(this, text, interrupt);
         /// <summary>Saves, then rebuilds every list.</summary>
         public void SaveAndRefresh() { Save(); Refresh(); }
+        /// <summary>Features add text to the Task field here (like boss health); null adds nothing.</summary>
+        public readonly List<Func<TaskItem, string?>> DetailParts = new();
+        /// <summary>Moves focus to the task in Today or Focus, if it shows there. Returns whether it did.</summary>
+        public bool SelectTask(TaskItem t)
+        {
+            foreach (var lb in new[] { _urgent, _alsoToday, _focus })
+            {
+                int at = IndexOf(lb, t.Id);
+                if (at < 0) continue;
+                _tabs.SelectedIndex = lb == _focus ? 1 : 0;
+                _lastList = lb;
+                Dispatcher.BeginInvoke(() => { TextViewer.Select(lb, at); ShowDetail(); }, System.Windows.Threading.DispatcherPriority.Input);
+                return true;
+            }
+            return false;
+        }
         /// <summary>Changes a task's status as Control 1 to 6 would, with its sounds and words.</summary>
         public void SetTaskStatus(TaskItem t, Status s) { _lastChosen = t; try { SetStatus(s); } finally { _lastChosen = null; } }
         private TaskItem? _lastChosen;
@@ -408,7 +424,7 @@ namespace BusyBunny
             Fill(_urgent, urgent, "Today, urgent", "Nothing urgent. Enjoy that while it lasts.");
             Fill(_alsoToday, rest, "Also today", "Nothing else today.");
 
-            var focusPool = urgent.Concat(_store.Data.Tasks.Where(t => t.Status is Status.ThisWeek && !urgent.Contains(t)).OrderBy(_store.Rank).ThenBy(t => t.Priority == 0 ? 9 : t.Priority)).ToList();
+            var focusPool = urgent.Concat(_store.Reorder(_store.Data.Tasks.Where(t => t.Status is Status.ThisWeek && !urgent.Contains(t) && _store.CanShowToday(t, now)).OrderBy(_store.Rank).ThenBy(t => t.Priority == 0 ? 9 : t.Priority).ToList(), now)).ToList();
             if (focusPool.Count > 0 && focusPool.All(t => _focusSkipped.Contains(t.Id))) _focusSkipped.Clear();
             Fill(_focus, focusPool.Where(t => !_focusSkipped.Contains(t.Id)).Take(3), "Focus", "Nothing to focus on. Suspicious, but okay.");
 
@@ -523,6 +539,8 @@ namespace BusyBunny
                 if (list.Scale.Length > 0)
                     text += " Priority: " + (t.Priority > 0 && t.Priority <= list.Scale.Length ? list.Scale[t.Priority - 1] + ", " + t.Priority + " of " + list.Scale.Length : "none")
                         + ", on the " + list.ScaleName + " scale: " + Scales.Rank(list.Scale);
+                foreach (var part in DetailParts)
+                    if (part(t) is string extra && extra.Length > 0) text += " " + extra;
             }
             if (_detail.Text != text) _detail.Text = text;
         }

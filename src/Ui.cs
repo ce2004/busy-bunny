@@ -16,6 +16,8 @@ namespace BusyBunny
         public int SoundKey { get; set; } = 10;
         public Dictionary<string, string> SoundChoices { get; set; } = new();
         public bool ShortMode { get; set; }
+        public bool LowEnergy { get; set; }
+        public bool ShuffleMode { get; set; }
         public bool CheckForUpdatesAtStart { get; set; } = true;
         public int UrgentWarnAbove { get; set; } = 5;
 
