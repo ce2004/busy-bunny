@@ -463,8 +463,12 @@ namespace BusyBunny
             foreach (var l in _store.ActiveLists.Where(l => _lists.ContainsKey("list-" + l.Name)))
             {
                 var tasks = _store.Data.Tasks.Where(t => t.List == l.Name && t.Status != Status.Done)
-                    .OrderBy(t => t.Status).ThenBy(t => t.Priority == 0 ? 9 : t.Priority).ThenBy(t => t.Due ?? DateTime.MaxValue);
-                Fill(_lists["list-" + l.Name], tasks, l.Name, "Nothing on " + l.Name + ".");
+                    .OrderBy(t => t.Status).ThenBy(t => t.Priority == 0 ? 9 : t.Priority).ThenBy(t => t.Due ?? DateTime.MaxValue).ToList();
+                // Tasks with no section (or one the list no longer has) first, then each section as its own named list.
+                Fill(_lists["list-" + l.Name], tasks.Where(t => !l.Sections.Contains(t.Section)), l.Name, "Nothing on " + l.Name + ".");
+                foreach (var sec in l.Sections)
+                    if (_lists.TryGetValue(SectionKey(l, sec), out var slb))
+                        Fill(slb, tasks.Where(t => t.Section == sec), l.Name + ", " + sec, "Nothing in " + sec + ".");
             }
 
             _summary.Text = _store.Summary(now, shortMode);
@@ -586,7 +590,9 @@ namespace BusyBunny
                 }
                 else
                 {
-                    Sounds.Play(Sounds.Event.TaskDone);
+                    string finish = _store.Data.Lists.FirstOrDefault(x => x.Name == t.List)?.FinishSound ?? "";
+                    if (finish.Length > 0) { if (Sounds.Enabled) Sounds.PlayNamed(finish); }
+                    else Sounds.Play(Sounds.Event.TaskDone);
                     Speech.Say(this, "Done: " + t.Name + ". " + done + " of " + total + " today.");
                 }
             }
@@ -628,7 +634,7 @@ namespace BusyBunny
         private void QuickAddTask()
         {
             string list = _tabs.SelectedItem is TabItem { Tag: string l } ? l : "Homework";
-            var status = _tabs.SelectedIndex <= 1 ? Status.Today : Status.ThisWeek;
+            var status = _tabs.SelectedIndex <= 1 ? Status.Today : _store.Data.Lists.FirstOrDefault(x => x.Name == list)?.DefaultStatus ?? Status.ThisWeek;
             if (QuickAdd.Show(this, _store, list, status) is not TaskItem t) return;
             AddTask(t);
         }
@@ -678,19 +684,45 @@ namespace BusyBunny
         /// Makes the list tabs, the Move to pick menu and the Move to list menu match the lists: after
         /// Settings adds, renames or reorders them, and after Undo puts them back.
         /// </summary>
+        private static string SectionKey(TaskList l, string sec) => "list-" + l.Name + "-sec-" + sec;
+        private string _tabSignature = "";
+        private readonly List<string> _tabKeys = new();
+
         private void SyncListTabs()
         {
-            var names = _store.ActiveLists.Where(l => l.Parent.Length == 0).Select(l => l.Name).ToList();
-            var tabs = _tabs.Items.OfType<TabItem>().Where(t => t.Tag is string).ToList();
-            if (tabs.Select(t => (string)t.Tag).SequenceEqual(names) && _moveMenu.Items.Count == names.Count) return;
+            var active = _store.ActiveLists.ToList();
+            // A sub-list shows inside its parent's tab; one whose parent is gone or archived is shown nowhere.
+            var tops = active.Where(l => l.Parent.Length == 0).ToList();
+            var subsOf = tops.ToDictionary(t => t.Name, t => active.Where(l => l.Parent == t.Name).ToList());
+            var names = tops.SelectMany(t => new[] { t.Name }.Concat(subsOf[t.Name].Select(s => s.Name))).ToList();
+            string signature = string.Join("|", tops.Select(t => t.Name + "<" + string.Join(",", t.Sections) + ">" +
+                string.Join(",", subsOf[t.Name].Select(s => s.Name + "<" + string.Join(",", s.Sections) + ">"))));
+            if (signature == _tabSignature && _tabs.Items.OfType<TabItem>().Count(t => t.Tag is string) == tops.Count) return;
+            _tabSignature = signature;
             object? selectedTag = (_tabs.SelectedItem as TabItem)?.Tag;
             int selectedIndex = _tabs.SelectedIndex;
-            foreach (var t in tabs) { _tabs.Items.Remove(t); _lists.Remove("list-" + t.Tag); }
-            foreach (var l in _store.ActiveLists.Where(l => l.Parent.Length == 0))
+            foreach (var t in _tabs.Items.OfType<TabItem>().Where(t => t.Tag is string).ToList()) _tabs.Items.Remove(t);
+            foreach (var k in _tabKeys) _lists.Remove(k);
+            _tabKeys.Clear();
+
+            ListBox MakeList(StackPanel panel, string key, string? heading)
             {
-                var lb = NewList("list-" + l.Name);
-                var panel = new StackPanel { Margin = new Thickness(6) };
+                var lb = NewList(key);
+                _tabKeys.Add(key);
+                if (heading != null) panel.Children.Add(new TextBlock { Text = heading, Margin = new Thickness(0, 10, 0, 2), FontWeight = FontWeights.SemiBold });
                 panel.Children.Add(lb);
+                return lb;
+            }
+            foreach (var l in tops)
+            {
+                var panel = new StackPanel { Margin = new Thickness(6) };
+                MakeList(panel, "list-" + l.Name, null);
+                foreach (var sec in l.Sections) MakeList(panel, SectionKey(l, sec), sec);
+                foreach (var sub in subsOf[l.Name])
+                {
+                    MakeList(panel, "list-" + sub.Name, sub.Name);
+                    foreach (var sec in sub.Sections) MakeList(panel, SectionKey(sub, sec), sub.Name + ", " + sec);
+                }
                 _tabs.Items.Add(new TabItem { Header = l.TabName, Content = new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, Tag = l.Name });
             }
             var same = _tabs.Items.OfType<TabItem>().FirstOrDefault(t => selectedTag is string s && Equals(t.Tag, s));
