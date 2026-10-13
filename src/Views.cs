@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -64,6 +65,21 @@ namespace BusyBunny
                 var lb = w.NewTaskList("board-" + s);
                 _board[s] = lb;
                 panel.Children.Add(new Label { Content = Words.Of(s), Target = lb, Padding = new Thickness(0, 8, 0, 2) });
+                if (s is Status.Today or Status.ThisWeek or Status.NextWeek)
+                {
+                    // Morgan's issue 10: each of these shows what she planned to do then, what is due then, or both.
+                    var st = s;
+                    var show = new ComboBox { ItemsSource = ShowWords, SelectedIndex = ShowOf(s), Width = 220, HorizontalAlignment = HorizontalAlignment.Left, Margin = new Thickness(0, 0, 0, 4) };
+                    AutomationProperties.SetName(show, Words.Of(s) + " shows");
+                    show.SelectionChanged += (_, _) =>
+                    {
+                        if (show.SelectedIndex < 0) return;
+                        w.AppSettings.BoardShow[st.ToString()] = show.SelectedIndex;
+                        w.AppSettings.Save();
+                        Refill();
+                    };
+                    panel.Children.Add(show);
+                }
                 panel.Children.Add(lb);
             }
             w.AddTab("Board", new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, () => _board[Status.Today]);
@@ -82,8 +98,9 @@ namespace BusyBunny
             _w.Say("Filter, sort and grouping cleared.", true);
         }
 
+        /// <summary>The subtasks by name for the Task field (Morgan's issue 7): Subtasks: read, done; outline, not done.</summary>
         public static string? StepsLine(TaskItem t) =>
-            t.Subtasks.Count == 0 ? null : t.Subtasks.Count(s => s.Done) + " of " + t.Subtasks.Count + (t.Subtasks.Count == 1 ? " step done." : " steps done.");
+            t.Subtasks.Count == 0 ? null : "Subtasks: " + string.Join("; ", t.Subtasks.Select(s => s.Name + (s.Done ? ", done" : ", not done"))) + ". Control Shift B checks them off.";
 
         // ---- Filtering and ordering (pure, so the self-test can check it) ----
 
@@ -126,11 +143,25 @@ namespace BusyBunny
                 }
         }
 
+        private static readonly string[] ShowWords = { "Things to do", "Things due", "Both" };
+        private int ShowOf(Status s) => _w.AppSettings.BoardShow.TryGetValue(s.ToString(), out int v) && v is >= 0 and <= 2 ? v : 2;
+
+        /// <summary>The tasks a Board group shows: show 0 is planned for then, 1 is due then, 2 is either.</summary>
+        public static IEnumerable<TaskItem> BoardGroup(IEnumerable<TaskItem> open, Status s, int show, DateTime now) =>
+            s is Status.Today or Status.ThisWeek or Status.NextWeek
+                ? open.Where(t => show != 1 && Store.PlanGroup(t, now) == s || show != 0 && Store.DueGroup(t, now) == s)
+                : open.Where(t => t.Status == s);
+
         private void Refill()
         {
+            var now = DateTime.Now;
             var open = _w.Store.Data.Tasks.Where(t => t.Status != Status.Done).ToList();
             foreach (var s in BoardStatuses)
-                Fill(_board[s], open.Where(t => t.Status == s), Words.Of(s), "Nothing " + (s == Status.Today ? "for today" : "here") + ".");
+            {
+                int show = ShowOf(s);
+                string name = Words.Of(s) + (s is Status.Today or Status.ThisWeek or Status.NextWeek ? ", " + ShowWords[show].ToLowerInvariant() : "");
+                Fill(_board[s], BoardGroup(open, s, show, now), name, "Nothing " + (s == Status.Today ? "for today" : "here") + ".");
+            }
             if (!State.Active) return;
             foreach (var l in _w.Store.ActiveLists)
                 if (_w.ListBoxOf(l.Name) is ListBox lb)
@@ -211,8 +242,36 @@ namespace BusyBunny
             if (Apply(all, v).Select(t => t.Name).Aggregate("", (a, b) => a + b) != "cba") throw new Exception("due sort");
             v = new ViewState { Sort = SortBy.Name, Group = GroupBy.Tag };
             if (Apply(all, v).Select(t => t.Name).Aggregate("", (a, b) => a + b) != "abc") throw new Exception("group by tag");
-            if (StepsLine(new TaskItem { Subtasks = { new Subtask { Done = true }, new Subtask(), new Subtask() } }) != "1 of 3 steps done.") throw new Exception("steps line");
+            if (StepsLine(new TaskItem { Subtasks = { new Subtask { Name = "a", Done = true }, new Subtask { Name = "b" } } }) != "Subtasks: a, done; b, not done. Control Shift B checks them off.") throw new Exception("steps line");
             if (new ViewState().Active) throw new Exception("empty state should be inactive");
+
+            // Morgan's issue 10, on a Tuesday: Today is what she planned for today, plus what is due today.
+            var now = new DateTime(2026, 10, 13, 10, 0, 0);
+            var st = new Store();
+            st.Data.Lists = Sample.Lists();
+            TaskItem M(string n, Status s, int? doDay = null, int? dueDay = null, int pr = 0) => new()
+            { Name = n, List = "Homework", Status = s, Priority = pr, DoDate = doDay is int d1 ? new DateTime(2026, 10, d1) : null, Due = dueDay is int d2 ? new DateTime(2026, 10, d2) : null };
+            var planned = M("planned today, due Friday", Status.Today, 13, 16);
+            var later = M("on Today but planned Wednesday", Status.Today, 14);
+            var top = M("top priority, no dates", Status.ThisWeek, pr: 1);
+            var dueNow = M("due today", Status.ThisWeek, dueDay: 13);
+            var dueTomorrow = M("due tomorrow", Status.ThisWeek, dueDay: 14);
+            var nextWeek = M("planned next Tuesday", Status.ThisWeek, 20);
+            st.Data.Tasks.AddRange(new[] { planned, later, top, dueNow, dueTomorrow, nextWeek });
+            var (todo, due) = st.Today(now);
+            string Names(IEnumerable<TaskItem> ts) => string.Join(" | ", ts.Select(t => t.Name));
+            if (Names(todo) != "planned today, due Friday") throw new Exception("Today, to do was " + Names(todo));
+            if (Names(due) != "due today") throw new Exception("Today, due was " + Names(due));
+            var ahead = st.GetAhead(now);
+            if (!ahead.Contains(later) || !ahead.Contains(top) || !ahead.Contains(dueTomorrow) || ahead.Contains(nextWeek) || ahead.Contains(planned))
+                throw new Exception("Get ahead was " + Names(ahead));
+            var open = st.Data.Tasks;
+            if (Names(BoardGroup(open, Status.ThisWeek, 0, now).OrderBy(t => t.Name)) != "due today | due tomorrow | on Today but planned Wednesday | top priority, no dates") throw new Exception("board this week, to do: " + Names(BoardGroup(open, Status.ThisWeek, 0, now)));
+            if (Names(BoardGroup(open, Status.ThisWeek, 1, now).OrderBy(t => t.Name)) != "due tomorrow | planned today, due Friday") throw new Exception("board this week, due: " + Names(BoardGroup(open, Status.ThisWeek, 1, now)));
+            if (!BoardGroup(open, Status.NextWeek, 2, now).Contains(nextWeek)) throw new Exception("board next week misses a task planned next week");
+            if (Engine.EarlyBonus(later, now) != 3 || Engine.EarlyBonus(planned, now) != 0) throw new Exception("early bonus");
+            if (!st.Line(later, now).Contains("planned for tomorrow")) throw new Exception("line misses the do date: " + st.Line(later, now));
+            Sounds.FxSelfTest();
         }
     }
 }

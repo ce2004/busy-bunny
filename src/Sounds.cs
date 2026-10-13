@@ -19,7 +19,7 @@ namespace BusyBunny
     /// Recordings are built into the exe as Opus (native\sounds) and decoded the first time they are needed.
     /// Sounds never speak, never play on keystrokes, and have their own volume, apart from NVDA's.
     /// </summary>
-    public static class Sounds
+    public static partial class Sounds
     {
         public enum Event { Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning, TaskAdded, TaskSaved,
             MenuOpened, SubmenuOpened, MenuClosed, WindowOpened, WindowClosed, TabSwitched, CheckedOn, CheckedOff, PickOpened, PickClosed, MovedField }
@@ -118,6 +118,7 @@ namespace BusyBunny
         {
             var names = new List<string> { NoSound, Angelic };
             foreach (var i in Instruments) foreach (var p in Patterns) names.Add(i.Name + ", " + p.Name);
+            names.AddRange(Effects.Keys);
             return names;
         });
 
@@ -182,10 +183,14 @@ namespace BusyBunny
         private static System.Threading.Thread? _soundThread;
         private static SoundPlayer? _current;
 
-        public static void Play(Event e)
+        public static void Play(Event e) => PlayAs(e, Resolve(e, Choice(e)));
+
+        /// <summary>Plays an event for a task on a list: the list's own sound pack when it has one (Morgan's issue 6), otherwise as Play.</summary>
+        public static void PlayFor(Event e, TaskList? list) => PlayAs(e, ListSound(e, list));
+
+        private static void PlayAs(Event e, string name)
         {
             if (!Enabled) return;
-            string name = Resolve(e, Choice(e));
             int volume = IsUi(e) ? Math.Max(10, Volume * 55 / 100) : Volume;
             int key = Key;
             System.Threading.ThreadPool.QueueUserWorkItem(_ =>
@@ -302,7 +307,7 @@ namespace BusyBunny
                 {
                     var (l, r) = Make(name, key);
                     if (l == null) return null;
-                    wav = Wav(l, r!, volume);
+                    wav = Wav(l, r!, volume, FxTrim.TryGetValue(name, out double trim) ? trim : 1);
                 }
                 Cache[cacheKey] = CacheOrder.AddFirst((cacheKey, wav));
                 while (Cache.Count > CacheMax)
@@ -400,13 +405,19 @@ namespace BusyBunny
         // ---- Sound packs (spec 12b.3 and 19.11): a pack sets the choice for every event ----
 
         public const string Classic = "Classic";
-        public static readonly string[] PackNames = { Classic, "Bunny pack", "Halloween", "Winter holidays", "Valentine's" };
+        public static readonly string[] PackNames = { Classic, "Bunny pack", "Space", "Coffee", "Stove", "Halloween", "Winter holidays", "Valentine's" };
 
         private static readonly Dictionary<string, string[]> PackSounds = new()
         {
-            // In Event order: Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning.
-            ["Bunny pack"] = new[] { "Xylophone, rising", "Pizzicato strings, two up", "Xylophone, sparkle", "Singing bells, sparkle", "Xylophone, four up",
-                "Singing bells, rising", "Xylophone, chord high", "Pizzicato strings, bounce", "Singing bells, bounce", "Pizzicato strings, sigh" },
+            // In Event order: Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning, TaskAdded, TaskSaved.
+            ["Bunny pack"] = new[] { "Xylophone, rising", "Bunny, two hops", "Bunny, binky", "Singing bells, sparkle", "Xylophone, four up",
+                "Singing bells, rising", "Xylophone, chord high", "Bunny, hop", "Singing bells, bounce", "Bunny, thump", "Bunny, nibble", "Bunny, hop" },
+            ["Space"] = new[] { Angelic, "Space, launch", "Space, orbit", "Space, beam", "Space, two blips",
+                "Space, orbit", "Space, pew", "Space, blip", "Space, beam", "Space, warble", "Space, blip", "Space, two blips" },
+            ["Coffee"] = new[] { Angelic, "Coffee, pour", "Coffee, percolate", "Coffee, two clinks", "Coffee, clink",
+                "Coffee, percolate", "Coffee, pour", "Coffee, steam", "Coffee, two clinks", "Coffee, steam", "Coffee, clink", "Coffee, stir" },
+            ["Stove"] = new[] { Angelic, "Stove, light", "Stove, whoosh", "Stove, whoosh", "Stove, click",
+                "Stove, whoosh", "Stove, light", "Stove, simmer", "Stove, sizzle", "Stove, simmer", "Stove, click", "Stove, sizzle" },
             ["Halloween"] = new[] { "Cello, creep", "Singing bells, minor rising", "Cello, minor chord", "Singing bells, creep", "Singing bells, minor rising",
                 "Strings, minor chord", "Cello, minor chord", "Singing bells, minor falling", "Singing bells, creep", "Cello, minor sigh" },
             ["Winter holidays"] = new[] { "Singing bells, rising", "Singing bells, two up", "Singing bells, sparkle", "Singing bells, sparkle", "Singing bells, four up",
@@ -542,6 +553,7 @@ namespace BusyBunny
         private static (double[]? L, double[]? R) Make(string name, int key)
         {
             if (name == Angelic) return AngelicWelcome(key);
+            if (Effects.TryGetValue(name, out var effect)) return effect();
             if (name.StartsWith(ClimbPrefix) && Instruments.FirstOrDefault(i => i.Name == name[ClimbPrefix.Length..]) is Instrument climber)
                 return UpdateClimb(key, climber);
             int comma = name.IndexOf(", ", StringComparison.Ordinal);
@@ -682,14 +694,14 @@ namespace BusyBunny
 
         // ---- Output ----
 
-        private static byte[] Wav(double[] left, double[] right, int volume)
+        private static byte[] Wav(double[] left, double[] right, int volume, double trim = 1)
         {
             // Trim the silence the room leaves at the end.
             int length = left.Length;
             while (length > Rate / 10 && Math.Abs(left[length - 1]) < 1e-4 && Math.Abs(right[length - 1]) < 1e-4) length--;
             double peak = 1e-9;
             for (int i = 0; i < length; i++) peak = Math.Max(peak, Math.Max(Math.Abs(left[i]), Math.Abs(right[i])));
-            double gain = 0.40 / peak * Math.Clamp(volume, 10, 100) / 100.0;
+            double gain = 0.40 / peak * Math.Clamp(volume, 10, 100) / 100.0 * trim;
             int fade = Math.Min(length / 4, Rate / 12);
             using var ms = new MemoryStream();
             using var w = new BinaryWriter(ms);

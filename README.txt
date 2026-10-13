@@ -20,8 +20,11 @@ Settings
 
 Options, Settings, or Control Comma. Pick a section at the top.
 General: sounds, short mode, automatic update checks, the hours you have on a typical day, and when to warn you about too many urgent tasks.
-Each list has its own section: its name, its place among the tabs, and its priority scale (Coffee, Space, Burner and more from the library, a custom one with your own levels, or None). The Levels field shows the order. Tabs show the scale after the list's name, like Homework (Coffee).
+Each list has its own section: its name, its place among the tabs, its priority scale (Coffee, Space, Burner and more from the library, a custom one with your own levels, or None), its categories, and its sound pack. The Levels field shows the order. Tabs show the scale after the list's name, like Homework (Coffee).
 Add a new list, at the end of the Section menu, makes a new list with its own tab.
+At the bottom of every list tab, View tab settings reads that list's settings, its priority scale first, with buttons to change the settings or the priority scale. View, View tab settings, or Control Shift E, does the same.
+
+Categories work like drawers inside a list: Homework can have one per class, each with its own assignments, and tags still apply. Add a category, at the bottom of the list's tab, makes one. Each shows in the tab as its own named list. Control N from inside a category adds the task there, and Task, Put in a category moves the chosen task into one.
 
 
 The main screen
@@ -32,7 +35,11 @@ Today's progress and this week's progress, by effort.
 The tabs, in a list down the left side: Today, Focus, Upcoming, Board, then each of your lists. Up and Down Arrow move through them.
 Under the tabs, two pick menus for the task you chose: Status and Move to. Arrow to what you want and press Enter. Nothing changes until you press Enter or leave the menu.
 
-Each task reads as one line, most important first: tag, name, status, priority, due date. For example: PSY, chapter 4 reading, Today, Triple shot 1, due Thursday.
+Each task reads as one line, most important first: tag, name, status, priority, the day you planned it for, due date, and how many of its subtasks are done. For example: PSY, chapter 4 reading, This week, Triple shot 1, planned for Tuesday, due Thursday, 1 of 3 steps done.
+
+The Today tab has two lists. To do today: what you planned for today, with its do date, or put on Today with Control 1. Due today: what is due today or overdue. Get ahead, under them, opens Upcoming to pick from the rest of the week, and finishing a task before its day earns bonus points. Upcoming lists each day with what is due and what is planned for it. On the Board, Today, This week and Next week each have a pick menu: things to do, things due, or both.
+
+Control Shift B on a task opens its subtasks as check boxes: Space checks one off, Delete removes one, and a box at the bottom adds more.
 
 
 Keys
@@ -51,7 +58,8 @@ Delete: delete the chosen task. Control Z brings it back.
 Control R: read my day.
 Control Shift S: short mode on or off.
 The Applications key or Shift F10 on a task: everything you can do to it.
-Control Shift N: add several tasks, one per line.
+Control Shift N: add several tasks, one per line, then a list, priority and when for each.
+Control Shift B: subtasks of the chosen task. Control Shift E: View tab settings.
 Control Shift V: paste tasks, for example from a Claude chat.
 Control Shift P: push the chosen task back a day.
 Control Shift F: filter and sort. Control Shift W: weekly review.
@@ -70,6 +78,7 @@ The Fun menu has the game (scoreboard, badges, your bunny, challenges, Semester 
 Sounds
 
 Sounds play on Busy Bunny's own real instruments: an upright piano, bowed strings, plucked violas, cello, singing bells, a quiet organ, flute and xylophone. While Busy Bunny is in front, quiet background music plays, made from the same instruments; Options, Sounds turns it off. Options, Sounds picks a sound for each event, with its own volume apart from NVDA's. You hear each sound as you arrow to it. Options, Sounds on turns them all off.
+Each list can have its own sound pack for adding, saving and finishing its tasks: Bunny (hops, nibbles and thumps), Space (blips and launches), Coffee (clinks and pours), Stove (the burner lighting), the holiday packs, or Match the priority scale, so Homework on the Coffee scale gets coffee sounds. Pick it in the list's section of Options, Settings.
 
 
 Your tasks

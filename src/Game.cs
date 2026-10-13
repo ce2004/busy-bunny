@@ -85,6 +85,14 @@ namespace BusyBunny
             return half ? Math.Max(1, pts / 2) : pts;
         }
 
+        /// <summary>Bonus points for finishing before the planned day (its do date, or else its due date): 3 a day early, up to 15. 0 when not early.</summary>
+        public static int EarlyBonus(TaskItem t, DateTime now)
+        {
+            if ((t.DoDate ?? t.Due) is not DateTime expected) return 0;
+            int days = (expected.Date - now.Date).Days;
+            return days <= 0 ? 0 : Math.Min(15, 3 * days);
+        }
+
         public static int Total(Data d) => d.Log.Where(e => KarmaKinds.Contains(e.Kind)).Sum(e => e.Points);
         public static int PointsOn(Data d, DateTime day) => d.Log.Where(e => e.When.Date == day.Date && KarmaKinds.Contains(e.Kind)).Sum(e => e.Points);
         public static DateTime WeekStart(DateTime day) => day.Date.AddDays(-(((int)day.DayOfWeek + 6) % 7));

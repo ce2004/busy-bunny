@@ -134,12 +134,10 @@ namespace BusyBunny
             var store = _w.Store;
             var now = DateTime.Now;
             var day = store.Data.Day(now);
-            var lists = store.ActiveLists.ToList();
 
             var dlg = Layout.Dialog(_w, "Morning check-in");
             var energy = new ComboBox { ItemsSource = Energies, SelectedIndex = day.Energy.Length > 0 ? Math.Max(0, Array.FindIndex(Energies, e => e.Equals(day.Energy, StringComparison.OrdinalIgnoreCase))) : 1 };
             var hours = HoursBox(store, now);
-            var list = new ComboBox { ItemsSource = lists.Select(l => l.Name).ToList(), SelectedIndex = 0 };
             var fresh = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Height = 80 };
             var ok = Layout.Button("OK", isDefault: true);
             var skip = Layout.Button(manual ? "Cancel" : "Not now", isCancel: true);
@@ -152,7 +150,7 @@ namespace BusyBunny
             panel.Children.Add(Layout.Row("_Energy today", energy, 300));
             panel.Children.Add(Layout.Row("_Hours available today", hours, 300));
             panel.Children.Add(Layout.Row("Anything _new? One task per line", fresh, 420));
-            panel.Children.Add(Layout.Row("Put new tasks on _list", list, 300));
+            AutomationProperties.SetHelpText(fresh, "After OK, you choose a list, priority and when for each one. They start on Today.");
             panel.Children.Add(buttons);
             dlg.Content = panel;
             dlg.ShowDialog();
@@ -167,12 +165,13 @@ namespace BusyBunny
             day.Energy = Energies[Math.Max(0, energy.SelectedIndex)].ToLowerInvariant();
             double h = HoursOf(hours);
             day.Hours = Math.Abs(h - store.Data.HoursAvailable) < 0.01 ? 0 : h;
-            var chosenList = lists.Count > 0 ? lists[Math.Max(0, list.SelectedIndex)] : null;
+            // Morgan's issue 9: each new task gets its own list, priority and when, starting on Today.
             var names = Lines(fresh.Text);
-            foreach (string n in names)
-                _w.AddTask(new TaskItem { Name = n, List = chosenList?.Name ?? "", Status = chosenList?.DefaultStatus ?? Status.ThisWeek, StatusSince = DateTime.Now }, false);
+            var made = names.Count == 0 ? new List<TaskItem>() : NewTasks.Review(_w, store, names, _w.CurrentListName, 0);
+            foreach (var t in made ?? new()) _w.AddTask(t, false);
             _w.SaveAndRefresh();
-            string said = "Checked in. Energy " + day.Energy + ", " + HoursWords(h) + " available" + (names.Count > 0 ? ", " + names.Count + (names.Count == 1 ? " task" : " tasks") + " added" : "") + ".";
+            string said = "Checked in. Energy " + day.Energy + ", " + HoursWords(h) + " available"
+                + (made == null ? ", no tasks added" : made.Count > 0 ? ", " + made.Count + (made.Count == 1 ? " task" : " tasks") + " added" : "") + ".";
             if (day.Energy == "low") said += " Low energy noted. Go easy on yourself.";
             _w.Say(said);
         }

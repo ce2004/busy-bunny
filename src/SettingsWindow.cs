@@ -32,6 +32,7 @@ namespace BusyBunny
             public bool InToday = true;
             public bool Archived;
             public string FinishSound = "";
+            public string SoundPack = "";
             public HashSet<TaskType> Types = new(Enum.GetValues<TaskType>());
             public TaskList? Real; // the saved list, made at OK for a new one
         }
@@ -66,8 +67,8 @@ namespace BusyBunny
             return d.ShowDialog() == true ? box.SelectedIndex : -1;
         }
 
-        /// <summary>Shows Settings, opened at a list's section when one is given. True when OK was pressed.</summary>
-        public static bool Show(Window owner, Store store, Settings settings, string? startList = null)
+        /// <summary>Shows Settings, opened at a list's section when one is given; focus "scale" starts on its priority scale. True when OK was pressed.</summary>
+        public static bool Show(Window owner, Store store, Settings settings, string? startList = null, string? focus = null)
         {
             var w = Layout.Dialog(owner, "Settings");
             var pages = Features.All.SelectMany(f => f.SettingsPages(store, settings)).ToList();
@@ -76,7 +77,7 @@ namespace BusyBunny
             {
                 Original = l.Name, Name = l.Name, ScaleName = l.Scale.Length == 0 ? "" : l.ScaleName, Levels = l.Scale,
                 Sections = string.Join(Environment.NewLine, l.Sections), DefaultStatus = l.DefaultStatus, InToday = l.InToday,
-                Archived = l.Archived, FinishSound = l.FinishSound, Types = l.Types.Count == 0 ? new(Enum.GetValues<TaskType>()) : new(l.Types), Real = l,
+                Archived = l.Archived, FinishSound = l.FinishSound, SoundPack = l.SoundPack, Types = l.Types.Count == 0 ? new(Enum.GetValues<TaskType>()) : new(l.Types), Real = l,
             }).ToList();
             foreach (var p in lists) p.Parent = lists.FirstOrDefault(o => o.Name == p.Real!.Parent && o != p);
             // Lists taken out here (merged or deleted), with where their tasks go (null: deleted with them). Done at OK.
@@ -125,13 +126,17 @@ namespace BusyBunny
             var inToday = new CheckBox { Content = "Show its tasks in _Today and Focus", Margin = new Thickness(0, 4, 0, 4) };
             const string UsualSound = "Usual Task done sound";
             var finish = new ComboBox { ItemsSource = new[] { UsualSound }.Concat(Sounds.All).ToList() };
+            // Morgan's issue 6: a sound pack for each tab, for adding, saving and finishing its tasks.
+            var packChoices = new[] { "", Sounds.MatchScale }.Concat(Sounds.PackNames).ToList();
+            var pack = new ComboBox();
+            AutomationProperties.SetHelpText(pack, "The sounds for adding, saving and finishing this list's tasks. Arrow through them to hear each one finish a task.");
             var typeBoxes = Enum.GetValues<TaskType>().ToDictionary(t => t, t => new CheckBox { Content = TypeName(t), Margin = new Thickness(0, 2, 0, 2) });
             var types = new StackPanel();
             foreach (var cb in typeBoxes.Values) types.Children.Add(cb);
             var group = new GroupBox { Header = "Task types it uses", Content = types, Margin = new Thickness(0, 4, 0, 6) };
             AutomationProperties.SetName(group, "Task types it uses");
             var sections = new TextBox { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, MinLines = 3, MaxLines = 6, VerticalScrollBarVisibility = ScrollBarVisibility.Auto };
-            AutomationProperties.SetHelpText(sections, "One per line, or separated by commas. Each shows in the list's tab as its own named list.");
+            AutomationProperties.SetHelpText(sections, "Like drawers inside the list, for example one per class. One per line, or separated by commas. Each shows in the list's tab as its own named list.");
             var archived = new CheckBox { Content = "_Archive this list: no tab, and its tasks show nowhere", Margin = new Thickness(0, 4, 0, 4) };
             var merge = Layout.Button("_Merge into another list...");
             var delete = Layout.Button("De_lete this list...");
@@ -141,9 +146,10 @@ namespace BusyBunny
             listPanel.Children.Add(promote);
             listPanel.Children.Add(Layout.Row("Default status for _new tasks", defStatus));
             listPanel.Children.Add(inToday);
+            listPanel.Children.Add(Layout.Row("Categories, one per _line", sections, 420));
+            listPanel.Children.Add(Layout.Row("Soun_d pack for this tab", pack, 420));
             listPanel.Children.Add(Layout.Row("_Finishing sound", finish, 420));
             listPanel.Children.Add(group);
-            listPanel.Children.Add(Layout.Row("Sections, one per _line", sections, 420));
             listPanel.Children.Add(archived);
             var actions = new StackPanel { Orientation = Orientation.Horizontal };
             actions.Children.Add(merge);
@@ -195,6 +201,8 @@ namespace BusyBunny
                 defStatus.SelectedIndex = Math.Max(0, Array.IndexOf(statuses, p.DefaultStatus));
                 inToday.IsChecked = p.InToday;
                 finish.SelectedIndex = p.FinishSound.Length == 0 ? 0 : Math.Max(0, Sounds.All.ToList().IndexOf(p.FinishSound) + 1);
+                pack.ItemsSource = packChoices.Select(c => Sounds.ListPackWords(new TaskList { SoundPack = c, ScaleName = p.Levels.Length == 0 ? "" : p.ScaleName })).ToList();
+                pack.SelectedIndex = Math.Max(0, packChoices.IndexOf(p.SoundPack));
                 foreach (var (t, cb) in typeBoxes) cb.IsChecked = p.Types.Contains(t);
                 sections.Text = p.Sections;
                 archived.IsChecked = p.Archived;
@@ -278,6 +286,12 @@ namespace BusyBunny
                 current.FinishSound = finish.SelectedIndex == 0 ? "" : (string)finish.SelectedItem;
                 if (finish.SelectedIndex > 0) Sounds.PlayNamed(current.FinishSound);
             };
+            pack.SelectionChanged += (_, _) =>
+            {
+                if (loading || current == null || pack.SelectedIndex < 0) return;
+                current.SoundPack = packChoices[pack.SelectedIndex];
+                Sounds.PlayNamed(Sounds.ListSound(Sounds.Event.TaskDone, new TaskList { SoundPack = current.SoundPack, ScaleName = current.Levels.Length == 0 ? "" : current.ScaleName }));
+            };
             foreach (var (t, cb) in typeBoxes)
             {
                 var type = t;
@@ -313,7 +327,7 @@ namespace BusyBunny
                 var gone = current;
                 var targets = lists.Where(o => o != gone).ToList();
                 int n = gone.Original == null ? 0 : store.Data.Tasks.Count(t => t.List == gone.Original);
-                int i = Pick(w, "Merge " + gone.Name, "All " + n + (n == 1 ? " task" : " tasks") + " on " + gone.Name + " move to the list you pick, and " + gone.Name + " goes away. Its sections come along.",
+                int i = Pick(w, "Merge " + gone.Name, "All " + n + (n == 1 ? " task" : " tasks") + " on " + gone.Name + " move to the list you pick, and " + gone.Name + " goes away. Its categories come along.",
                     "Merge into", targets.Select(o => o.Name).ToList(), "_Merge");
                 if (i < 0) return;
                 var into = targets[i];
@@ -421,6 +435,7 @@ namespace BusyBunny
                     list.DefaultStatus = p.DefaultStatus;
                     list.InToday = p.InToday;
                     list.FinishSound = p.FinishSound;
+                    list.SoundPack = p.SoundPack;
                     list.Archived = p.Archived;
                     list.Types = p.Types.Count == Enum.GetValues<TaskType>().Length || p.Types.Count == 0 ? new() : p.Types.OrderBy(t => t).ToList();
                     list.Sections = ListTools.ParseSections(p.Sections);
@@ -441,7 +456,11 @@ namespace BusyBunny
             int start = startList == null ? 0 : pageAt >= 0 ? pageAt + 1 : lists.FindIndex(l => l.Name == startList) + 1 + P;
             FillSections(Math.Max(0, start));
             ShowSection();
-            w.Loaded += (_, _) => section.Focus();
+            w.Loaded += (_, _) =>
+            {
+                if (focus == "scale" && current != null) { scales.Focus(); Speech.Say(w, current.Name + ": " + Scales.Rank(current.Levels), false); }
+                else section.Focus();
+            };
             return w.ShowDialog() == true;
         }
     }

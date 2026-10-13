@@ -21,6 +21,8 @@ namespace BusyBunny
         /// <summary>The seasonal pack hint already spoken, like Halloween 2026.</summary>
         public string PackHinted { get; set; } = "";
         public bool ShortMode { get; set; }
+        /// <summary>What each Board group shows (Morgan's issue 10), by status name: 0 things to do, 1 things due, 2 both. Both when missing.</summary>
+        public Dictionary<string, int> BoardShow { get; set; } = new();
         public bool LowEnergy { get; set; }
         public bool ShuffleMode { get; set; }
         public bool CheckForUpdatesAtStart { get; set; } = true;

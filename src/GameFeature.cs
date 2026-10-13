@@ -42,7 +42,12 @@ namespace BusyBunny
             if (!finished)
             {
                 // Moved back out of finished: the points go too, so toggling never farms them.
-                if (prior.Count > 0) { foreach (var p in prior) d.Log.Remove(p); S.Save(); }
+                if (prior.Count > 0)
+                {
+                    foreach (var p in prior) d.Log.Remove(p);
+                    d.Log.RemoveAll(e => e.Kind == "Bonus" && e.TaskId == t.Id && e.Text.StartsWith("Finished early"));
+                    S.Save();
+                }
                 return;
             }
             int owed = Engine.PointsFor(t, S.ListOf(t), half: t.Status == Status.DoneNotSubmitted);
@@ -50,6 +55,12 @@ namespace BusyBunny
             if (owed <= got) return;
             var entry = new LogEntry { Kind = "Done", Text = t.Name, Tag = t.Tag, List = t.List, Points = owed - got, TaskId = t.Id };
             var o = Engine.Record(S, DateTime.Now, entry, t, got == 0);
+            // Morgan's issue 10: finishing before the day she planned (or, with no plan, before it is due) earns extra.
+            if (got == 0 && Engine.EarlyBonus(t, DateTime.Now) is int bonus and > 0)
+            {
+                S.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Bonus", Text = "Finished early: " + t.Name, Points = bonus, TaskId = t.Id });
+                o.Said.Add("Plus " + bonus + " for finishing early. Overachiever.");
+            }
             S.Save();
             Game.Announce(_w, "", o);
         }

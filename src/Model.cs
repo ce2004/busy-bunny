@@ -74,6 +74,8 @@ namespace BusyBunny
         public bool Archived { get; set; }
         /// <summary>A sound name for finishing its tasks, or empty for the usual Task done sound.</summary>
         public string FinishSound { get; set; } = "";
+        /// <summary>A sound pack for adding, saving and finishing its tasks (Morgan's issue 6): empty for the one used everywhere, Sounds.MatchScale for the pack that fits its scale, or a pack name.</summary>
+        public string SoundPack { get; set; } = "";
         /// <summary>Task types this list uses; empty means all of them.</summary>
         public List<TaskType> Types { get; set; } = new();
     }
@@ -406,14 +408,63 @@ namespace BusyBunny
             return true;
         }
 
-        /// <summary>Today pulls from every list: anything urgent, plus anything done but not submitted or planned for today (its do date).</summary>
-        public (List<TaskItem> Urgent, List<TaskItem> Others) Today(DateTime now)
+        /// <summary>
+        /// Planned for today (Morgan's issue 10): its do date is today or past, or it has no do date and
+        /// its status is Today. Done but not submitted is always on the plate. A do date later on wins over
+        /// a Today status, and top priority alone no longer puts a task on Today.
+        /// </summary>
+        public static bool PlannedToday(TaskItem t, DateTime now) =>
+            t.Status == Status.DoneNotSubmitted ||
+            t.Status != Status.Done && t.Status != Status.Waiting && (t.DoDate is DateTime d ? d.Date <= now.Date : t.Status == Status.Today);
+
+        /// <summary>Due today, or overdue.</summary>
+        public static bool DueToday(TaskItem t, DateTime now) => t.Due is DateTime d && d.Date <= now.Date;
+
+        /// <summary>
+        /// Today pulls from every list, in two parts (Morgan's issue 10): what she planned to do today,
+        /// urgent ones first; and what is due today or overdue. A task can be in both.
+        /// </summary>
+        public (List<TaskItem> ToDo, List<TaskItem> Due) Today(DateTime now)
         {
             var open = Data.Tasks.Where(t => t.Status != Status.Done && CanShowToday(t, now)).ToList();
-            var urgent = UrgentOrder(open.Where(t => IsUrgent(t, now)), now).ToList();
-            var rest = open.Where(t => !IsUrgent(t, now) && (t.Status == Status.DoneNotSubmitted || t.DoDate?.Date <= now.Date && t.Status != Status.Waiting))
-                .OrderBy(Rank).ToList();
-            return (urgent, Reorder(rest, now));
+            var planned = open.Where(t => PlannedToday(t, now)).ToList();
+            var todo = UrgentOrder(planned.Where(t => IsUrgent(t, now)), now)
+                .Concat(Reorder(planned.Where(t => !IsUrgent(t, now)).OrderBy(Rank).ToList(), now)).ToList();
+            var due = open.Where(t => t.Status != Status.Waiting && DueToday(t, now)).OrderBy(t => t.Due).ThenBy(Rank).ToList();
+            return (todo, due);
+        }
+
+        /// <summary>Everything on Today once, to do first.</summary>
+        public List<TaskItem> TodayAll(DateTime now)
+        {
+            var (todo, due) = Today(now);
+            return todo.Concat(due.Where(t => !todo.Contains(t))).ToList();
+        }
+
+        /// <summary>The Sunday that ends this week (weeks start on Monday).</summary>
+        public static DateTime WeekEnd(DateTime now) => now.Date.AddDays(6 - (((int)now.DayOfWeek + 6) % 7));
+
+        /// <summary>Which of Today, This week or Next week a task is planned for: by its do date when it has one (later than next week counts as next week), otherwise by its status. Null for any other status.</summary>
+        public static Status? PlanGroup(TaskItem t, DateTime now)
+        {
+            if (t.Status is not (Status.Today or Status.ThisWeek or Status.NextWeek)) return null;
+            if (t.DoDate is not DateTime d) return t.Status;
+            return d.Date <= now.Date ? Status.Today : d.Date <= WeekEnd(now) ? Status.ThisWeek : Status.NextWeek;
+        }
+
+        /// <summary>Which of Today (or overdue), This week or Next week a task is due in, or null.</summary>
+        public static Status? DueGroup(TaskItem t, DateTime now)
+        {
+            if (t.Status is not (Status.Today or Status.ThisWeek or Status.NextWeek) || t.Due is not DateTime d) return null;
+            return d.Date <= now.Date ? Status.Today : d.Date <= WeekEnd(now) ? Status.ThisWeek : d.Date <= WeekEnd(now).AddDays(7) ? Status.NextWeek : null;
+        }
+
+        /// <summary>Open tasks planned or due later this week, not already on Today: the ones to get ahead on.</summary>
+        public List<TaskItem> GetAhead(DateTime now)
+        {
+            var today = TodayAll(now);
+            return Data.Tasks.Where(t => !today.Contains(t) && CanShowToday(t, now) && (PlanGroup(t, now) == Status.ThisWeek || DueGroup(t, now) == Status.ThisWeek))
+                .OrderBy(t => t.DoDate ?? t.Due ?? DateTime.MaxValue).ThenBy(Rank).ToList();
         }
 
         /// <summary>Hours available today: what she set for the day, or her usual.</summary>
@@ -423,11 +474,11 @@ namespace BusyBunny
         /// <summary>What counts toward today: everything on Today plus what was finished today.</summary>
         public (int Done, int Total, int PointsDone, int PointsTotal) Progress(DateTime now)
         {
-            var (urgent, rest) = Today(now);
+            var open = TodayAll(now);
             var finished = Data.Tasks.Where(t => t.Status == Status.Done && t.DoneAt?.Date == now.Date).ToList();
-            var all = urgent.Concat(rest).Concat(finished).ToList();
+            var all = open.Concat(finished).ToList();
             // Done but not submitted earns half (spec 5.4).
-            int pointsDone = finished.Sum(t => Words.Points(t.Size)) + rest.Concat(urgent).Where(t => t.Status == Status.DoneNotSubmitted).Sum(t => Words.Points(t.Size)) / 2;
+            int pointsDone = finished.Sum(t => Words.Points(t.Size)) + open.Where(t => t.Status == Status.DoneNotSubmitted).Sum(t => Words.Points(t.Size)) / 2;
             // I did a thing (spec 12.12): things logged today count as done items and points.
             var things = Data.Log.Where(l => l.Kind == "DidAThing" && l.When.Date == now.Date).ToList();
             return (finished.Count + things.Count, all.Count + things.Count, pointsDone + things.Sum(l => l.Points), all.Sum(t => Words.Points(t.Size)) + things.Sum(l => l.Points));
@@ -437,8 +488,9 @@ namespace BusyBunny
         public string DayType(DateTime now)
         {
             if (Data.Days.TryGetValue(Key(now), out var set) && set.DayType.Length > 0) return set.DayType;
-            var (urgent, rest) = Today(now);
-            double hours = urgent.Concat(rest).Where(t => t.Status != Status.DoneNotSubmitted).Sum(t => Words.Hours(t.Size));
+            var all = TodayAll(now);
+            var urgent = all.Where(t => IsUrgent(t, now)).ToList();
+            double hours = all.Where(t => t.Status != Status.DoneNotSubmitted).Sum(t => Words.Hours(t.Size));
             int dueSoon = urgent.Count(t => DueSoon(t, now));
             double available = HoursToday(now);
             if (hours > available || dueSoon >= 3 || urgent.Count > 5) return "Fox at the door";
@@ -482,8 +534,13 @@ namespace BusyBunny
             parts.Add(Words.Of(t.Status));
             var scale = ListOf(t).Scale;
             if (t.Priority > 0 && t.Priority <= scale.Length) parts.Add(shortMode ? "P" + t.Priority : scale[t.Priority - 1] + " " + t.Priority);
+            if (t.DoDate is DateTime p && t.Status != Status.Done)
+                parts.Add((shortMode ? "do " : "planned for ") + Words.Day(p, now));
             if (t.Due is DateTime d)
                 parts.Add((t.IsMeeting ? "" : "due ") + Words.Day(d, now) + (t.DueHasTime ? " at " + Words.Time(d) : ""));
+            // Subtasks show on the line itself, so they are never out of sight (Morgan's issue 7).
+            if (t.Subtasks.Count > 0)
+                parts.Add(t.Subtasks.Count(s => s.Done) + " of " + t.Subtasks.Count + (shortMode ? " steps" : t.Subtasks.Count == 1 ? " step done" : " steps done"));
             return string.Join(", ", parts);
         }
     }

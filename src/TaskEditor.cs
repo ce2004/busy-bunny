@@ -120,7 +120,7 @@ namespace BusyBunny
             to.Subtasks = from.Subtasks; to.Comments = from.Comments;
         }
 
-        public static TaskItem? Show(Window owner, Store store, string list, Status status, TaskItem? editing = null, TaskItem? from = null)
+        public static TaskItem? Show(Window owner, Store store, string list, Status status, TaskItem? editing = null, TaskItem? from = null, string startSection = "")
         {
             var src = editing ?? from;
             if (src != null) { list = store.Data.Lists.Any(l => l.Name == src.List) ? src.List : list; status = src.Status; }
@@ -179,7 +179,7 @@ namespace BusyBunny
                 }
                 if (lb.Items.Count > 0) lb.SelectedIndex = Math.Clamp(keep, 0, lb.Items.Count - 1);
             }
-            void FillSubs(int keep) => FillList(subList, subs.Select(s => s.Name + (s.Done ? ", done" : "")), keep);
+            void FillSubs(int keep) => FillList(subList, subs.Select(s => s.Name + (s.Done ? ", done" : ", not done")), keep);
             void FillComments() => FillList(commentList, comments.Select(c => c.When.ToString("MMM d, h:mm tt", CultureInfo.InvariantCulture).ToLowerInvariant() + ": " + c.Text), comments.Count - 1);
             void AddSub() { string s = newSub.Text.Trim(); if (s.Length == 0) return; subs.Add(new Subtask { Name = s }); newSub.Clear(); FillSubs(subs.Count - 1); Speech.Say(w, "Added subtask " + s + ".", true); }
             void AddComment() { string s = newComment.Text.Trim(); if (s.Length == 0) return; comments.Add(new Comment { When = DateTime.Now, Text = s }); newComment.Clear(); FillComments(); Speech.Say(w, "Comment added.", true); }
@@ -193,7 +193,8 @@ namespace BusyBunny
                 if (l != null) items.AddRange(l.Sections);
                 if (src != null && src.Section.Length > 0 && !items.Contains(src.Section)) items.Add(src.Section);
                 section.ItemsSource = items;
-                section.SelectedIndex = src != null && items.IndexOf(src.Section) > 0 ? items.IndexOf(src.Section) : 0;
+                string want = src?.Section ?? startSection;
+                section.SelectedIndex = items.IndexOf(want) > 0 ? items.IndexOf(want) : 0;
             }
             void FillPriority()
             {
@@ -260,7 +261,7 @@ namespace BusyBunny
             panel.Children.Add(Layout.Row("Task _name", name));
             panel.Children.Add(Layout.Row("Task t_ype", type));
             panel.Children.Add(Layout.Row("_List", lists));
-            panel.Children.Add(Layout.Row("Sec_tion", section));
+            panel.Children.Add(Layout.Row("Ca_tegory", section));
             panel.Children.Add(Layout.Row("_Tag", tags));
             panel.Children.Add(Layout.Row("_Status", statuses));
             panel.Children.Add(Layout.Row("_Priority", priority));
@@ -375,6 +376,9 @@ namespace BusyBunny
                 made.Due = when;
                 made.DueHasTime = hasTime;
                 made.DoDate = doWhen?.Date;
+                // A do date later on wins over Today (Morgan's issue 10), so the status says when too.
+                if (made.Status == Status.Today && made.DoDate > DateTime.Today)
+                    made.Status = made.DoDate <= Store.WeekEnd(DateTime.Now) ? Status.ThisWeek : Status.NextWeek;
                 made.Size = (Size)Math.Max(0, size.SelectedIndex);
                 made.Energy = (Energy)Math.Max(0, energy.SelectedIndex);
                 made.GradeWeight = gradeWeight;
@@ -412,6 +416,85 @@ namespace BusyBunny
             w.Content = panel;
             w.Loaded += (_, _) => { box.Focus(); box.SelectAll(); };
             return w.ShowDialog() == true ? box.Text : null;
+        }
+    }
+
+    /// <summary>
+    /// After typing several tasks (the morning check-in, Add several tasks): a group per task with its
+    /// list, category, priority and when, so each can go somewhere different (Morgan's issue 9). A date
+    /// or repeat at the end of a name fills itself in, as in Quick add.
+    /// </summary>
+    public static class NewTasks
+    {
+        static readonly string[] WhenWords = { "Today", "This week", "Next week" };
+        static readonly Status[] WhenStatus = { Status.Today, Status.ThisWeek, Status.NextWeek };
+
+        /// <summary>The tasks to add, or null for Cancel. when is where each starts: 0 Today, 1 This week, 2 Next week.</summary>
+        public static List<TaskItem>? Review(Window owner, Store store, IReadOnlyList<string> names, string list, int when)
+        {
+            var w = Layout.Dialog(owner, names.Count == 1 ? "Your new task" : "Your " + names.Count + " new tasks");
+            var lists = store.ActiveLists.Select(l => l.Name).ToList();
+            if (!lists.Contains(list)) list = lists.FirstOrDefault() ?? list;
+            var rows = new List<(string Name, DateTime? Due, bool HasTime, string Repeat, ComboBox List, ComboBox Category, ComboBox Priority, ComboBox When)>();
+            var panel = new StackPanel { Margin = new Thickness(14), Width = 420 };
+            panel.Children.Add(new TextBlock { Text = "Choose a list, category, priority and when for each one. Tab goes through them, task by task.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
+            foreach (var raw in names)
+            {
+                var (rest, due, hasTime, repeat) = Language.TakeFromName(raw, DateTime.Now);
+                string name = rest.Trim().Length > 0 && (due != null || repeat.Length > 0) ? rest.Trim() : raw;
+                var listBox = new ComboBox { ItemsSource = lists, SelectedItem = list };
+                var category = new ComboBox();
+                var priority = new ComboBox();
+                var whenBox = new ComboBox { ItemsSource = WhenWords, SelectedIndex = Math.Clamp(when, 0, 2) };
+                void Fill()
+                {
+                    var l = store.Data.Lists.FirstOrDefault(x => x.Name == listBox.SelectedItem as string);
+                    priority.ItemsSource = new[] { "None" }.Concat((l?.Scale ?? Array.Empty<string>()).Select((s, i) => s + " " + (i + 1))).ToList();
+                    priority.SelectedIndex = 0;
+                    category.ItemsSource = new[] { "None" }.Concat(l?.Sections ?? new List<string>()).ToList();
+                    category.SelectedIndex = 0;
+                    category.IsEnabled = l?.Sections.Count > 0;
+                }
+                listBox.SelectionChanged += (_, _) => Fill();
+                Fill();
+                var group = new StackPanel();
+                if (due != null || repeat.Length > 0)
+                    group.Children.Add(new TextBlock { Text = (due != null ? "Due " + Words.Day(due.Value, DateTime.Now) + (hasTime ? " at " + Words.Time(due.Value) : "") + ". " : "") + (repeat.Length > 0 ? "Repeats " + repeat + "." : ""), Margin = new Thickness(0, 0, 0, 4) });
+                group.Children.Add(Layout.Row("List", listBox, 380));
+                group.Children.Add(Layout.Row("Category", category, 380));
+                group.Children.Add(Layout.Row("Priority", priority, 380));
+                group.Children.Add(Layout.Row("When", whenBox, 380));
+                var box = new GroupBox { Header = name, Content = group, Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(6) };
+                AutomationProperties.SetName(box, name);
+                panel.Children.Add(box);
+                rows.Add((name, due, hasTime, repeat, listBox, category, priority, whenBox));
+            }
+            var ok = Layout.Button(names.Count == 1 ? "_Add it" : "_Add them all", isDefault: true);
+            var cancel = Layout.Button("Cancel", isCancel: true);
+            ok.Click += (_, _) => w.DialogResult = true;
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+            buttons.Children.Add(ok);
+            buttons.Children.Add(cancel);
+            panel.Children.Add(buttons);
+            w.Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = SystemParameters.WorkArea.Height - 80, Focusable = false };
+            w.Loaded += (_, _) => rows.FirstOrDefault().List?.Focus();
+            if (w.ShowDialog() != true) return null;
+
+            var now = DateTime.Now;
+            return rows.Select(r =>
+            {
+                string l = r.List.SelectedItem as string ?? list;
+                bool meeting = l == "Meetings";
+                return new TaskItem
+                {
+                    Name = r.Name, List = l, StatusSince = now,
+                    Section = r.Category.SelectedIndex > 0 ? r.Category.SelectedItem as string ?? "" : "",
+                    Priority = Math.Max(0, r.Priority.SelectedIndex),
+                    Status = WhenStatus[Math.Clamp(r.When.SelectedIndex, 0, 2)],
+                    Due = r.Due, DueHasTime = r.HasTime, Repeat = RepeatRule.Parse(r.Repeat)?.Describe() ?? "",
+                    IsMeeting = meeting, Type = meeting ? TaskType.Meeting : TaskType.General,
+                };
+            }).ToList();
         }
     }
 
@@ -458,7 +541,7 @@ namespace BusyBunny
             ok.Click += (_, _) => dlg.DialogResult = true;
             string list = w.CurrentListName;
             var panel = new StackPanel { Margin = new Thickness(14) };
-            panel.Children.Add(new TextBlock { Text = "One task per line. They go on " + list + ".", Margin = new Thickness(0, 0, 0, 6), TextWrapping = TextWrapping.Wrap, MaxWidth = 420 });
+            panel.Children.Add(new TextBlock { Text = "One task per line. Next, you choose a list, priority and when for each one.", Margin = new Thickness(0, 0, 0, 6), TextWrapping = TextWrapping.Wrap, MaxWidth = 420 });
             panel.Children.Add(Layout.Row("_Tasks, one per line", box, 420));
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
             buttons.Children.Add(ok);
@@ -470,9 +553,10 @@ namespace BusyBunny
             var names = box.Text.Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
             if (names.Count == 0) { w.Say("No tasks typed, so nothing was added.", true); return; }
             var status = w.Store.Data.Lists.FirstOrDefault(l => l.Name == list)?.DefaultStatus ?? Status.ThisWeek;
-            foreach (var n in names)
-                w.AddTask(new TaskItem { Name = n, List = list, Status = status, StatusSince = DateTime.Now, IsMeeting = list == "Meetings", Type = list == "Meetings" ? TaskType.Meeting : TaskType.General }, announce: false);
-            w.Say("Added " + names.Count + (names.Count == 1 ? " task" : " tasks") + " to " + list + ". Control Z undoes them one at a time.", true);
+            if (NewTasks.Review(w, w.Store, names, list, status == Status.Today ? 0 : status == Status.NextWeek ? 2 : 1) is not List<TaskItem> made) return;
+            foreach (var t in made) w.AddTask(t, announce: false);
+            var where = made.Select(t => t.List).Distinct().ToList();
+            w.Say("Added " + made.Count + (made.Count == 1 ? " task" : " tasks") + " to " + string.Join(" and ", where) + ". Control Z undoes them one at a time.", true);
         }
 
         static void SaveTemplate(MainWindow w)
