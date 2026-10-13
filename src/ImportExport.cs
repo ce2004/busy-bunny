@@ -69,7 +69,31 @@ namespace BusyBunny
             text = text.Trim();
             var all = store.Data.Lists;
             return all.FirstOrDefault(l => l.Name.Equals(text, StringComparison.OrdinalIgnoreCase))
-                ?? all.FirstOrDefault(l => text.Length >= 3 && l.Name.StartsWith(text, StringComparison.OrdinalIgnoreCase));
+                ?? all.FirstOrDefault(l => text.Length >= 3 && l.Name.StartsWith(text, StringComparison.OrdinalIgnoreCase))
+                ?? (Fuzzy.Best(text, all.Select(l => l.Name)) is string near ? all.First(l => l.Name == near) : null);
+        }
+
+        private static readonly Dictionary<string, Status> StatusWords = new()
+        {
+            ["today"] = Status.Today, ["this week"] = Status.ThisWeek, ["next week"] = Status.NextWeek,
+            ["done not submitted"] = Status.DoneNotSubmitted, ["not submitted"] = Status.DoneNotSubmitted,
+            ["waiting"] = Status.Waiting, ["waiting on someone"] = Status.Waiting, ["done"] = Status.Done, ["finished"] = Status.Done,
+        };
+
+        // Other names for the fields of a pasted line.
+        private static readonly Dictionary<string, string> KeyWords = new()
+        {
+            ["date"] = "due", ["deadline"] = "due", ["when"] = "due", ["duedate"] = "due", ["class"] = "tag", ["course"] = "tag",
+            ["prio"] = "priority", ["p"] = "priority", ["kind"] = "type", ["plan"] = "do", ["dodate"] = "do", ["state"] = "status",
+            ["effort"] = "size", ["project"] = "list",
+        };
+
+        private static string? KeyOf(string word)
+        {
+            string w = word.ToLowerInvariant();
+            if (Keys.Contains(w)) return w;
+            if (KeyWords.TryGetValue(w, out var k)) return k;
+            return Fuzzy.Best(w, Keys.Concat(KeyWords.Keys)) is string near ? (Keys.Contains(near) ? near : KeyWords[near]) : null;
         }
 
         public static Status? ParseStatus(string text)
@@ -84,7 +108,9 @@ namespace BusyBunny
                 "done not submitted" or "not submitted" or "done but not submitted" or "dns" or "x" => Status.DoneNotSubmitted,
                 "waiting" or "waiting on someone" or "waiting on" => Status.Waiting,
                 "done" or "finished" or "complete" or "completed" => Status.Done,
-                _ => null,
+                "asap" or "urgent" or "now" or "right now" => Status.Today,
+                "later" or "next weeks" => Status.NextWeek,
+                _ => Fuzzy.Best(t, StatusWords.Keys) is string near ? StatusWords[near] : null,
             };
         }
 
@@ -93,7 +119,11 @@ namespace BusyBunny
             string t = Regex.Replace(text.ToLowerInvariant(), @"[^a-z]", "");
             foreach (TaskType x in Enum.GetValues<TaskType>())
                 if (x.ToString().ToLowerInvariant() == t) return x;
-            return t switch { "exam" or "quiz" or "midterm" => TaskType.Test, "homework" => TaskType.Assignment, "goal" => TaskType.PersonalGoal, _ => null };
+            return t switch
+            {
+                "exam" or "quiz" or "midterm" or "final" => TaskType.Test, "homework" or "essay" or "paper" => TaskType.Assignment, "goal" => TaskType.PersonalGoal,
+                _ => Fuzzy.Best(t, Enum.GetNames<TaskType>().Concat(new[] { "exam", "quiz", "midterm", "homework" })) is string near ? ParseType(near) : null,
+            };
         }
 
         /// <summary>Reads one line of pasted text. Null when the line is empty.</summary>
@@ -110,13 +140,13 @@ namespace BusyBunny
             for (int i = 0; i < parts.Length; i++)
             {
                 string part = parts[i].Trim();
-                var m = Regex.Match(part, @"^([A-Za-z]+)\s*:\s*(.*)$");
-                if (i == 0 || !m.Success || !Keys.Contains(m.Groups[1].Value.ToLowerInvariant()))
+                var m = Regex.Match(part, @"^([A-Za-z ]+?)\s*:\s*(.*)$");
+                if (i == 0 || !m.Success || KeyOf(m.Groups[1].Value.Replace(" ", "")) == null)
                 {
                     if (part.Length > 0) nameParts.Add(part);
                     continue;
                 }
-                string key = m.Groups[1].Value.ToLowerInvariant(), val = m.Groups[2].Value.Trim();
+                string key = KeyOf(m.Groups[1].Value.Replace(" ", ""))!, val = m.Groups[2].Value.Trim();
                 switch (key)
                 {
                     case "list":

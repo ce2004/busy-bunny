@@ -158,6 +158,9 @@ namespace BusyBunny
                 // Edit task writes dates this way; a past one must keep its year.
                 Date("10/5/2026 at 3:00 pm", new DateTime(2026, 10, 5, 15, 0, 0), true);
                 Date("9/1/2026", new DateTime(2026, 9, 1), false);
+                Language.SelfTest();
+                foreach (string inst in Sounds.InstrumentNames)
+                    if (Sounds.Length(Sounds.ClimbPrefix + inst) < 5) throw new Exception("update climb did not build on " + inst);
 
                 // Updates: three versions newer, a draft and a pre-release left out, the newest one still without its files.
                 string releases = "[" +

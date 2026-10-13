@@ -18,6 +18,9 @@ namespace BusyBunny
     {
         static readonly string[] TypeWords = { "General task", "Assignment", "Test", "Meeting", "Event", "Personal goal" };
         static readonly string[] EnergyWords = { "Not set", "Easy", "Brain-heavy" };
+        /// <summary>What Quick add took from the end of the name, to say after Added, or empty.</summary>
+        public static string Taken { get; private set; } = "";
+
         static readonly string[] ScheduleChoices = { "Does not repeat", "Every day", "Every weekday", "Every week", "Every 2 weeks", "Every month", "Every year", "Something else, in my own words" };
         static readonly DayOfWeek[] WeekOrder = { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
 
@@ -334,6 +337,20 @@ namespace BusyBunny
                 if (remind.Text.Trim().Length > 0 && remindWhen == null) { Speech.Say(w, "Busy Bunny did not understand that reminder. Try tomorrow at 3, or 10/20 at 8:30 am.", true); remind.Focus(); return; }
                 if (remindWhen != null && !remindTime) remindWhen = remindWhen.Value.AddHours(9);
                 string repeatText = ScheduleText(repeat, dayBoxes, customRepeat);
+                // Quick add: a date or repeat typed at the end of the name, like call grandma tomorrow at 3,
+                // fills in Due and Repeat when those are empty, and comes out of the name.
+                string taskName = name.Text.Trim();
+                Taken = "";
+                if (editing == null && due.Text.Trim().Length == 0 && repeatText.Length == 0)
+                {
+                    var (rest, fromName, fromNameTime, fromNameRepeat) = Language.TakeFromName(taskName, DateTime.Now);
+                    if (fromName != null || fromNameRepeat.Length > 0)
+                    {
+                        taskName = rest;
+                        if (fromName != null) { when = fromName; hasTime = fromNameTime; Taken += " Due " + Words.Day(fromName.Value, DateTime.Now) + (fromNameTime ? " at " + Words.Time(fromName.Value) : "") + "."; }
+                        if (fromNameRepeat.Length > 0) { repeatText = fromNameRepeat; Taken += " Repeats " + fromNameRepeat + "."; }
+                    }
+                }
                 if (!RepeatRule.IsValid(repeatText)) { Speech.Say(w, "Busy Bunny did not understand that repeat. Try every 3 days, every Monday and Thursday, or every other week on Tuesday.", true); customRepeat.Focus(); return; }
                 if (!RepeatRule.IsValid(remindRepeat.Text)) { Speech.Say(w, "Busy Bunny did not understand that reminder repeat. Try every day, every Monday, or every 2 weeks.", true); remindRepeat.Focus(); return; }
                 int gradeWeight = 0;
@@ -348,7 +365,7 @@ namespace BusyBunny
                 if (tag.Length > 0 && known == null) { tag = tag.ToUpperInvariant(); store.Data.Tags.Add(new TagInfo { Name = tag }); }
                 else if (known != null) tag = known.Name;
                 made = editing != null ? editing.Copy() : new TaskItem { StatusSince = DateTime.Now };
-                made.Name = name.Text.Trim();
+                made.Name = taskName;
                 made.List = listName;
                 made.Tag = tag;
                 made.Type = kind;

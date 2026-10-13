@@ -154,7 +154,7 @@ namespace BusyBunny
             var minute = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
             minute.Tick += (_, _) => { CheckNewDay(); MinuteTick?.Invoke(); };
             minute.Start();
-            Closed += (_, _) => minute.Stop();
+            Closed += (_, _) => { _closing = true; minute.Stop(); };
             foreach (var f in Features.All) f.Attach(this);
             Refresh();
             _urgentBefore = _store.Today(DateTime.Now).Urgent.Count;
@@ -211,7 +211,22 @@ namespace BusyBunny
         /// <summary>The date changed since the lists were last shown (overnight, or waking the laptop).</summary>
         public event Action<DateTime>? NewDay;
 
-        public void OnStarted() => Started?.Invoke();
+        /// <summary>
+        /// Runs each startup feature in turn (setup guide, morning check-in...), stopping once Busy
+        /// Bunny is closing: an update installed from inside the setup guide closed the window, and the
+        /// check-in after it then failed (Morgan, 0.5.0).
+        /// </summary>
+        public void OnStarted()
+        {
+            if (Started == null) return;
+            foreach (Action step in Started.GetInvocationList())
+            {
+                if (_closing) return;
+                step();
+            }
+        }
+
+        private bool _closing;
         /// <summary>Quick add and Edit task, for features (reminders, hotkeys, the snooze limit).</summary>
         public void OpenQuickAdd() => QuickAddTask();
         public void OpenEditTask() => EditTask();
@@ -223,6 +238,7 @@ namespace BusyBunny
             _store.Data.Tasks.Add(t);
             Save();
             Refresh();
+            Sounds.Play(Sounds.Event.TaskAdded);
             if (announce) Speech.Say(this, "Added " + t.Name + " to " + t.List + ".");
             TaskAdded?.Invoke(t);
             WarnIfOverloaded();
@@ -641,7 +657,8 @@ namespace BusyBunny
             string list = _tabs.SelectedItem is TabItem { Tag: string l } ? l : "Homework";
             var status = _tabs.SelectedIndex <= 1 ? Status.Today : _store.Data.Lists.FirstOrDefault(x => x.Name == list)?.DefaultStatus ?? Status.ThisWeek;
             if (QuickAdd.Show(this, _store, list, status) is not TaskItem t) return;
-            AddTask(t);
+            AddTask(t, announce: false);
+            Speech.Say(this, "Added " + t.Name + " to " + t.List + "." + QuickAdd.Taken);
         }
 
         /// <summary>Edit task (F2): the Quick add form, filled in with the chosen task. Save changes it in place; Control Z undoes it.</summary>
@@ -661,6 +678,7 @@ namespace BusyBunny
                 int at = IndexOf(back, t.Id);
                 TextViewer.Select(back, at >= 0 ? at : Math.Min(Math.Max(0, back.SelectedIndex), back.Items.Count - 1));
             }
+            Sounds.Play(Sounds.Event.TaskSaved);
             Speech.Say(this, "Saved " + t.Name + ".");
             WarnIfOverloaded();
         }
@@ -905,24 +923,15 @@ namespace BusyBunny
                 if (!UpdateDialog.Show(this, r, Behind(r))) return;
                 Speech.Say(this, "Downloading the update.", true);
                 Save();
-                // A random instrument climbs the scale as it downloads, at half volume: a progress bar to hear.
+                // A random instrument climbs in chords as it downloads, at half volume, and Busy Bunny
+                // waits for it to land before restarting, so it is never cut off.
                 var names = Sounds.InstrumentNames;
-                string instrument = names[new Random().Next(names.Count)];
-                int played = -1;
-                var lastNote = DateTime.MinValue;
-                Sounds.PlayScaleNote(instrument, 0, 0.5);
-                played = 0;
-                var progress = new Progress<double>(p =>
-                {
-                    int degree = Math.Min(7, (int)(p * 7));
-                    if (degree <= played || (DateTime.Now - lastNote).TotalMilliseconds < 220) return;
-                    played++; // one step at a time, so no note of the scale is skipped
-                    lastNote = DateTime.Now;
-                    Sounds.PlayScaleNote(instrument, played, 0.5);
-                });
-                await Updater.InstallAsync(r, progress);
-                while (played < 7) { await System.Threading.Tasks.Task.Delay(220); Sounds.PlayScaleNote(instrument, ++played, 0.5); }
-                await System.Threading.Tasks.Task.Delay(500);
+                Sounds.PlayUpdateClimb(names[new Random().Next(names.Count)], 0.5);
+                var started = DateTime.Now;
+                await Updater.InstallAsync(r);
+                var left = TimeSpan.FromSeconds(Sounds.ClimbSeconds) - (DateTime.Now - started);
+                if (_settings.SoundsOn && left > TimeSpan.Zero) await System.Threading.Tasks.Task.Delay(left);
+                _closing = true;
                 Application.Current.Shutdown();
             }
             catch (Exception e)

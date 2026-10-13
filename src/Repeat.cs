@@ -23,7 +23,7 @@ namespace BusyBunny
         /// <summary>Reads the words, or null when they are not a repeat rule. Empty text is not a rule.</summary>
         public static RepeatRule? Parse(string? text)
         {
-            string t = (text ?? "").Trim().ToLowerInvariant().Replace(",", " ").Replace("&", " and ");
+            string t = Language.RepeatWords((text ?? "").Replace("&", " and "));
             t = Regex.Replace(t, @"\s+", " ");
             if (t.Length == 0) return null;
             switch (t)

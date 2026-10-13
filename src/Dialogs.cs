@@ -51,58 +51,10 @@ namespace BusyBunny
         }
     }
 
-    /// <summary>Plain-language dates for now: today, tomorrow, a weekday, 10/20, with an optional time like at 3 or 3:30 pm.</summary>
+    /// <summary>Plain-language dates, typos forgiven: see Language.ParseDate.</summary>
     public static class Dates
     {
-        public static (DateTime? When, bool HasTime) Parse(string text, DateTime now)
-        {
-            string t = text.Trim().ToLowerInvariant();
-            if (t.Length == 0) return (null, false);
-            int? hour = null, minute = null;
-            // A space in front, so a time on its own (3pm, at 3) is found the same way as after a day.
-            t = " " + t;
-            var m = Regex.Match(t, @"\s(?:at\s+)?(\d{1,2})(?::(\d{2}))?\s?(am|pm|a\.m\.|p\.m\.)?$");
-            if (m.Success && (t.Contains(" at ") || m.Groups[2].Success || m.Groups[3].Success))
-            {
-                int h = int.Parse(m.Groups[1].Value);
-                minute = m.Groups[2].Success ? int.Parse(m.Groups[2].Value) : 0;
-                string ap = m.Groups[3].Value;
-                if (ap.StartsWith("p") && h < 12) h += 12;
-                else if (ap.StartsWith("a") && h == 12) h = 0;
-                else if (ap.Length == 0 && h >= 1 && h <= 7) h += 12; // at 3 means 3 in the afternoon for a student
-                if (h > 23 || minute > 59) return (null, false);
-                hour = h;
-                t = t[..m.Index];
-            }
-            t = t.Trim();
-            DateTime? day = null;
-            if (t is "today" or "tonight") day = now.Date;
-            else if (t is "tomorrow" or "tmrw") day = now.Date.AddDays(1);
-            else if (t.Length == 0 && hour != null) day = now.Date;
-            else
-            {
-                string w = t.StartsWith("next ") ? t[5..] : t;
-                foreach (DayOfWeek d in Enum.GetValues<DayOfWeek>())
-                {
-                    string full = d.ToString().ToLowerInvariant();
-                    if (w == full || w.Length >= 3 && full.StartsWith(w))
-                    {
-                        var x = now.Date.AddDays(1);
-                        while (x.DayOfWeek != d) x = x.AddDays(1);
-                        if (t.StartsWith("next ") && (x - now.Date).Days < 7) x = x.AddDays(7);
-                        day = x;
-                        break;
-                    }
-                }
-                if (day == null && DateTime.TryParseExact(t, new[] { "M/d", "M/d/yyyy", "M/d/yy", "MMMM d", "MMM d" }, CultureInfo.GetCultureInfo("en-US"), DateTimeStyles.AllowWhiteSpaces, out var parsed))
-                {
-                    day = parsed.Date;
-                    if (!Regex.IsMatch(t, @"\d{4}|/\d{2}$") && day < now.Date.AddDays(-7)) day = day.Value.AddYears(1);
-                }
-            }
-            if (day == null) return (null, false);
-            return hour == null ? (day, false) : (day.Value.AddHours(hour.Value).AddMinutes(minute ?? 0), true);
-        }
+        public static (DateTime? When, bool HasTime) Parse(string text, DateTime now) => Language.ParseDate(text, now);
     }
 
     /// <summary>

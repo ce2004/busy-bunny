@@ -113,15 +113,24 @@ namespace BusyBunny
         public static Button Button(string text, bool isDefault = false, bool isCancel = false) =>
             new() { Content = text, IsDefault = isDefault, IsCancel = isCancel, MinWidth = 90, Margin = new Thickness(0, 8, 8, 0), Padding = new Thickness(10, 3, 10, 3) };
 
-        public static Window Dialog(Window owner, string title) => new()
+        public static Window Dialog(Window owner, string title)
         {
-            Title = title,
-            Owner = owner,
-            SizeToContent = SizeToContent.WidthAndHeight,
-            ResizeMode = ResizeMode.NoResize,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ShowInTaskbar = false,
-            FontSize = 15,
-        };
+            var w = new Window
+            {
+                Title = title,
+                SizeToContent = SizeToContent.WidthAndHeight,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ShowInTaskbar = false,
+                FontSize = 15,
+            };
+            // A window that has closed (Busy Bunny closing for an update) cannot own one: then it stands alone.
+            if (PresentationSource.FromVisual(owner) != null)
+            {
+                w.Owner = owner;
+                w.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            }
+            return w;
+        }
     }
 }

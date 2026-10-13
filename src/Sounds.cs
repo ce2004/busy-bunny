@@ -21,7 +21,7 @@ namespace BusyBunny
     /// </summary>
     public static class Sounds
     {
-        public enum Event { Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning }
+        public enum Event { Startup, TaskDone, DailyGoal, PersonalRecord, StreakExtended, LevelUp, BossDefeated, SprintFinished, SurpriseReward, OverloadWarning, TaskAdded, TaskSaved }
 
         public static string Label(Event e) => e switch
         {
@@ -34,6 +34,8 @@ namespace BusyBunny
             Event.BossDefeated => "_Boss defeated",
             Event.SprintFinished => "Sprint _finished",
             Event.SurpriseReward => "Surprise _reward",
+            Event.TaskAdded => "Task a_dded",
+            Event.TaskSaved => "Task sa_ved after editing",
             _ => "_Overload warning",
         };
 
@@ -114,6 +116,8 @@ namespace BusyBunny
             Event.BossDefeated => "Piano and strings, chord high",
             Event.SprintFinished => "Pizzicato strings, bounce",
             Event.SurpriseReward => "Harp, sparkle",
+            Event.TaskAdded => "Marimba, rising",
+            Event.TaskSaved => "Harp, two up",
             _ => "Soft piano, sigh",
         };
 
@@ -362,7 +366,7 @@ namespace BusyBunny
 
         /// <summary>What a pack picks for an event: Default for Classic, otherwise a sound name.</summary>
         public static string PackChoice(string pack, Event e) =>
-            PackSounds.TryGetValue(pack, out var s) ? s[(int)e] : DefaultName;
+            PackSounds.TryGetValue(pack, out var s) && (int)e < s.Length ? s[(int)e] : DefaultName;
 
         /// <summary>The holiday pack that fits this date, or null: Halloween in October, Winter holidays in December, Valentine's in the first half of February.</summary>
         public static string? SeasonPack(DateTime d) =>
@@ -407,9 +411,75 @@ namespace BusyBunny
             return (left, right);
         }
 
+        /// <summary>
+        /// The update climb: rolled chords rising up the key on one instrument, over soft low strings,
+        /// each ringing into the next and fading in the room, landing on a big chord an octave up with a
+        /// glockenspiel shimmer. One sound, so nothing is cut off (Windows plays one sound at a time).
+        /// </summary>
+        private static (double[] L, double[] R) UpdateClimb(int key, Instrument inst)
+        {
+            int home = 54 + ((key - 54 % 12) % 12 + 12) % 12 + inst.Up;
+            int[][] chords =
+            {
+                new[] { 0, 4, 7 }, new[] { 2, 5, 9 }, new[] { 4, 7, 11 }, new[] { 5, 9, 12 },
+                new[] { 7, 11, 14 }, new[] { 9, 12, 16 }, new[] { 5, 9, 12, 14 }, new[] { 7, 11, 14, 17 },
+            };
+            int[] landing = { 0, 4, 7, 12, 16, 19, 24 };
+            const double step = 0.55;
+            double end = chords.Length * step;
+            int length = (int)((end + 3.4) * Rate);
+            var left = new double[length];
+            var right = new double[length];
+            void Mix((double[] L, double[] R) note, double at, double gain, double pan, double swell)
+            {
+                int start = (int)(at * Rate), rise = Math.Max(1, (int)(swell * Rate));
+                double gl = Math.Sqrt(0.5 * (1 - pan)) * 1.414, gr = Math.Sqrt(0.5 * (1 + pan)) * 1.414;
+                for (int i = 0; i < note.L.Length && start + i < length; i++)
+                {
+                    double g = gain * (i < rise ? Math.Sin(i / (double)rise * Math.PI / 2) : 1);
+                    left[start + i] += note.L[i] * g * gl;
+                    right[start + i] += note.R[i] * g * gr;
+                }
+            }
+            double ring = Math.Max(inst.Ring, 0.5) + 0.5, release = Math.Max(inst.Release, 0.3) + 0.6;
+            double soft = inst.Soft ? 0.7 : 1;
+            for (int c = 0; c < chords.Length; c++)
+            {
+                double at = c * step;
+                // The chord rolled upward, a little louder as it climbs.
+                for (int k = 0; k < chords[c].Length; k++)
+                    Mix(Note(inst.Bank, home + chords[c][k], ring, release), at + 0.04 * k, (0.34 + 0.03 * c) * soft, -0.45 + 0.9 * k / Math.Max(1, chords[c].Length - 1), 0.006);
+                // Soft strings underneath: the chord's root an octave down, swelling in.
+                Mix(Note("strings", home - 12 + chords[c][0], step + 0.5, 0.6), at, 0.22, 0, 0.18);
+            }
+            for (int k = 0; k < landing.Length; k++)
+                Mix(Note(inst.Bank, home + landing[k], 1.6, 1.4), end + 0.035 * k, 0.4 * soft, -0.6 + 1.2 * k / (landing.Length - 1), 0.006);
+            Mix(Note("strings", home - 12, 2.0, 1.2), end, 0.3, -0.3, 0.12);
+            Mix(Note("strings", home - 5, 2.0, 1.2), end, 0.24, 0.3, 0.12);
+            int[] shimmer = { 24, 28, 31, 36 };
+            for (int k = 0; k < shimmer.Length; k++)
+                Mix(Note("glockenspiel", home - inst.Up + shimmer[k], 0.9, 0.9), end + 0.25 + 0.09 * k, 0.16, k % 2 == 0 ? -0.4 : 0.4, 0.004);
+            Room(left, right, 0.42);
+            return (left, right);
+        }
+
+        public const string ClimbPrefix = "Update climb, ";
+
+        /// <summary>Plays the update climb on an instrument at a share of the usual volume. Silent when sounds are off.</summary>
+        public static void PlayUpdateClimb(string instrument, double share)
+        {
+            if (!Enabled) return;
+            PlayNamed(ClimbPrefix + instrument, Math.Max(1, (int)(Volume * share)));
+        }
+
+        /// <summary>How long the update climb lasts, in seconds.</summary>
+        public const double ClimbSeconds = 8 * 0.55 + 3.4;
+
         private static (double[]? L, double[]? R) Make(string name, int key)
         {
             if (name == Angelic) return AngelicWelcome(key);
+            if (name.StartsWith(ClimbPrefix) && Instruments.FirstOrDefault(i => i.Name == name[ClimbPrefix.Length..]) is Instrument climber)
+                return UpdateClimb(key, climber);
             int comma = name.IndexOf(", ", StringComparison.Ordinal);
             if (comma < 0) return (null, null);
             var inst = Instruments.FirstOrDefault(i => i.Name == name[..comma]);
