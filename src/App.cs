@@ -46,6 +46,7 @@ namespace BusyBunny
                     show.WaitOne();
                     app.Dispatcher.BeginInvoke(() =>
                     {
+                        if (!w.IsVisible) w.Show();
                         if (w.WindowState == WindowState.Minimized) w.WindowState = WindowState.Normal;
                         w.Activate();
                     });

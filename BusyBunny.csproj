@@ -4,6 +4,7 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
     <AssemblyName>BusyBunny</AssemblyName>
     <RootNamespace>BusyBunny</RootNamespace>
     <Product>Busy Bunny</Product>

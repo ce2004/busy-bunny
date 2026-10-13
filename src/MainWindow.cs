@@ -185,6 +185,9 @@ namespace BusyBunny
         public event Action<DateTime>? NewDay;
 
         public void OnStarted() => Started?.Invoke();
+        /// <summary>Quick add and Edit task, for features (reminders, hotkeys, the snooze limit).</summary>
+        public void OpenQuickAdd() => QuickAddTask();
+        public void OpenEditTask() => EditTask();
 
         /// <summary>Adds a task as Quick add does: undoable, saved, announced.</summary>
         public void AddTask(TaskItem t, bool announce = true)
@@ -277,7 +280,7 @@ namespace BusyBunny
             file.Items.Add(Item("Open the _backups folder", () => Open(Store.BackupFolder)));
             file.Items.Add(Item("Start over with the _sample tasks...", ResetSample));
             file.Items.Add(new Separator());
-            file.Items.Add(Item("E_xit", Close, "Alt+F4"));
+            file.Items.Add(Item("E_xit", () => { Reminders.Quitting = true; Close(); }, "Alt+F4"));
 
             var task = new MenuItem { Header = "_Task" };
             task.Items.Add(Item("_Edit task...", EditTask, "F2"));
