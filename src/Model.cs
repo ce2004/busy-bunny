@@ -196,6 +196,8 @@ namespace BusyBunny
         /// <summary>A repeat rule for the reminder, like every day, or empty.</summary>
         public string RemindRepeat { get; set; } = "";
         public Energy Energy { get; set; }
+        /// <summary>Marked as a quick win (spec 22.4): two minutes or less, shown in the Quick wins drawer.</summary>
+        public bool QuickWin { get; set; }
         /// <summary>How much it counts toward the grade, in percent (spec 22.2), or 0.</summary>
         public int GradeWeight { get; set; }
         /// <summary>The section of its list, or empty.</summary>
@@ -265,6 +267,13 @@ namespace BusyBunny
         public readonly List<Func<TaskItem, DateTime, bool>> HideFromToday = new();
         /// <summary>Features add parts to the summary line here, like time until the next class. Given now and short mode; null adds nothing.</summary>
         public readonly List<Func<DateTime, bool, string?>> SummaryParts = new();
+        /// <summary>Features reorder the non-urgent tasks of Also today and Focus here (shuffle mode). Applied in turn.</summary>
+        public readonly List<Func<List<TaskItem>, DateTime, List<TaskItem>>> ReorderRules = new();
+        public List<TaskItem> Reorder(List<TaskItem> tasks, DateTime now)
+        {
+            foreach (var r in ReorderRules) tasks = r(tasks, now);
+            return tasks;
+        }
 
         public IEnumerable<TaskList> ActiveLists => Data.Lists.Where(l => !l.Archived);
         public string Key(DateTime d) => d.ToString("yyyy-MM-dd");
@@ -373,7 +382,7 @@ namespace BusyBunny
             var urgent = UrgentOrder(open.Where(t => IsUrgent(t, now)), now).ToList();
             var rest = open.Where(t => !IsUrgent(t, now) && (t.Status == Status.DoneNotSubmitted || t.DoDate?.Date <= now.Date && t.Status != Status.Waiting))
                 .OrderBy(Rank).ToList();
-            return (urgent, rest);
+            return (urgent, Reorder(rest, now));
         }
 
         /// <summary>Hours available today: what she set for the day, or her usual.</summary>
