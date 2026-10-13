@@ -1,3 +1,5 @@
+0.5.2
+New feature: in Quick add and Edit task, Control Enter adds or saves the task from any field, even Notes. The Add and Save buttons are still there too.
 0.5.1
 Bug fixed: the check for updates every 30 seconds stopped working after about half an hour, so you had to check by hand. GitHub only answers 60 questions an hour, and every check counted. Now the frequent check asks a different way that has no limit, so it keeps going all day.
 Bug fixed: if a new version came out while you were in another program, Busy Bunny announced it where NVDA could not hear it, and never said it again. Now you hear it as soon as you come back to Busy Bunny, and Windows shows a notification either way.
