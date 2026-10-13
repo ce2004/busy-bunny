@@ -51,6 +51,17 @@ namespace BusyBunny
                 return new RepeatRule { Per = per, Every = n };
             }
 
+            // every 2 weeks on Tuesday / every other week on Monday and Thursday
+            int everyWeeks = 1;
+            var on = Regex.Match(rest, @"^(other|\d{1,3})\s+weeks?\s+on\s+(.+)$");
+            if (on.Success)
+            {
+                everyWeeks = on.Groups[1].Value == "other" ? 2 : int.Parse(on.Groups[1].Value);
+                if (everyWeeks < 1) return null;
+                rest = on.Groups[2].Value;
+            }
+            else if (rest.StartsWith("week on ")) rest = rest[8..];
+
             // every Monday / every Monday and Wednesday / every mon wed fri
             var days = new List<DayOfWeek>();
             foreach (string word in rest.Split(' ', StringSplitOptions.RemoveEmptyEntries))
@@ -63,7 +74,7 @@ namespace BusyBunny
                 if (!days.Contains(d.Value)) days.Add(d.Value);
             }
             if (days.Count == 0) return null;
-            return new RepeatRule { Per = Unit.Week, Days = days };
+            return new RepeatRule { Per = Unit.Week, Days = days, Every = everyWeeks };
         }
 
         /// <summary>The next date after from (time of day kept), following the rule.</summary>
@@ -102,11 +113,24 @@ namespace BusyBunny
         {
             if (Per == Unit.Week && Days.Count > 0)
             {
+                string names = string.Join(" and ", Days.OrderBy(d => ((int)d + 6) % 7).Select(d => d.ToString()));
+                if (Every > 1) return "every " + Every + " weeks on " + names;
                 if (Days.OrderBy(x => x).SequenceEqual(Weekdays.OrderBy(x => x))) return "every weekday";
-                return "every " + string.Join(" and ", Days.Select(d => d.ToString()));
+                return "every " + names;
             }
             string unit = Per.ToString().ToLowerInvariant();
             return Every == 1 ? "every " + unit : "every " + Every + " " + unit + "s";
+        }
+
+        /// <summary>
+        /// The name for the next copy: the last number in the name moved on by one, like
+        /// PSY chapter 9 readings to PSY chapter 10 readings. Unchanged when it has no number.
+        /// </summary>
+        public static string NextName(string name)
+        {
+            var m = Regex.Match(name, @"\d+(?!.*\d)");
+            if (!m.Success || !int.TryParse(m.Value, out int n)) return name;
+            return name[..m.Index] + (n + 1) + name[(m.Index + m.Length)..];
         }
 
         /// <summary>Whether this text is blank or a rule: for checking what was typed.</summary>
@@ -151,6 +175,11 @@ namespace BusyBunny
             Same(Parse("every monday and wednesday")!.Next(mon), mon.AddDays(2), "Mon and Wed from Mon");
             Same(Parse("every Monday and Wednesday")!.Next(mon.AddDays(2)), mon.AddDays(7), "Mon and Wed from Wed");
             Same(Parse("every 2 weeks")!.Next(mon), mon.AddDays(14), "every 2 weeks");
+            Same(Parse("every 2 weeks on Tuesday")!.Next(mon.AddDays(1)), mon.AddDays(15), "every 2 weeks on Tuesday");
+            if (Parse("every other week on monday and thursday")!.Describe() != "every 2 weeks on Monday and Thursday") throw new Exception("every other week on days reads wrong");
+            if (Parse(Parse("every 2 weeks on Tuesday")!.Describe())!.Every != 2) throw new Exception("every 2 weeks on Tuesday does not round-trip");
+            if (NextName("PSY chapter 9 readings") != "PSY chapter 10 readings") throw new Exception("next name did not count on");
+            if (NextName("weekly reading") != "weekly reading") throw new Exception("next name changed a name with no number");
             Same(Parse("every other week")!.Every, 2, "every other week");
             Same(Parse("every month")!.Next(new DateTime(2026, 1, 31)), new DateTime(2026, 2, 28), "month end clamps");
             Same(Parse("every year")!.Next(mon), mon.AddYears(1), "every year");

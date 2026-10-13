@@ -153,7 +153,51 @@ namespace BusyBunny
         /// </summary>
         public static async Task<Release?> CheckAsync(bool quick = false)
         {
-            return Pick(ParseReleases(await ReleasesJsonAsync(TimeSpan.FromSeconds(quick ? 10 : 30)), AssetName), Current);
+            if (quick)
+            {
+                // The every-30-seconds check: GitHub's API counts every question, even "nothing changed",
+                // against 60 an hour, so asking it twice a minute ran out after half an hour and the
+                // checks quietly failed. The latest-release link is not limited: ask it which version is
+                // newest, and only ask the API (once per new version) for its notes and checksum.
+                var latest = await LatestVersionAsync(TimeSpan.FromSeconds(10));
+                if (latest == null || latest <= Current) return null;
+                lock (AnswerGate) if (_known?.Version == latest) return _known;
+            }
+            var r = Pick(ParseReleases(await ReleasesJsonAsync(TimeSpan.FromSeconds(quick ? 10 : 30)), AssetName), Current);
+            lock (AnswerGate) _known = r;
+            return r;
+        }
+
+        private static Release? _known;
+
+        /// <summary>
+        /// The version GitHub's latest-release download link points at (it redirects to the release's
+        /// own file), or null when no release has this PC's exe yet. Uses no API, so no hourly limit.
+        /// </summary>
+        public static async Task<Version?> LatestVersionAsync(TimeSpan limitAfter)
+        {
+            using var handler = new HttpClientHandler { AllowAutoRedirect = false };
+            using var h = new HttpClient(handler) { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
+            h.DefaultRequestHeaders.UserAgent.ParseAdd("BusyBunny/" + Current);
+            using var limit = new System.Threading.CancellationTokenSource(limitAfter);
+            try
+            {
+                using var req = new HttpRequestMessage(HttpMethod.Head, Website + "/releases/latest/download/" + AssetName);
+                using var resp = await h.SendAsync(req, limit.Token);
+                if (resp.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
+                string? to = resp.Headers.Location?.ToString();
+                var m = to == null ? null : System.Text.RegularExpressions.Regex.Match(to, @"/releases/download/([^/]+)/");
+                if ((int)resp.StatusCode is >= 300 and < 400 && m is { Success: true }) return NormalizeTag(Uri.UnescapeDataString(m.Groups[1].Value));
+                throw new InvalidOperationException("GitHub's latest-release link answered " + (int)resp.StatusCode + ".");
+            }
+            catch (OperationCanceledException) when (limit.IsCancellationRequested)
+            {
+                throw new InvalidOperationException("GitHub did not answer.");
+            }
+            catch (HttpRequestException e)
+            {
+                throw new InvalidOperationException("Could not reach GitHub: " + e.Message, e);
+            }
         }
 
         internal static Release? Pick(List<Parsed> all, Version current)

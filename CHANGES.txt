@@ -1,3 +1,8 @@
+0.5.1
+Bug fixed: the check for updates every 30 seconds stopped working after about half an hour, so you had to check by hand. GitHub only answers 60 questions an hour, and every check counted. Now the frequent check asks a different way that has no limit, so it keeps going all day.
+Bug fixed: if a new version came out while you were in another program, Busy Bunny announced it where NVDA could not hear it, and never said it again. Now you hear it as soon as you come back to Busy Bunny, and Windows shows a notification either way.
+New feature: the task form has a schedule picker for repeats: Does not repeat, Every day, Every weekday, Every week, Every 2 weeks, Every month, Every year, or your own words. For every week or every 2 weeks, check the days, like Tuesday.
+New feature: for a repeating task, check Ask for a new name each time it repeats. When you finish it, Busy Bunny asks what the next one is called, and suggests the next number, so PSY chapter 9 readings becomes PSY chapter 10 readings. Press Enter to take it, or type another name.
 0.5.0
 New feature: the rest of the plan is built, everything except sync between laptops and the phone page. Help, Keyboard shortcuts lists every key.
 New feature: a setup guide the first time you start: tags, class times, weekday plans, the morning check-in, how hard Busy Bunny roasts you, your bunny, and reminders. File, Setup guide brings it back.

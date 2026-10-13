@@ -18,6 +18,70 @@ namespace BusyBunny
     {
         static readonly string[] TypeWords = { "General task", "Assignment", "Test", "Meeting", "Event", "Personal goal" };
         static readonly string[] EnergyWords = { "Not set", "Easy", "Brain-heavy" };
+        static readonly string[] ScheduleChoices = { "Does not repeat", "Every day", "Every weekday", "Every week", "Every 2 weeks", "Every month", "Every year", "Something else, in my own words" };
+        static readonly DayOfWeek[] WeekOrder = { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
+
+        /// <summary>The Repeat pick menu, the day checkboxes (weekly only), the own-words box (something else only) and the rename checkbox (any repeat).</summary>
+        static FrameworkElement ScheduleRows(ComboBox repeat, WrapPanel days, TextBox custom, CheckBox rename)
+        {
+            var panel = new StackPanel();
+            panel.Children.Add(Layout.Row("_Repeat", repeat));
+            var daysLabel = new Label { Content = "Repeat on these days", Padding = new Thickness(0, 2, 0, 2) };
+            panel.Children.Add(daysLabel);
+            panel.Children.Add(days);
+            var customRow = Layout.Row("Repeat in my o_wn words", custom);
+            panel.Children.Add(customRow);
+            panel.Children.Add(rename);
+            void Show()
+            {
+                int i = repeat.SelectedIndex;
+                var weekly = i is 3 or 4 ? Visibility.Visible : Visibility.Collapsed;
+                days.Visibility = daysLabel.Visibility = weekly;
+                customRow.Visibility = i == ScheduleChoices.Length - 1 ? Visibility.Visible : Visibility.Collapsed;
+                rename.Visibility = i > 0 ? Visibility.Visible : Visibility.Collapsed;
+            }
+            repeat.SelectionChanged += (_, _) => Show();
+            Show();
+            return panel;
+        }
+
+        static void LoadSchedule(string rule, ComboBox repeat, List<CheckBox> days, TextBox custom)
+        {
+            var r = RepeatRule.Parse(rule);
+            int pick = r switch
+            {
+                null => 0,
+                { Per: RepeatRule.Unit.Day, Every: 1 } => 1,
+                { Per: RepeatRule.Unit.Week, Every: 1 } when r.Describe() == "every weekday" => 2,
+                { Per: RepeatRule.Unit.Week, Every: 1 } => 3,
+                { Per: RepeatRule.Unit.Week, Every: 2 } => 4,
+                { Per: RepeatRule.Unit.Month, Every: 1 } => 5,
+                { Per: RepeatRule.Unit.Year, Every: 1 } => 6,
+                _ => ScheduleChoices.Length - 1,
+            };
+            if (r != null && pick is 3 or 4)
+                for (int k = 0; k < days.Count; k++) days[k].IsChecked = r.Days.Contains(WeekOrder[k]);
+            if (pick == ScheduleChoices.Length - 1) custom.Text = rule;
+            repeat.SelectedIndex = pick;
+        }
+
+        /// <summary>The picker's choice in the plain words RepeatRule reads, or empty for no repeat.</summary>
+        static string ScheduleText(ComboBox repeat, List<CheckBox> days, TextBox custom)
+        {
+            var on = WeekOrder.Where((d, k) => days[k].IsChecked == true).Select(d => d.ToString()).ToList();
+            return repeat.SelectedIndex switch
+            {
+                1 => "every day",
+                2 => "every weekday",
+                3 => on.Count > 0 ? "every " + string.Join(" and ", on) : "every week",
+                4 => on.Count > 0 ? "every 2 weeks on " + string.Join(" and ", on) : "every 2 weeks",
+                5 => "every month",
+                6 => "every year",
+                7 => custom.Text.Trim(),
+                _ => "",
+            };
+        }
+
         static readonly string[] RepeatChoices = { "", "every day", "every weekday", "every Monday", "every Monday and Wednesday", "every week", "every 2 weeks", "every month" };
 
         /// <summary>Which optional fields each type shows. Name, type, list, section, tag, status, priority, notes, subtasks and comments always show.</summary>
@@ -75,8 +139,17 @@ namespace BusyBunny
             var energy = new ComboBox { ItemsSource = EnergyWords, SelectedIndex = 0 };
             var weight = new TextBox();
             AutomationProperties.SetHelpText(weight, "How many percent of the grade it counts, like 20. Heavy ones suggest a higher priority. Leave it empty for none.");
-            var repeat = new ComboBox { IsEditable = true, ItemsSource = RepeatChoices };
-            AutomationProperties.SetHelpText(repeat, "In plain words: every day, every weekday, every Monday, every 2 weeks, every month, every Monday and Wednesday. Empty means it does not repeat.");
+            // The schedule picker (Morgan's issue 5): how often, then which days for a weekly one, or
+            // her own words for anything else, and whether to ask for a new name each time.
+            var repeat = new ComboBox { ItemsSource = ScheduleChoices, SelectedIndex = 0 };
+            AutomationProperties.SetHelpText(repeat, "How often it repeats. For every week or every 2 weeks, check the days below.");
+            var dayBoxes = WeekOrder.Select(d => new CheckBox { Content = d.ToString(), Margin = new Thickness(0, 2, 12, 2) }).ToList();
+            var daysPanel = new WrapPanel { Width = 320 };
+            foreach (var b in dayBoxes) daysPanel.Children.Add(b);
+            AutomationProperties.SetName(daysPanel, "Repeat on");
+            var customRepeat = new TextBox();
+            AutomationProperties.SetHelpText(customRepeat, "In plain words, like every 3 days, every Monday and Thursday, or every other week on Tuesday.");
+            var rename = new CheckBox { Content = "As_k for a new name each time it repeats, like chapter 9 then chapter 10", Margin = new Thickness(0, 4, 0, 6) };
             var remind = new TextBox();
             AutomationProperties.SetHelpText(remind, "A date and time, like tomorrow at 3 or 10/20 at 8:30 am. With no time it is 9 am. Leave it empty for none.");
             var remindRepeat = new ComboBox { IsEditable = true, ItemsSource = RepeatChoices };
@@ -138,7 +211,8 @@ namespace BusyBunny
                 due.Text = Show(src.Due, src.DueHasTime);
                 doDate.Text = Show(src.DoDate, false);
                 remind.Text = Show(src.RemindAt, true);
-                repeat.Text = src.Repeat;
+                LoadSchedule(src.Repeat, repeat, dayBoxes, customRepeat);
+                rename.IsChecked = src.RenameOnRepeat;
                 remindRepeat.Text = src.RemindRepeat;
                 weight.Text = src.GradeWeight > 0 ? src.GradeWeight.ToString() : "";
                 notes.Text = src.Notes;
@@ -166,7 +240,7 @@ namespace BusyBunny
                 ["size"] = Layout.Row("Si_ze", size),
                 ["energy"] = Layout.Row("_Energy", energy),
                 ["weight"] = Layout.Row("_Grade weight in percent", weight),
-                ["repeat"] = Layout.Row("_Repeat", repeat),
+                ["repeat"] = ScheduleRows(repeat, daysPanel, customRepeat, rename),
                 ["remind"] = Layout.Row("Re_minder date and time", remind),
                 ["remindrepeat"] = Layout.Row("Reminder rep_eat", remindRepeat),
             };
@@ -250,7 +324,8 @@ namespace BusyBunny
                 var (remindWhen, remindTime) = Dates.Parse(remind.Text, DateTime.Now);
                 if (remind.Text.Trim().Length > 0 && remindWhen == null) { Speech.Say(w, "Busy Bunny did not understand that reminder. Try tomorrow at 3, or 10/20 at 8:30 am.", true); remind.Focus(); return; }
                 if (remindWhen != null && !remindTime) remindWhen = remindWhen.Value.AddHours(9);
-                if (!RepeatRule.IsValid(repeat.Text)) { Speech.Say(w, "Busy Bunny did not understand that repeat. Try every day, every weekday, every Monday, every 2 weeks, or every month.", true); repeat.Focus(); return; }
+                string repeatText = ScheduleText(repeat, dayBoxes, customRepeat);
+                if (!RepeatRule.IsValid(repeatText)) { Speech.Say(w, "Busy Bunny did not understand that repeat. Try every 3 days, every Monday and Thursday, or every other week on Tuesday.", true); customRepeat.Focus(); return; }
                 if (!RepeatRule.IsValid(remindRepeat.Text)) { Speech.Say(w, "Busy Bunny did not understand that reminder repeat. Try every day, every Monday, or every 2 weeks.", true); remindRepeat.Focus(); return; }
                 int gradeWeight = 0;
                 string wt = weight.Text.Trim().TrimEnd('%').Trim();
@@ -277,7 +352,8 @@ namespace BusyBunny
                 made.Size = (Size)Math.Max(0, size.SelectedIndex);
                 made.Energy = (Energy)Math.Max(0, energy.SelectedIndex);
                 made.GradeWeight = gradeWeight;
-                made.Repeat = RepeatRule.Parse(repeat.Text)?.Describe() ?? "";
+                made.Repeat = RepeatRule.Parse(repeatText)?.Describe() ?? "";
+                made.RenameOnRepeat = made.Repeat.Length > 0 && rename.IsChecked == true;
                 made.RemindAt = remindWhen;
                 made.RemindRepeat = RepeatRule.Parse(remindRepeat.Text)?.Describe() ?? "";
                 made.Notes = notes.Text.Trim();
@@ -335,9 +411,16 @@ namespace BusyBunny
             if (RepeatRule.NextCopy(t, DateTime.Now, start) is not TaskItem next) return;
             // Marking it Done twice must not make two copies.
             if (w.Store.Data.Tasks.Any(x => x != t && x.Status != Status.Done && x.Name == t.Name && x.List == t.List && x.Due == next.Due && x.DoDate == next.DoDate)) return;
+            if (t.RenameOnRepeat)
+            {
+                // Morgan's issue 5: weekly readings change chapter each week. Suggest the number moved on; Cancel keeps the suggestion.
+                string suggested = RepeatRule.NextName(t.Name);
+                string? typed = Prompt.Ask(w, "Name for the next one", "Next " + ((next.Due ?? next.DoDate) is DateTime nd ? Words.Day(nd, DateTime.Now) : "time") + ", the task is called", suggested);
+                next.Name = string.IsNullOrWhiteSpace(typed) ? suggested : typed.Trim();
+            }
             w.AddTask(next, announce: false);
             string when = (next.Due ?? next.DoDate) is DateTime d ? ", " + (next.Due != null ? "due " : "for ") + Words.Day(d, DateTime.Now) : "";
-            w.Say("Next copy of " + t.Name + " added" + when + ".");
+            w.Say("Next one added: " + next.Name + when + ".");
         }
 
         static void AddSeveral(MainWindow w)

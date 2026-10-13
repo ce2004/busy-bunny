@@ -146,7 +146,11 @@ namespace BusyBunny
 
             PreviewKeyDown += OnKeys;
             Loaded += (_, _) => { Refresh(); FocusTab(announce: false); };
-            Activated += (_, _) => CheckNewDay();
+            Activated += (_, _) =>
+            {
+                CheckNewDay();
+                if (_unheard is string say) { _unheard = null; Dispatcher.BeginInvoke(() => Speech.Say(this, say), System.Windows.Threading.DispatcherPriority.ApplicationIdle); }
+            };
             var minute = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
             minute.Tick += (_, _) => { CheckNewDay(); MinuteTick?.Invoke(); };
             minute.Start();
@@ -850,10 +854,16 @@ namespace BusyBunny
             BackgroundCheck();
         }
 
+        private DateTime _checkStarted;
+        private string? _unheard;
+
         private async void BackgroundCheck()
         {
-            if (_backgroundChecking || _manualChecking || !_settings.CheckForUpdatesAtStart) return;
+            // A check that somehow never came back must not stop every check after it.
+            if (_backgroundChecking && DateTime.Now - _checkStarted < TimeSpan.FromMinutes(2)) return;
+            if (_manualChecking || !_settings.CheckForUpdatesAtStart) return;
             _backgroundChecking = true;
+            _checkStarted = DateTime.Now;
             try
             {
                 var r = await Updater.CheckAsync(quick: true);
@@ -862,7 +872,10 @@ namespace BusyBunny
                 if (r != null && r.Version != _announced)
                 {
                     _announced = r.Version;
-                    Speech.Say(this, "Busy Bunny " + r.Version + " is out. " + Behind(r) + " Help menu, Install version " + r.Version + " shows what's new and installs it.");
+                    string say = "Busy Bunny " + r.Version + " is out. " + Behind(r) + " Help menu, Install version " + r.Version + " shows what's new and installs it.";
+                    // NVDA only speaks Busy Bunny's announcements while it is the window in front: if it
+                    // is not, the line waits until she comes back to it. The notification shows either way.
+                    if (IsActive) Speech.Say(this, say); else _unheard = say;
                     Reminders.Notify("Busy Bunny " + r.Version + " is out", Behind(r) + " In Busy Bunny, Help menu, Install version " + r.Version + ".");
                 }
             }

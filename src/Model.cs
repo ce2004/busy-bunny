@@ -192,6 +192,8 @@ namespace BusyBunny
         public DateTime? DoDate { get; set; }
         /// <summary>A repeat rule in plain words, like every Monday, or empty.</summary>
         public string Repeat { get; set; } = "";
+        /// <summary>Ask for a new name each time it repeats, like chapter 9 readings becoming chapter 10 (Morgan's issue 5).</summary>
+        public bool RenameOnRepeat { get; set; }
         public DateTime? RemindAt { get; set; }
         /// <summary>A repeat rule for the reminder, like every day, or empty.</summary>
         public string RemindRepeat { get; set; } = "";
