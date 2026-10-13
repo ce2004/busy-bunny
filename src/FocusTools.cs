@@ -237,10 +237,9 @@ namespace BusyBunny
             try
             {
                 int points = 10;
-                var award = typeof(FocusTools).Assembly.GetType("BusyBunny.Game")?.GetMethod("Award", new[] { typeof(MainWindow), typeof(int), typeof(string) });
-                bool awarded = false;
-                if (award != null && award.IsStatic) { try { award.Invoke(null, new object[] { _w, points, "Boss defeated: " + t.Name }); awarded = true; } catch { } }
-                S.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Boss", Text = "Boss defeated: " + t.Name, Tag = t.Tag, List = t.List, TaskId = t.Id, Points = awarded ? 0 : points });
+                // Boss entries count bosses beaten; the points go through the game, logged as a bonus.
+                S.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Boss", Text = "Boss defeated: " + t.Name, Tag = t.Tag, List = t.List, TaskId = t.Id });
+                Game.Award(_w, points, "Boss defeated: " + t.Name);
                 S.Save();
             }
             finally { _inBoss = false; }

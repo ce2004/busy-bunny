@@ -233,6 +233,8 @@ namespace BusyBunny
         public Dictionary<string, string> WeekdayPlans { get; set; } = new();
         /// <summary>The Monday of the week the backlog sweep was last offered (spec 19.8), or null.</summary>
         public DateTime? SweepOfferedWeek { get; set; }
+        /// <summary>Karma, goals, badges, bunny and challenges (Game.cs).</summary>
+        public GameState Game { get; set; } = new();
 
         public DayInfo Day(DateTime d)
         {
