@@ -434,6 +434,13 @@ namespace BusyBunny
             return (todo, due);
         }
 
+        /// <summary>
+        /// The Priority tab (Morgan's issue 11): every urgent task from every list, whatever day it is
+        /// planned for: on Today, top priority on its list, or due within 24 hours (spec 6.4), most urgent first.
+        /// </summary>
+        public List<TaskItem> Priority(DateTime now) =>
+            UrgentOrder(Data.Tasks.Where(t => t.Status != Status.Done && CanShowToday(t, now) && IsUrgent(t, now)), now).ToList();
+
         /// <summary>Everything on Today once, to do first.</summary>
         public List<TaskItem> TodayAll(DateTime now)
         {

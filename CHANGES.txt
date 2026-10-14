@@ -1,3 +1,5 @@
+0.6.1
+New feature: a Priority tab, right after Today. It lists everything urgent from every list: put on Today, top priority on its list, or due within 24 hours, most urgent first. Today stays just what you planned for today and what is due.
 0.6.0
 Changed: the Today tab now shows only what is for today, in two lists. To do today has what you planned for today with its do date, or put on Today yourself. Due today has what is due today or overdue. A task planned for Tuesday no longer shows up on Monday just because it is top priority or due soon.
 New feature: Get ahead, at the bottom of Today, says how many more tasks are planned or due this week and opens Upcoming so you can pick one if you have the energy. When you finish everything for today, Busy Bunny tells you about them.

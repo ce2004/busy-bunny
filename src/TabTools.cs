@@ -38,7 +38,7 @@ namespace BusyBunny
         private void GetAhead()
         {
             var ahead = _store.GetAhead(DateTime.Now);
-            _tabs.SelectedIndex = 2;
+            _tabs.SelectedItem = _upcomingTab;
             Dispatcher.BeginInvoke(() =>
             {
                 FocusTab(false);

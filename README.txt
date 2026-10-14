@@ -32,7 +32,7 @@ The main screen
 From the top:
 The summary line, like: 3 of 8 done today, test Friday, next meeting at 2, a Hop to it day.
 Today's progress and this week's progress, by effort.
-The tabs, in a list down the left side: Today, Focus, Upcoming, Board, then each of your lists. Up and Down Arrow move through them.
+The tabs, in a list down the left side: Today, Priority, Focus, Upcoming, Board, then each of your lists. Priority has everything urgent from every list: on Today, top priority, or due within 24 hours. Up and Down Arrow move through them.
 Under the tabs, two pick menus for the task you chose: Status and Move to. Arrow to what you want and press Enter. Nothing changes until you press Enter or leave the menu.
 
 Each task reads as one line, most important first: tag, name, status, priority, the day you planned it for, due date, and how many of its subtasks are done. For example: PSY, chapter 4 reading, This week, Triple shot 1, planned for Tuesday, due Thursday, 1 of 3 steps done.

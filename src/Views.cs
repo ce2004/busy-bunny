@@ -262,6 +262,10 @@ namespace BusyBunny
             string Names(IEnumerable<TaskItem> ts) => string.Join(" | ", ts.Select(t => t.Name));
             if (Names(todo) != "planned today, due Friday") throw new Exception("Today, to do was " + Names(todo));
             if (Names(due) != "due today") throw new Exception("Today, due was " + Names(due));
+            // Morgan's issue 11: the Priority tab has every urgent task, whatever day it is planned for.
+            var pri = st.Priority(now);
+            if (!pri.Contains(top) || !pri.Contains(dueNow) || !pri.Contains(planned) || !pri.Contains(later) || pri.Contains(nextWeek) || pri[0] != dueNow)
+                throw new Exception("Priority was " + Names(pri));
             var ahead = st.GetAhead(now);
             if (!ahead.Contains(later) || !ahead.Contains(top) || !ahead.Contains(dueTomorrow) || ahead.Contains(nextWeek) || ahead.Contains(planned))
                 throw new Exception("Get ahead was " + Names(ahead));

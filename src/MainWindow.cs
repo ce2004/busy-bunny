@@ -38,7 +38,8 @@ namespace BusyBunny
 
         // Every task list on screen, by a key that stays the same across refreshes, so focus can come back to it.
         private readonly Dictionary<string, ListBox> _lists = new();
-        private readonly ListBox _todo, _due, _focus;
+        private readonly ListBox _todo, _due, _priority, _focus;
+        private readonly TabItem _todayTab, _priorityTab, _focusTab, _upcomingTab;
         private readonly Button _getAhead = Layout.Button("Get _ahead");
         private readonly StackPanel _upcoming = new();
         private ListBox? _lastList;
@@ -60,6 +61,7 @@ namespace BusyBunny
             AutomationProperties.SetName(_progress, "Progress");
             _todo = NewList("today-todo");
             _due = NewList("today-due");
+            _priority = NewList("priority");
             _focus = NewList("focus");
 
             // Today (Morgan's issue 10): what she planned to do today, then what is due today, then a
@@ -74,7 +76,14 @@ namespace BusyBunny
             AutomationProperties.SetHelpText(_getAhead, "Opens the Upcoming tab, to pick something from later this week if you have the energy.");
             _getAhead.Click += (_, _) => GetAhead();
             today.Children.Add(_getAhead);
-            _tabs.Items.Add(new TabItem { Header = "Today", Content = new ScrollViewer { Content = today, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
+            _todayTab = new TabItem { Header = "Today", Content = new ScrollViewer { Content = today, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+            _tabs.Items.Add(_todayTab);
+
+            // Priority (Morgan's issue 11): everything urgent from every list, so Today and Upcoming stay clean.
+            var priority = new StackPanel { Margin = new Thickness(6) };
+            priority.Children.Add(_priority);
+            _priorityTab = new TabItem { Header = "Priority", Content = new ScrollViewer { Content = priority, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+            _tabs.Items.Add(_priorityTab);
 
             // Focus: two or three tasks, picked by the urgent rules; Swap trades the chosen one for the next.
             var focus = new StackPanel { Margin = new Thickness(6) };
@@ -83,9 +92,11 @@ namespace BusyBunny
             swap.HorizontalAlignment = HorizontalAlignment.Left;
             swap.Click += (_, _) => SwapFocus();
             focus.Children.Add(swap);
-            _tabs.Items.Add(new TabItem { Header = "Focus", Content = focus });
+            _focusTab = new TabItem { Header = "Focus", Content = focus };
+            _tabs.Items.Add(_focusTab);
 
-            _tabs.Items.Add(new TabItem { Header = "Upcoming", Content = new ScrollViewer { Content = _upcoming, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } });
+            _upcomingTab = new TabItem { Header = "Upcoming", Content = new ScrollViewer { Content = _upcoming, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto } };
+            _tabs.Items.Add(_upcomingTab);
 
             // Left and Right Arrow on the tab row move through the tabs and stay there, like any tab
             // control; Control Tab and Control Page Down jump straight into the new tab's tasks.
@@ -187,11 +198,11 @@ namespace BusyBunny
         /// <summary>Moves focus to the task in Today or Focus, if it shows there. Returns whether it did.</summary>
         public bool SelectTask(TaskItem t)
         {
-            foreach (var lb in new[] { _todo, _due, _focus })
+            foreach (var lb in new[] { _todo, _due, _priority, _focus })
             {
                 int at = IndexOf(lb, t.Id);
                 if (at < 0) continue;
-                _tabs.SelectedIndex = lb == _focus ? 1 : 0;
+                _tabs.SelectedItem = lb == _focus ? _focusTab : lb == _priority ? _priorityTab : _todayTab;
                 _lastList = lb;
                 Dispatcher.BeginInvoke(() => { TextViewer.Select(lb, at); ShowDetail(); }, System.Windows.Threading.DispatcherPriority.Input);
                 return true;
@@ -461,6 +472,7 @@ namespace BusyBunny
             var (todo, dueToday) = _store.Today(now);
             Fill(_todo, todo, "Today, to do", "Nothing planned for today. Enjoy that while it lasts.");
             Fill(_due, dueToday, "Due today", "Nothing due today.");
+            Fill(_priority, _store.Priority(now), "Priority", "Nothing urgent. Enjoy that while it lasts.");
             int ahead = _store.GetAhead(now).Count;
             _getAhead.Content = ahead == 0 ? "Get _ahead: nothing else this week" : "Get _ahead: " + ahead + " more this week";
             var urgent = _store.TodayAll(now);
@@ -553,11 +565,12 @@ namespace BusyBunny
         private void FocusTab(bool announce)
         {
             if (_tabs.SelectedItem is not TabItem tab) return;
-            ListBox? first = _tabs.SelectedIndex switch
+            ListBox? first = tab switch
             {
-                0 => _todo,
-                1 => _focus,
-                2 => _upcoming.Children.OfType<ListBox>().FirstOrDefault(),
+                _ when tab == _todayTab => _todo,
+                _ when tab == _priorityTab => _priority,
+                _ when tab == _focusTab => _focus,
+                _ when tab == _upcomingTab => _upcoming.Children.OfType<ListBox>().FirstOrDefault(),
                 _ when _firstLists.TryGetValue(tab, out var f) => f(),
                 _ => _lists.TryGetValue("list-" + tab.Tag, out var lb) ? lb : null,
             };
@@ -679,7 +692,7 @@ namespace BusyBunny
             if (_lastList != null && _placeOf.TryGetValue(_lastList, out var place) && _tabs.SelectedItem is TabItem { Tag: string open }
                 && (place.List == open || _store.Data.Lists.Any(x => x.Name == place.List && x.Parent == open)))
                 (list, section) = place;
-            var status = _tabs.SelectedIndex <= 1 ? Status.Today : _store.Data.Lists.FirstOrDefault(x => x.Name == list)?.DefaultStatus ?? Status.ThisWeek;
+            var status = _tabs.SelectedItem == _todayTab || _tabs.SelectedItem == _focusTab ? Status.Today : _store.Data.Lists.FirstOrDefault(x => x.Name == list)?.DefaultStatus ?? Status.ThisWeek;
             if (QuickAdd.Show(this, _store, list, status, startSection: section) is not TaskItem t) return;
             AddTask(t, announce: false);
             Speech.Say(this, "Added " + t.Name + " to " + t.List + "." + QuickAdd.Taken);
