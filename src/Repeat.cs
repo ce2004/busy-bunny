@@ -142,11 +142,14 @@ namespace BusyBunny
             var rule = Parse(t.Repeat);
             if (rule == null) return null;
             var anchor = t.Due ?? t.DoDate ?? now.Date;
+            // Every Monday, scheduled Monday and due Friday: the rule names the scheduled day, so follow that one.
+            if (rule.Days.Count > 0 && t.DoDate is DateTime doDate && !rule.Days.Contains(anchor.DayOfWeek) && rule.Days.Contains(doDate.DayOfWeek))
+                anchor = doDate;
             var next = rule.NextOnOrAfter(anchor, now);
             var shift = next - anchor;
             var c = t.Copy();
             c.Id = Guid.NewGuid();
-            if (t.Due != null) c.Due = next;
+            if (t.Due != null) c.Due = t.Due.Value + shift;
             if (t.DoDate != null) c.DoDate = t.DoDate.Value + shift;
             if (t.RemindAt != null) c.RemindAt = t.RemindAt.Value + shift;
             if (t.Due == null && t.DoDate == null) c.DoDate = next;
@@ -205,6 +208,12 @@ namespace BusyBunny
             // Finished weeks late: the next one is not in the past.
             var late = NextCopy(t, mon.AddDays(30), Status.ThisWeek)!;
             if (late.Due!.Value.Date < mon.AddDays(30)) throw new Exception("Repeat: next copy landed in the past");
+            // Morgan's issue 12: every Monday, scheduled Monday, due Friday, done on Friday.
+            var week = new TaskItem { Name = "weekly work", Repeat = "every Monday", DoDate = mon, Due = mon.AddDays(4).AddHours(23), Status = Status.Done };
+            var nw = NextCopy(week, mon.AddDays(4).AddHours(12), Status.ThisWeek)!;
+            Same(nw.DoDate, mon.AddDays(7), "next scheduled Monday");
+            Same(nw.Due, mon.AddDays(11).AddHours(23), "next due Friday");
+            if (Store.PlannedToday(nw, mon.AddDays(4).AddHours(12))) throw new Exception("Repeat: next week's copy shows on Today");
             if (NextCopy(new TaskItem(), mon, Status.ThisWeek) != null) throw new Exception("Repeat: copy of a non-repeating task");
         }
     }

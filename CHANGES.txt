@@ -1,3 +1,5 @@
+0.6.2
+Bug fixed: if a repeating task was scheduled on one day and due on another, like scheduled every Monday and due Friday, finishing it put next week's copy on Today straight away. The next copy is now scheduled for next Monday and due next Friday, so it stays off Today until then.
 0.6.1
 New feature: a Priority tab, right after Today. It lists everything urgent from every list: put on Today, top priority on its list, or due within 24 hours, most urgent first. Today stays just what you planned for today and what is due.
 0.6.0
