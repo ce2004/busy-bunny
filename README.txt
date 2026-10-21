@@ -62,7 +62,7 @@ Control Shift N: add several tasks, one per line, then a list, priority and when
 Control Shift B: subtasks of the chosen task. Control Shift E: View tab settings.
 Control Shift V: paste tasks, for example from a Claude chat.
 Control Shift P: push the chosen task back a day.
-Control Shift F: filter and sort. Control Shift W: weekly review.
+Control F: search tasks. Control Shift F: filter and sort. Control Shift W: weekly review.
 Control Shift M: morning check-in. Control Shift Y: the kind of day.
 Control Shift I: I did a thing. Control Shift K: park a thought.
 Control Shift G: scoreboard.

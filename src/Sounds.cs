@@ -206,7 +206,7 @@ namespace BusyBunny
         public static int SampleRate => Rate;
 
         /// <summary>The recording nearest a note on an instrument's bank, and the note it was recorded at, for the music.</summary>
-        public static (double[] L, double[] R, int Midi) RecordingFor(string bank, int midi)
+        public static (short[] L, short[] R, int Midi) RecordingFor(string bank, int midi)
         {
             var have = Resources.Value.Where(r => r.StartsWith("snd." + bank + "."))
                 .Select(r => int.Parse(r["snd.".Length..^".opus".Length][(bank.Length + 1)..])).ToArray();
@@ -619,17 +619,22 @@ namespace BusyBunny
                 int p = (int)pos;
                 double f = pos - p;
                 double g = i > ring ? Math.Pow(Math.Cos((i - ring) / (double)release * Math.PI / 2), 2) : 1;
-                l[i] = (sl[p] + (sl[p + 1] - sl[p]) * f) * g;
-                r[i] = (sr[p] + (sr[p + 1] - sr[p]) * f) * g;
+                l[i] = (sl[p] + (sl[p + 1] - sl[p]) * f) * g * ToUnit;
+                r[i] = (sr[p] + (sr[p + 1] - sr[p]) * f) * g * ToUnit;
             }
             return (l, r);
         }
 
         // ---- Recordings ----
 
-        private static readonly Dictionary<string, (double[] L, double[] R)> Recordings = new();
+        /// <summary>From a 16-bit sample to the range minus 1 to 1.</summary>
+        public const double ToUnit = 1 / 32768.0;
 
-        private static (double[] L, double[] R) Recording(string resource)
+        // Decoded recordings stay as 16-bit samples: a quarter of the memory of doubles. Morgan's issue
+        // 13: with doubles, every recording the music and sounds had used came to over 200 MB.
+        private static readonly Dictionary<string, (short[] L, short[] R)> Recordings = new();
+
+        private static (short[] L, short[] R) Recording(string resource)
         {
             lock (Recordings)
             {
@@ -647,7 +652,7 @@ namespace BusyBunny
         /// Decodes an Ogg Opus file: gathers the packets from the Ogg pages, skips the two header
         /// packets and Opus's pre-skip, and stops at the length the last page gives. Mono files play on both sides.
         /// </summary>
-        private static (double[] L, double[] R) OggOpus(byte[] file)
+        private static (short[] L, short[] R) OggOpus(byte[] file)
         {
             var packets = new List<byte[]>();
             var current = new MemoryStream();
@@ -668,27 +673,29 @@ namespace BusyBunny
                 if (granule > 0) lastGranule = granule;
                 pos = data;
             }
-            if (packets.Count < 3) return (Array.Empty<double>(), Array.Empty<double>());
+            if (packets.Count < 3) return (Array.Empty<short>(), Array.Empty<short>());
             int channels = Math.Max(1, (int)packets[0][9]);
             int preSkip = BitConverter.ToUInt16(packets[0], 10);
             var decoder = OpusCodecFactory.CreateDecoder(Rate, channels);
             var pcm = new short[5760 * channels];
-            var all = new List<short>();
-            for (int i = 2; i < packets.Count; i++)
+            // Straight into the two sides, skipping the pre-skip, with no growing list in between.
+            long want = lastGranule > preSkip ? lastGranule - preSkip : long.MaxValue;
+            var l = new short[(int)Math.Min(want, 48000L * 4)];
+            var r = new short[l.Length];
+            int total = 0, skip = preSkip;
+            for (int i = 2; i < packets.Count && total < want; i++)
             {
                 int frames = decoder.Decode(packets[i], pcm, 5760, false);
-                for (int k = 0; k < frames * channels; k++) all.Add(pcm[k]);
+                for (int k = 0; k < frames && total < want; k++)
+                {
+                    if (skip > 0) { skip--; continue; }
+                    if (total == l.Length) { Array.Resize(ref l, l.Length * 2); Array.Resize(ref r, l.Length); }
+                    l[total] = pcm[k * channels];
+                    r[total] = pcm[k * channels + channels - 1];
+                    total++;
+                }
             }
-            int count = all.Count / channels;
-            int total = (int)Math.Min(count - preSkip, lastGranule > preSkip ? lastGranule - preSkip : count);
-            var l = new double[Math.Max(0, total)];
-            var r = new double[l.Length];
-            for (int i = 0; i < l.Length; i++)
-            {
-                int at = (preSkip + i) * channels;
-                l[i] = all[at] / 32768.0;
-                r[i] = all[at + channels - 1] / 32768.0;
-            }
+            if (total < l.Length) { Array.Resize(ref l, total); Array.Resize(ref r, total); }
             return (l, r);
         }
 

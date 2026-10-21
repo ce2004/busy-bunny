@@ -1,3 +1,7 @@
+0.7.0
+New feature: search. Press Control F, type a few words and press Enter. You get a list of the open tasks that have those words in their name, tag, notes or subtasks, and everything works on them as usual: F2 to edit, the Task menu, the Status and Move to menus, and Control 1 to 6. Search in picks the list you were on or every list, and Escape in the results takes you back to type another search. It is also in the View menu.
+Bug fixed: if Busy Bunny was open a long time, or the computer slept, or headphones or Bluetooth came and went, the sounds and the music could stop for good until you restarted it. Now Busy Bunny notices when Windows stops its sound and starts it again by itself.
+Bug fixed: Busy Bunny used far too much memory, up to about 800 MB. It now starts at about 200 MB and keeps its sounds in a quarter of the space. The download is a little bigger because of it.
 0.6.2
 Bug fixed: if a repeating task was scheduled on one day and due on another, like scheduled every Monday and due Friday, finishing it put next week's copy on Today straight away. The next copy is now scheduled for next Monday and due next Friday, so it stays off Today until then.
 0.6.1

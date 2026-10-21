@@ -11,6 +11,11 @@ namespace BusyBunny
     /// Plays every sound through one mixer, so sounds overlap instead of cutting each other off
     /// (Windows' own player plays one at a time), and the background music runs underneath.
     /// If there is no sound device, sounds just stay quiet.
+    ///
+    /// Morgan's issue 13: sounds stopped for good after a while. When Windows stops or stalls the
+    /// sound output (sleep, headphones or Bluetooth coming and going, the audio service restarting),
+    /// the mixer used to stay dead until Busy Bunny restarted. Now it notices, by the output stopping
+    /// or by its position not moving, and starts a fresh one; a check every few seconds brings the music back too.
     /// </summary>
     public static class Mixer
     {
@@ -19,25 +24,54 @@ namespace BusyBunny
         private static ISampleProvider? _preview;
         private static readonly object Gate = new();
         public static readonly MusicLoop Music = new();
+        private static System.Threading.Timer? _check;
+        private static long _lastPos = -1;
+        private static DateTime _lastMoved = DateTime.UtcNow;
 
         private static MixingSampleProvider? Mix()
         {
             lock (Gate)
             {
-                if (_mix != null) return _mix;
+                if (_mix != null && !Stuck()) return _mix;
+                Drop();
                 try
                 {
                     var mix = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(Sounds.SampleRate, 2)) { ReadFully = true };
                     mix.AddMixerInput(Music);
                     var o = new WaveOutEvent { DesiredLatency = 150, NumberOfBuffers = 3 };
+                    o.PlaybackStopped += (s, _) => { lock (Gate) if (ReferenceEquals(s, _out)) Drop(); };
                     o.Init(mix);
                     o.Play();
                     _out = o;
                     _mix = mix;
+                    _lastPos = -1;
+                    _lastMoved = DateTime.UtcNow;
                 }
-                catch { _out = null; _mix = null; }
+                catch { Drop(); }
                 return _mix;
             }
+        }
+
+        /// <summary>Whether the output says it plays but has not moved for two seconds (the music keeps it always moving).</summary>
+        private static bool Stuck()
+        {
+            if (_out == null) return true;
+            if (_out.PlaybackState != PlaybackState.Playing) return true;
+            long pos;
+            try { pos = _out.GetPosition(); } catch { return true; }
+            var now = DateTime.UtcNow;
+            if (pos != _lastPos) { _lastPos = pos; _lastMoved = now; return false; }
+            return (now - _lastMoved).TotalSeconds > 2;
+        }
+
+        /// <summary>Lets go of the output, closing it in the background in case the sound driver is the stuck part.</summary>
+        private static void Drop()
+        {
+            var old = _out;
+            _out = null;
+            _mix = null;
+            _preview = null;
+            if (old != null) System.Threading.ThreadPool.QueueUserWorkItem(_ => { try { old.Dispose(); } catch { } });
         }
 
         /// <summary>Plays a WAV. exclusive: stops the previous exclusive one first (previews in the Sounds window).</summary>
@@ -65,7 +99,11 @@ namespace BusyBunny
         }
 
         /// <summary>Starts the mixer early, so the music can begin and the first sound has no delay.</summary>
-        public static void Start() => Mix();
+        public static void Start()
+        {
+            Mix();
+            _check ??= new System.Threading.Timer(_ => { try { Mix(); } catch { } }, null, 5000, 5000);
+        }
     }
 
     /// <summary>
@@ -99,12 +137,25 @@ namespace BusyBunny
 
         private sealed class Voice
         {
-            public double[] L = Array.Empty<double>(), R = Array.Empty<double>();
+            public short[] L = Array.Empty<short>(), R = Array.Empty<short>();
             public double Ratio, Gain, Gl, Gr;
             public int I, Length, Ring, Release, Swell;
         }
 
         public int Read(float[] buffer, int offset, int count)
+        {
+            // Never let the music break the mixer: on any problem, a moment of silence and a fresh start.
+            try { return ReadMusic(buffer, offset, count); }
+            catch
+            {
+                Array.Clear(buffer, offset, count);
+                _voices.Clear();
+                _events = null;
+                return count;
+            }
+        }
+
+        private int ReadMusic(float[] buffer, int offset, int count)
         {
             double target = Wanted ? Level * Math.Clamp(Sounds.Volume, 10, 100) / 100.0 : 0;
             // Nothing to hear and nothing ringing: stay silent and keep the place in the piece.
@@ -129,7 +180,7 @@ namespace BusyBunny
                     double p = x.I * x.Ratio;
                     int k = (int)p;
                     double f = p - k;
-                    double g = x.Gain;
+                    double g = x.Gain * Sounds.ToUnit;
                     if (x.I < x.Swell) g *= Math.Sin(x.I / (double)x.Swell * Math.PI / 2);
                     if (x.I > x.Ring) g *= Math.Pow(Math.Cos((x.I - x.Ring) / (double)x.Release * Math.PI / 2), 2);
                     l += (x.L[k] + (x.L[k + 1] - x.L[k]) * f) * g * x.Gl;

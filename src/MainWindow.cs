@@ -189,6 +189,8 @@ namespace BusyBunny
         /// <summary>The task chosen in the list used last, or null.</summary>
         public TaskItem? ChosenTask => Current();
         /// <summary>The list whose tab is open, or the first list when Today, Focus or Upcoming is.</summary>
+        /// <summary>The list whose tab is open, or null when another tab is.</summary>
+        public string? OpenListName => _tabs.SelectedItem is TabItem { Tag: string l } ? l : null;
         public string CurrentListName => _tabs.SelectedItem is TabItem { Tag: string l } ? l : _store.ActiveLists.FirstOrDefault()?.Name ?? "Homework";
         public void Say(string text, bool interrupt = false) => Speech.Say(this, text, interrupt);
         /// <summary>Saves, then rebuilds every list.</summary>
