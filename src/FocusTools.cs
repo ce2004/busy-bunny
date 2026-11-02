@@ -265,7 +265,7 @@ namespace BusyBunny
 
         // ---- Low-energy mode (12.10, 19.2) and shuffle mode (22.10) ----
 
-        private void SetLow(bool on, bool speak)
+        public void SetLow(bool on, bool speak)
         {
             if (Cfg.LowEnergy == on && !_announceLow) { if (_lowMenu != null) _lowMenu.IsChecked = on; if (speak) _w.Say("Low-energy mode is already " + (on ? "on" : "off") + ".", true); return; }
             Cfg.LowEnergy = on;
@@ -290,7 +290,7 @@ namespace BusyBunny
             SetLow(true, true);
         }
 
-        private void SetShuffle(bool on)
+        public void SetShuffle(bool on)
         {
             Cfg.ShuffleMode = on;
             Cfg.Save();

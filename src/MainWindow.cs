@@ -38,7 +38,9 @@ namespace BusyBunny
 
         // Every task list on screen, by a key that stays the same across refreshes, so focus can come back to it.
         private readonly Dictionary<string, ListBox> _lists = new();
-        private readonly ListBox _todo, _due, _priority, _focus;
+        private readonly ListBox _todo, _overdue, _due, _priority, _focus, _focusOverdue;
+        // The bottom of the main screen, under Status and Move to: Talk to Bunny lives here.
+        private readonly StackPanel _bottom = new() { Margin = new Thickness(8, 0, 8, 8) };
         private readonly TabItem _todayTab, _priorityTab, _focusTab, _upcomingTab;
         private readonly Button _getAhead = Layout.Button("Get _ahead");
         private readonly StackPanel _upcoming = new();
@@ -63,12 +65,16 @@ namespace BusyBunny
             _due = NewList("today-due");
             _priority = NewList("priority");
             _focus = NewList("focus");
+            _overdue = NewList("today-overdue");
+            _focusOverdue = NewList("focus-overdue");
 
-            // Today (Morgan's issue 10): what she planned to do today, then what is due today, then a
-            // button to the Upcoming tab for getting ahead on the rest of the week.
+            // Today (Morgan's issue 10): what she planned to do today, then everything overdue (issue 14),
+            // then what is due today, then a button to the Upcoming tab for getting ahead on the week.
             var today = new StackPanel { Margin = new Thickness(6) };
             today.Children.Add(new Label { Content = "To _do today", Target = _todo, Padding = new Thickness(0, 4, 0, 2) });
             today.Children.Add(_todo);
+            today.Children.Add(new Label { Content = "Ove_rdue", Target = _overdue, Padding = new Thickness(0, 10, 0, 2) });
+            today.Children.Add(_overdue);
             today.Children.Add(new Label { Content = "Du_e today", Target = _due, Padding = new Thickness(0, 10, 0, 2) });
             today.Children.Add(_due);
             _getAhead.HorizontalAlignment = HorizontalAlignment.Left;
@@ -86,7 +92,11 @@ namespace BusyBunny
             _tabs.Items.Add(_priorityTab);
 
             // Focus: two or three tasks, picked by the urgent rules; Swap trades the chosen one for the next.
+            // Morgan's issue 14: overdue tasks first, then the two or three for today.
             var focus = new StackPanel { Margin = new Thickness(6) };
+            focus.Children.Add(new Label { Content = "Ove_rdue", Target = _focusOverdue, Padding = new Thickness(0, 4, 0, 2) });
+            focus.Children.Add(_focusOverdue);
+            focus.Children.Add(new Label { Content = "Focus _now", Target = _focus, Padding = new Thickness(0, 10, 0, 2) });
             focus.Children.Add(_focus);
             var swap = Layout.Button("S_wap this one for another");
             swap.HorizontalAlignment = HorizontalAlignment.Left;
@@ -153,11 +163,14 @@ namespace BusyBunny
             body.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
             body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            body.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             Grid.SetRow(_detail, 1);
             Grid.SetRow(pickers, 2);
+            Grid.SetRow(_bottom, 3);
             body.Children.Add(_tabs);
             body.Children.Add(_detail);
             body.Children.Add(pickers);
+            body.Children.Add(_bottom);
             dock.Children.Add(body);
             KeyboardNavigation.SetTabNavigation(dock, KeyboardNavigationMode.Cycle);
             Content = dock;
@@ -200,11 +213,11 @@ namespace BusyBunny
         /// <summary>Moves focus to the task in Today or Focus, if it shows there. Returns whether it did.</summary>
         public bool SelectTask(TaskItem t)
         {
-            foreach (var lb in new[] { _todo, _due, _priority, _focus })
+            foreach (var lb in new[] { _todo, _overdue, _due, _priority, _focusOverdue, _focus })
             {
                 int at = IndexOf(lb, t.Id);
                 if (at < 0) continue;
-                _tabs.SelectedItem = lb == _focus ? _focusTab : lb == _priority ? _priorityTab : _todayTab;
+                _tabs.SelectedItem = lb == _focus || lb == _focusOverdue ? _focusTab : lb == _priority ? _priorityTab : _todayTab;
                 _lastList = lb;
                 Dispatcher.BeginInvoke(() => { TextViewer.Select(lb, at); ShowDetail(); }, System.Windows.Threading.DispatcherPriority.Input);
                 return true;
@@ -216,6 +229,38 @@ namespace BusyBunny
         private TaskItem? _lastChosen;
         /// <summary>The list tab's task list for a list name, or null.</summary>
         public ListBox? ListBoxOf(string listName) => _lists.TryGetValue("list-" + listName, out var lb) ? lb : null;
+        /// <summary>Adds something to the bottom of the main screen, after Status and Move to.</summary>
+        public void AddBottom(UIElement e) => _bottom.Children.Add(e);
+        /// <summary>The names of the tabs, in order, as they show.</summary>
+        public List<string> TabNames => _tabs.Items.OfType<TabItem>().Select(t => t.Header?.ToString() ?? "").ToList();
+        /// <summary>Opens a tab by its name (Today, Focus, Homework...) and goes into its tasks. False when there is none.</summary>
+        public bool OpenTab(string name)
+        {
+            var tab = _tabs.Items.OfType<TabItem>().FirstOrDefault(t => string.Equals(t.Header?.ToString(), name, StringComparison.OrdinalIgnoreCase) || Equals(t.Tag, name))
+                ?? _tabs.Items.OfType<TabItem>().FirstOrDefault(t => (t.Header?.ToString() ?? "").StartsWith(name, StringComparison.OrdinalIgnoreCase));
+            if (tab == null) return false;
+            _tabs.SelectedItem = tab;
+            Dispatcher.BeginInvoke(() => FocusTab(false), System.Windows.Threading.DispatcherPriority.Input);
+            return true;
+        }
+        /// <summary>After settings change outside the Settings window: the menu check marks, sounds and lists follow.</summary>
+        public void SettingsChanged()
+        {
+            _settings.Save();
+            _settings.Apply();
+            _shortMenu.IsChecked = _settings.ShortMode;
+            _soundsOnMenu.IsChecked = _settings.SoundsOn;
+            _checkAtStartMenu.IsChecked = _settings.CheckForUpdatesAtStart;
+            if (_settings.CheckForUpdatesAtStart) StartAutoUpdates();
+            Save();
+            Refresh();
+        }
+        /// <summary>Puts the main screen back on the list used last, or the open tab.</summary>
+        public void BackToTasks()
+        {
+            if (_lastList != null && _lists.ContainsValue(_lastList) && _lastList.IsVisible) TextViewer.Select(_lastList, Math.Max(0, _lastList.SelectedIndex));
+            else FocusTab(false);
+        }
         /// <summary>Features add a short line for the Task field here, like 2 of 5 steps done; null adds nothing.</summary>
         public readonly List<Func<TaskItem, string?>> DetailNotes = new();
 
@@ -311,9 +356,11 @@ namespace BusyBunny
 
         private ListBox NewList(string key)
         {
-            var lb = new ListBox { MinHeight = 40, MaxHeight = 420, BorderThickness = new Thickness(1) };
+            // Extended (Morgan's issue 14): Shift with the arrows selects several tasks, or Control with the
+            // arrows then Control Space picks them one by one; then the task actions work on all of them.
+            var lb = new ListBox { MinHeight = 40, MaxHeight = 420, BorderThickness = new Thickness(1), SelectionMode = SelectionMode.Extended };
             ScrollViewer.SetCanContentScroll(lb, true);
-            lb.GotKeyboardFocus += (_, _) => { _lastList = lb; ShowDetail(); };
+            lb.GotKeyboardFocus += (_, e) => { if (e.OriginalSource is ListBoxItem item) _focusedItem = item; _lastList = lb; ShowDetail(); };
             lb.SelectionChanged += (_, _) => { if (lb.IsKeyboardFocusWithin) { _lastList = lb; ShowDetail(); } };
             lb.ContextMenu = new ContextMenu();
             // Start on the first item, so NVDA says Edit task at once instead of just "menu".
@@ -393,6 +440,7 @@ namespace BusyBunny
             help.Items.Add(Item("_Licences and credits...", () => TextViewer.Show(this, "Licences and credits", Credits(), l => l.EndsWith(":"))));
             help.Items.Add(Item("Open the Busy Bunny _website", () => Open(Updater.Website)));
             help.Items.Add(Item("_Report a problem", () => Open(Updater.Website + "/issues/new")));
+            help.Items.Add(Item("Request a _feature", () => RequestFeature()));
 
             var fun = new MenuItem { Header = "F_un", Visibility = Visibility.Collapsed };
             var bar = new Menu();
@@ -472,16 +520,20 @@ namespace BusyBunny
                 if (lb.IsKeyboardFocusWithin) { focusKey = k; focusIndex = Math.Max(0, lb.SelectedIndex); focusId = (lb.SelectedItem as ListBoxItem)?.Tag as Guid?; }
 
             var (todo, dueToday) = _store.Today(now);
+            var overdue = _store.Overdue(now);
             Fill(_todo, todo, "Today, to do", "Nothing planned for today. Enjoy that while it lasts.");
-            Fill(_due, dueToday, "Due today", "Nothing due today.");
+            Fill(_overdue, overdue, "Overdue", "Nothing overdue. Look at you.");
+            Fill(_due, dueToday.Where(t => !Store.IsOverdue(t, now)), "Due today", "Nothing due today.");
+            Fill(_focusOverdue, overdue, "Overdue", "Nothing overdue.");
             Fill(_priority, _store.Priority(now), "Priority", "Nothing urgent. Enjoy that while it lasts.");
             int ahead = _store.GetAhead(now).Count;
             _getAhead.Content = ahead == 0 ? "Get _ahead: nothing else this week" : "Get _ahead: " + ahead + " more this week";
-            var urgent = _store.TodayAll(now);
+            // Focus for today: the overdue ones have their own list just above.
+            var urgent = _store.TodayAll(now).Where(t => !overdue.Contains(t)).ToList();
 
             var focusPool = urgent.Concat(_store.Reorder(_store.Data.Tasks.Where(t => t.Status is Status.ThisWeek && !urgent.Contains(t) && _store.CanShowToday(t, now)).OrderBy(_store.Rank).ThenBy(t => t.Priority == 0 ? 9 : t.Priority).ToList(), now)).ToList();
             if (focusPool.Count > 0 && focusPool.All(t => _focusSkipped.Contains(t.Id))) _focusSkipped.Clear();
-            Fill(_focus, focusPool.Where(t => !_focusSkipped.Contains(t.Id)).Take(3), "Focus", "Nothing to focus on. Suspicious, but okay.");
+            Fill(_focus, focusPool.Where(t => !_focusSkipped.Contains(t.Id)).Take(3), "Focus now", "Nothing to focus on. Suspicious, but okay.");
 
             // Upcoming: a group per day, like Tuesday, 4 tasks: due that day or planned for it.
             foreach (var key in _lists.Keys.Where(k => k.StartsWith("up-")).ToList()) _lists.Remove(key);
@@ -571,7 +623,7 @@ namespace BusyBunny
             {
                 _ when tab == _todayTab => _todo,
                 _ when tab == _priorityTab => _priority,
-                _ when tab == _focusTab => _focus,
+                _ when tab == _focusTab => _focusOverdue.Items.OfType<ListBoxItem>().Any(i => i.Tag is Guid) ? _focusOverdue : _focus,
                 _ when tab == _upcomingTab => _upcoming.Children.OfType<ListBox>().FirstOrDefault(),
                 _ when _firstLists.TryGetValue(tab, out var f) => f(),
                 _ => _lists.TryGetValue("list-" + tab.Tag, out var lb) ? lb : null,
@@ -581,13 +633,33 @@ namespace BusyBunny
 
         // ---- Acting on the chosen task ----
 
+        private ListBoxItem? _focusedItem;
+
+        /// <summary>The task the cursor is on in the list used last (with several selected, the one last moved to).</summary>
         private TaskItem? Current()
         {
             if (_lastChosen != null) return _lastChosen;
             var lb = _lastList;
-            if (lb == null || (lb.SelectedItem as ListBoxItem)?.Tag is not Guid id) return null;
+            if (lb == null) return null;
+            object? item = _focusedItem != null && lb.Items.Contains(_focusedItem) ? _focusedItem : lb.SelectedItem;
+            if ((item as ListBoxItem)?.Tag is not Guid id) return null;
             return _store.Data.Tasks.FirstOrDefault(t => t.Id == id);
         }
+
+        /// <summary>Every selected task in the list used last when there are several, otherwise just the chosen one.</summary>
+        private List<TaskItem> ChosenTasks()
+        {
+            if (_lastChosen != null) return new() { _lastChosen };
+            if (_lastList is ListBox lb && lb.SelectedItems.Count > 1)
+            {
+                var ids = lb.SelectedItems.OfType<ListBoxItem>().Select(i => i.Tag).OfType<Guid>().ToHashSet();
+                var many = _store.Data.Tasks.Where(t => ids.Contains(t.Id)).ToList();
+                if (many.Count > 1) return many;
+            }
+            return Current() is TaskItem t ? new() { t } : new();
+        }
+
+        private static string Count(int n) => n + (n == 1 ? " task" : " tasks");
 
         /// <summary>The Task field: the chosen task's line, then where it lives and how big it is.</summary>
         private void ShowDetail()
@@ -615,22 +687,46 @@ namespace BusyBunny
             return t;
         }
 
+        /// <summary>A status chosen by hand moves the do date along: Today plans it for today, This week or Next week takes it off a do date that has come.</summary>
+        private static void ApplyStatus(TaskItem t, Status s, DateTime now)
+        {
+            t.Status = s;
+            t.TouchedAt = now;
+            t.StatusSince = now;
+            if (s == Status.Today && t.DoDate?.Date > now.Date) t.DoDate = now.Date;
+            else if (s is Status.ThisWeek or Status.NextWeek && t.DoDate?.Date <= now.Date) t.DoDate = null;
+            t.DoneAt = s == Status.Done ? now : null;
+        }
+
+        /// <summary>Several selected tasks at once (Morgan's issue 14): one undo step, one sound, one sentence.</summary>
+        private void SetStatusMany(List<TaskItem> tasks, Status s)
+        {
+            var change = tasks.Where(t => t.Status != s).ToList();
+            if (change.Count == 0) { Speech.Say(this, "They are all " + Words.Of(s) + " already.", true); return; }
+            var now = DateTime.Now;
+            _store.Remember((s == Status.Done ? "marking " : "changing the status of ") + Count(change.Count));
+            var olds = change.Select(t => (Task: t, Old: t.Status)).ToList();
+            foreach (var t in change) ApplyStatus(t, s, now);
+            Save();
+            Refresh();
+            if (s == Status.Done) Sounds.PlayFor(Sounds.Event.TaskDone, _store.ListOf(change[0]));
+            Speech.Say(this, s == Status.Done ? "Done: " + Count(change.Count) + ". " + _store.Progress(now).Done + " of " + _store.Progress(now).Total + " today."
+                : Count(change.Count) + " now " + Words.Of(s) + ".");
+            foreach (var (t, old) in olds) StatusChanged?.Invoke(t, old);
+            WarnIfOverloaded();
+        }
+
         private void SetStatus(Status s)
         {
+            var chosen = ChosenTasks();
+            if (chosen.Count > 1) { SetStatusMany(chosen, s); return; }
             if (CurrentOrSay() is not TaskItem t) return;
             if (t.Status == s) { Speech.Say(this, "It is already " + Words.Of(s) + ".", true); return; }
             var now = DateTime.Now;
             int doneBefore = _store.Progress(now).Done;
             _store.Remember((s == Status.Done ? "marking " : "changing the status of ") + t.Name);
             var old = t.Status;
-            t.Status = s;
-            t.TouchedAt = now;
-            t.StatusSince = now;
-            // The do date decides Today, so a status chosen by hand moves it along: Today plans it for
-            // today, and This week or Next week takes it off a do date that has come.
-            if (s == Status.Today && t.DoDate?.Date > now.Date) t.DoDate = now.Date;
-            else if (s is Status.ThisWeek or Status.NextWeek && t.DoDate?.Date <= now.Date) t.DoDate = null;
-            t.DoneAt = s == Status.Done ? now : null;
+            ApplyStatus(t, s, now);
             Save();
             Refresh();
             if (s == Status.Done)
@@ -658,6 +754,24 @@ namespace BusyBunny
 
         private void MoveTo(string list)
         {
+            var chosen = ChosenTasks();
+            if (chosen.Count > 1)
+            {
+                var move = chosen.Where(x => x.List != list).ToList();
+                if (move.Count == 0) { Speech.Say(this, "They are all on " + list + " already.", true); return; }
+                _store.Remember("moving " + Count(move.Count));
+                var newScale = _store.Data.Lists.FirstOrDefault(l => l.Name == list)?.Scale ?? Array.Empty<string>();
+                foreach (var x in move)
+                {
+                    x.List = list;
+                    if (!_store.ListOf(x).Sections.Contains(x.Section)) x.Section = "";
+                    if (x.Priority > newScale.Length) x.Priority = newScale.Length;
+                }
+                Save();
+                Refresh();
+                Speech.Say(this, "Moved " + Count(move.Count) + " to " + list + ".");
+                return;
+            }
             if (CurrentOrSay() is not TaskItem t) return;
             if (t.List == list) { Speech.Say(this, "It is already on " + list + ".", true); return; }
             _store.Remember("moving " + t.Name);
@@ -671,6 +785,16 @@ namespace BusyBunny
 
         private void DeleteTask()
         {
+            var chosen = ChosenTasks();
+            if (chosen.Count > 1)
+            {
+                _store.Remember("deleting " + Count(chosen.Count));
+                foreach (var x in chosen) _store.Data.Tasks.Remove(x);
+                Save();
+                Refresh();
+                Speech.Say(this, "Deleted " + Count(chosen.Count) + ". Control Z brings them back.");
+                return;
+            }
             if (CurrentOrSay() is not TaskItem t) return;
             _store.Remember("deleting " + t.Name);
             _store.Data.Tasks.Remove(t);
@@ -882,7 +1006,11 @@ namespace BusyBunny
                 foreach (var sec in new[] { "" }.Concat(sections))
                 {
                     var x = sec;
-                    cat.Items.Add(Item((sec.Length == 0 ? "No category" : sec) + (sec == t.Section ? ", now" : ""), () => SetCategory(t, x)));
+                    cat.Items.Add(Item((sec.Length == 0 ? "No category" : sec) + (sec == t.Section ? ", now" : ""), () =>
+                    {
+                        var all = ChosenTasks();
+                        SetCategory(all.All(a => a.List == t.List) ? all : new List<TaskItem> { t }, x);
+                    }));
                 }
                 menu.Items.Add(cat);
             }
@@ -945,6 +1073,10 @@ namespace BusyBunny
             // A check that somehow never came back must not stop every check after it.
             if (_backgroundChecking && DateTime.Now - _checkStarted < TimeSpan.FromMinutes(2)) return;
             if (_manualChecking || _installing || !_settings.CheckForUpdatesAtStart) return;
+            // On battery (Morgan's issue 14) every 15 minutes is plenty; plugged in, every 30 seconds as before.
+            bool onBattery = false;
+            try { onBattery = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Offline; } catch { }
+            if (onBattery && DateTime.Now - _checkStarted < TimeSpan.FromMinutes(15)) return;
             _backgroundChecking = true;
             _checkStarted = DateTime.Now;
             try
@@ -1104,6 +1236,7 @@ namespace BusyBunny
             "Read my day: Control R",
             "Short mode on or off: Control Shift S",
             "Task menu for the chosen task: the Applications key or Shift F10",
+            "Select several tasks in a list: Shift with Up or Down Arrow. Or move with Control and the arrows, and press Control Space on each one you want. Then Control D, Control 1 to 6, Delete, Move to, and Task, Put in a category work on all of them",
         }.Concat(_keyHelp).Append("These shortcuts are a first try. Tell Conner which ones feel wrong.").ToList();
 
         private static List<string> About() => new()
@@ -1124,6 +1257,14 @@ namespace BusyBunny
                 lines.AddRange(App.Resource(name).Split('\n').Select(l => l.Trim()).Where(l => l.Length > 0));
             }
             return lines;
+        }
+
+        /// <summary>Help, Request a feature: a new GitHub issue, its title started for her. Bunny points here too.</summary>
+        public void RequestFeature(string idea = "")
+        {
+            string title = "Feature request: " + idea.Trim();
+            Open(Updater.Website + "/issues/new?title=" + Uri.EscapeDataString(title));
+            Speech.Say(this, "Opening a new feature request on GitHub in your browser. Say what you would like, then press Submit new issue.", true);
         }
 
         private void Open(string target)

@@ -37,9 +37,19 @@ Under the tabs, two pick menus for the task you chose: Status and Move to. Arrow
 
 Each task reads as one line, most important first: tag, name, status, priority, the day you planned it for, due date, and how many of its subtasks are done. For example: PSY, chapter 4 reading, This week, Triple shot 1, planned for Tuesday, due Thursday, 1 of 3 steps done.
 
-The Today tab has two lists. To do today: what you planned for today, with its do date, or put on Today with Control 1. Due today: what is due today or overdue. Get ahead, under them, opens Upcoming to pick from the rest of the week, and finishing a task before its day earns bonus points. Upcoming lists each day with what is due and what is planned for it. On the Board, Today, This week and Next week each have a pick menu: things to do, things due, or both.
+The Today tab has three lists. To do today: what you planned for today, with its do date, or put on Today with Control 1. Overdue: everything past its due date, from every list, so nothing gets lost. Due today: what is due today. Focus has the overdue ones first too, then two or three for today. The Board starts with an Overdue group. Get ahead, under them, opens Upcoming to pick from the rest of the week, and finishing a task before its day earns bonus points. Upcoming lists each day with what is due and what is planned for it. On the Board, Today, This week and Next week each have a pick menu: things to do, things due, or both.
 
 Control Shift B on a task opens its subtasks as check boxes: Space checks one off, Delete removes one, and a box at the bottom adds more.
+
+To work on several tasks at once, select them: Shift with Up or Down Arrow, or move with Control and the arrows and press Control Space on each one. Then Control D, Control 1 to 6, Delete, Move to, or Task, Put in a category does all of them.
+
+The task form (Control N or F2) is in sections: Task, Status and priority, Dates, Repeat and reminder, Notes, Subtasks and Comments. Control Down and Control Up jump between them. A day on its own follows the status: set to Next week, Friday means next week's Friday.
+
+
+Talk to Bunny (Smarter Bunny)
+
+At the bottom of the main screen, or Control Shift A. Type what you want and press Enter, like: add PSY chapter 5 reading due Friday, move my stats homework to next week, what should I do first, or turn on low-energy mode. Bunny answers out loud, and its answers stay in the box under it. It can add, change, finish and delete tasks, add categories, change settings, set up your day, check on you every few hours in a small window, and remember what helps you. It only works with what Busy Bunny can already do; for anything new, Help, Request a feature opens a GitHub issue. Control Z undoes what Bunny changed.
+It needs your own Claude API key, from console.anthropic.com (pay as you go, separate from a Claude plan). Put it in Options, Settings, Smarter Bunny, where you also choose how often Bunny checks on you. The key is kept encrypted on your computer. When you talk to Bunny, your tasks are sent to Claude.
 
 
 Keys
@@ -69,6 +79,7 @@ Control Shift G: scoreboard.
 Control Shift T: start a sprint, or hear the time left.
 Control Shift U: pick one for me. Control Shift Q: quick wins. Control Shift O: everything is too much.
 Control Shift L: low-energy mode.
+Control Shift A: talk to Bunny.
 From any program: Control Alt Shift A adds a task, Control Alt Shift R reads your day.
 Help, Keyboard shortcuts lists them all.
 

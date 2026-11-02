@@ -84,6 +84,7 @@ namespace BusyBunny
             if (_settings == null) return;
             Mixer.Music.Level = Math.Clamp(_settings.MusicVolume, 1, 50) / 100f;
             Mixer.Music.Wanted = _active && _settings.MusicOn && _settings.SoundsOn;
+            if (Mixer.Music.Wanted) Mixer.Wake();
         }
     }
 }

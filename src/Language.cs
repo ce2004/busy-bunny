@@ -107,12 +107,32 @@ namespace BusyBunny
                 if (w is "a" or "p" && words.Count > 0 && Regex.IsMatch(words[^1], @"^\d")) w += "m";
                 if (Aliases.TryGetValue(w, out var a)) { words.Add(a); continue; }
                 if (Vocabulary.Contains(w) || !Regex.IsMatch(w, @"^[a-z]+$") || !guess) { words.Add(w); continue; }
+                // Words typed together (Morgan's issue 14): nextmonday, thisfriday, endofweek, inaweek.
+                if (Split(w, 0) is List<string> parts) { corrected = true; words.AddRange(parts); continue; }
                 // Day and month names first: wensday is as close to weekday as to Wednesday, and meant Wednesday.
                 var fix = Fuzzy.Best(w, DayNames.Concat(MonthNames)) ?? Fuzzy.Best(w, Vocabulary);
                 if (fix != null) { corrected = true; words.Add(fix); }
                 else words.Add(w);
             }
             return words;
+        }
+
+        private static string? Known(string x) => Aliases.TryGetValue(x, out var a) ? a : Vocabulary.Contains(x) && (x.Length > 1 || x == "a") ? x : null;
+
+        /// <summary>A word made of date words run together, split apart; the last may be a misspelled day or month. Null when it is not.</summary>
+        private static List<string>? Split(string w, int depth)
+        {
+            if (depth > 3 || w.Length < 2) return null;
+            for (int i = w.Length - 1; i >= 1; i--)
+            {
+                string? left = Known(w[..i]);
+                if (left == null) continue;
+                string right = w[i..];
+                if (Known(right) is string r) return new() { left, r };
+                if (right.Length >= 4 && Fuzzy.Best(right, DayNames.Concat(MonthNames)) is string fix) return new() { left, fix };
+                if (Split(right, depth + 1) is List<string> rest) { rest.Insert(0, left); return rest; }
+            }
+            return null;
         }
 
         private static int? Number(string w)
@@ -141,7 +161,8 @@ namespace BusyBunny
         /// A date, with or without a time, from plain words. Null when any word is not part of a date,
         /// so a typo that is not a date is never quietly read as one.
         /// </summary>
-        public static (DateTime? When, bool HasTime) ParseDate(string text, DateTime now, bool guess = true)
+        /// <param name="week">The task's status, when known: for Next week, a day on its own (Friday) means next week's Friday; for This week, this week's.</param>
+        public static (DateTime? When, bool HasTime) ParseDate(string text, DateTime now, bool guess = true, Status? week = null)
         {
             var w = Words(text, out _, guess);
             // Leading and filler words that add nothing: due friday, by 10/20, on the 20th, do it tuesday.
@@ -182,13 +203,13 @@ namespace BusyBunny
             if (w.Contains("tonight") && hour == null) { hour = 20; minute = 0; }
             w.RemoveAll(x => x == "at");
 
-            DateTime? day = DayFrom(w, now);
+            DateTime? day = DayFrom(w, now, week);
             if (day == null && w.Count == 0 && hour != null) day = now.Date;
             if (day == null) return (null, false);
             return hour == null ? (day, false) : (day.Value.Date.AddHours(hour.Value).AddMinutes(minute ?? 0), true);
         }
 
-        private static DateTime? DayFrom(List<string> w, DateTime now)
+        private static DateTime? DayFrom(List<string> w, DateTime now, Status? week = null)
         {
             var today = now.Date;
             string s = string.Join(" ", w);
@@ -236,6 +257,11 @@ namespace BusyBunny
             if (wd.Success && Day(wd.Groups[2].Value) is DayOfWeek d)
             {
                 string pre = wd.Groups[1].Value.Trim(), post = wd.Groups[3].Value.Trim();
+                // A day on its own follows the task's week (Morgan's issue 14): set to Next week, Friday is next week's Friday.
+                if (pre.Length == 0 && post.Length == 0 && week == Status.NextWeek)
+                    return Store.WeekEnd(now).AddDays(1 + ((int)d + 6) % 7);
+                if (pre.Length == 0 && post.Length == 0 && week == Status.ThisWeek && Coming(now, d, true) is var thisWeek && thisWeek <= Store.WeekEnd(now))
+                    return thisWeek;
                 if (pre == "this" || post == "this week") return Coming(now, d, true);
                 var x = Coming(now, d, false);
                 if (pre == "next" && (x - today).Days < 7) x = x.AddDays(7);
@@ -392,6 +418,25 @@ namespace BusyBunny
             Date("blorp", null);
             Date("friday blorp", null);
             Date("25:00", null);
+            // Morgan's issue 14: words typed together, and a day on its own following the task's week.
+            Date("nextmonday", new DateTime(2026, 10, 19));
+            Date("thisfriday", new DateTime(2026, 10, 16));
+            Date("nextweek", new DateTime(2026, 10, 19));
+            Date("endofmonth", new DateTime(2026, 10, 31));
+            Date("nextwensday", new DateTime(2026, 10, 21));
+            Date("inaweek", new DateTime(2026, 10, 19));
+            void Week(string text, Status s, DateTime now, DateTime want)
+            {
+                var got = ParseDate(text, now, week: s).When;
+                if (got != want) throw new Exception("'" + text + "' for " + s + " gave " + got + ", wanted " + want);
+            }
+            var wed = new DateTime(2026, 10, 14, 9, 0, 0);
+            Week("friday", Status.NextWeek, wed, new DateTime(2026, 10, 23));
+            Week("monday", Status.NextWeek, wed, new DateTime(2026, 10, 19));
+            Week("friday", Status.ThisWeek, wed, new DateTime(2026, 10, 16));
+            Week("monday", Status.ThisWeek, wed, new DateTime(2026, 10, 19));
+            Week("monday", Status.NextWeek, mon, new DateTime(2026, 10, 19));
+            Week("sunday", Status.NextWeek, mon, new DateTime(2026, 10, 25));
 
             void Rep(string text, string want)
             {

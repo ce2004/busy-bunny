@@ -52,6 +52,7 @@ namespace BusyBunny
 
         private MainWindow _w = null!;
         private readonly Dictionary<Status, ListBox> _board = new();
+        private ListBox _overdue = null!;
 
         public static string TypeWords(TaskType t) => t == TaskType.PersonalGoal ? "personal goal" : t.ToString().ToLowerInvariant();
         public static string SortWords(SortBy s) => s switch { SortBy.DueDate => "due date", SortBy.Newest => "newest first", _ => s.ToString().ToLowerInvariant() };
@@ -60,6 +61,10 @@ namespace BusyBunny
         {
             _w = w;
             var panel = new StackPanel { Margin = new Thickness(6) };
+            // Morgan's issue 14: overdue tasks first, from every list, so none gets lost.
+            _overdue = w.NewTaskList("board-overdue");
+            panel.Children.Add(new Label { Content = "Overdue", Target = _overdue, Padding = new Thickness(0, 4, 0, 2) });
+            panel.Children.Add(_overdue);
             foreach (var s in BoardStatuses)
             {
                 var lb = w.NewTaskList("board-" + s);
@@ -82,7 +87,8 @@ namespace BusyBunny
                 }
                 panel.Children.Add(lb);
             }
-            w.AddTab("Board", new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto }, () => _board[Status.Today]);
+            w.AddTab("Board", new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+                () => _overdue.Items.OfType<ListBoxItem>().Any(i => i.Tag is Guid) ? _overdue : _board[Status.Today]);
 
             w.AddMenuItem("View", "_Filter and sort...", Open, "Ctrl+Shift+F");
             w.AddMenuItem("View", "_Clear filter", ClearFilter);
@@ -156,11 +162,16 @@ namespace BusyBunny
         {
             var now = DateTime.Now;
             var open = _w.Store.Data.Tasks.Where(t => t.Status != Status.Done).ToList();
+            var overdue = _w.Store.Overdue(now);
+            Fill(_overdue, overdue, "Overdue", "Nothing overdue.");
             foreach (var s in BoardStatuses)
             {
                 int show = ShowOf(s);
                 string name = Words.Of(s) + (s is Status.Today or Status.ThisWeek or Status.NextWeek ? ", " + ShowWords[show].ToLowerInvariant() : "");
-                Fill(_board[s], BoardGroup(open, s, show, now), name, "Nothing " + (s == Status.Today ? "for today" : "here") + ".");
+                var group = BoardGroup(open, s, show, now);
+                // Overdue ones have their own group above; Today keeps only what is planned or due today.
+                if (s == Status.Today) group = group.Where(t => !overdue.Contains(t) || Store.PlanGroup(t, now) == Status.Today);
+                Fill(_board[s], group, name, "Nothing " + (s == Status.Today ? "for today" : "here") + ".");
             }
             if (!State.Active) return;
             foreach (var l in _w.Store.ActiveLists)
@@ -275,6 +286,15 @@ namespace BusyBunny
             if (!BoardGroup(open, Status.NextWeek, 2, now).Contains(nextWeek)) throw new Exception("board next week misses a task planned next week");
             if (Engine.EarlyBonus(later, now) != 3 || Engine.EarlyBonus(planned, now) != 0) throw new Exception("early bonus");
             if (!st.Line(later, now).Contains("planned for tomorrow")) throw new Exception("line misses the do date: " + st.Line(later, now));
+            // Morgan's issue 14: a project due last week, set to Next week, on a list kept out of Today, still shows as overdue.
+            var late = M("Claude project", Status.NextWeek, dueDay: 6);
+            st.Data.Tasks.Add(late);
+            st.Data.Lists[0].InToday = false;
+            if (!st.Overdue(now).Contains(late) || !st.TodayAll(now).Contains(late)) throw new Exception("an overdue task did not show");
+            if (!st.Line(late, now).Contains("overdue")) throw new Exception("line does not say overdue: " + st.Line(late, now));
+            if (!st.Summary(now).Contains("1 overdue")) throw new Exception("summary does not count overdue: " + st.Summary(now));
+            late.Status = Status.Done;
+            if (st.Overdue(now).Contains(late)) throw new Exception("a done task stayed overdue");
             Sounds.FxSelfTest();
         }
     }

@@ -55,6 +55,18 @@ namespace BusyBunny
         /// <summary>Surprise unlocks: Set:Drama, Emoji:Animals and so on.</summary>
         public List<string> Unlocked { get; set; } = new();
 
+        // ---- Smarter Bunny ----
+        /// <summary>The Claude API key, encrypted for this Windows user (DPAPI), or empty.</summary>
+        public string BunnyKey { get; set; } = "";
+        /// <summary>Hours between Bunny's check-ins, or 0 for never.</summary>
+        public int BunnyCheckHours { get; set; } = 3;
+        /// <summary>When Bunny last checked in.</summary>
+        public DateTime BunnyLastCheck { get; set; }
+        /// <summary>Ask before Bunny deletes a task.</summary>
+        public bool BunnyAskBeforeDelete { get; set; } = true;
+        /// <summary>Let Bunny read dates the form does not understand.</summary>
+        public bool BunnyReadsDates { get; set; } = true;
+
         public static string FilePath => Path.Combine(Store.Folder, "settings.json");
 
         public static Settings Load()
@@ -93,8 +105,12 @@ namespace BusyBunny
     /// </summary>
     public static class Speech
     {
+        /// <summary>While Smarter Bunny changes things, the usual spoken lines (Added, Done...) wait: Bunny says it all in its answer.</summary>
+        public static bool Muted;
+
         public static void Say(UIElement from, string text, bool interrupt = false)
         {
+            if (Muted) return;
             try
             {
                 var peer = UIElementAutomationPeer.FromElement(from) ?? UIElementAutomationPeer.CreatePeerForElement(from);

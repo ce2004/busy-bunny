@@ -77,6 +77,7 @@ namespace BusyBunny
         /// <summary>Plays a WAV. exclusive: stops the previous exclusive one first (previews in the Sounds window).</summary>
         public static bool Play(byte[] wav, bool exclusive)
         {
+            _lastSound = DateTime.UtcNow;
             var mix = Mix();
             if (mix == null) return false;
             try
@@ -102,7 +103,31 @@ namespace BusyBunny
         public static void Start()
         {
             Mix();
-            _check ??= new System.Threading.Timer(_ => { try { Mix(); } catch { } }, null, 5000, 5000);
+            _check ??= new System.Threading.Timer(_ => { try { Tick(); } catch { } }, null, 5000, 5000);
+        }
+
+        private static DateTime _lastSound = DateTime.UtcNow;
+
+        /// <summary>
+        /// Morgan's issue 14, battery: the output used to play silence all day, even in the tray, which
+        /// keeps the sound hardware and the processor awake. Now it closes once nothing has played for
+        /// 20 seconds and the music is off or faded out, and opens again for the next sound or the music.
+        /// </summary>
+        private static void Tick()
+        {
+            lock (Gate)
+            {
+                bool busy = Music.Audible || DateTime.UtcNow - _lastSound < TimeSpan.FromSeconds(20) || (_mix != null && _mix.MixerInputs.Skip(1).Any());
+                if (!busy) { if (_out != null) Drop(); return; }
+            }
+            Mix();
+        }
+
+        /// <summary>Opens the output again when the music is wanted (Busy Bunny came to the front).</summary>
+        public static void Wake()
+        {
+            _lastSound = DateTime.UtcNow;
+            try { Mix(); } catch { }
         }
     }
 
@@ -122,6 +147,8 @@ namespace BusyBunny
 
         /// <summary>Whether it should be heard now: on in settings, sounds on, and Busy Bunny in front.</summary>
         public volatile bool Wanted;
+        /// <summary>Wanted, or still fading out.</summary>
+        public bool Audible => Wanted || _gain > 0.0001;
         /// <summary>Its volume, as a share of full scale before the sound volume: 0.10 is 10 percent.</summary>
         public volatile float Level = 0.10f;
 

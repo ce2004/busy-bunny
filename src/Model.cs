@@ -242,6 +242,8 @@ namespace BusyBunny
         public DateTime? SweepOfferedWeek { get; set; }
         /// <summary>Karma, goals, badges, bunny and challenges (Game.cs).</summary>
         public GameState Game { get; set; } = new();
+        /// <summary>What Smarter Bunny keeps in mind about her: goals, what helps, what to avoid. She can read and clear it.</summary>
+        public List<string> BunnyNotes { get; set; } = new();
 
         public DayInfo Day(DateTime d)
         {
@@ -441,11 +443,25 @@ namespace BusyBunny
         public List<TaskItem> Priority(DateTime now) =>
             UrgentOrder(Data.Tasks.Where(t => t.Status != Status.Done && CanShowToday(t, now) && IsUrgent(t, now)), now).ToList();
 
-        /// <summary>Everything on Today once, to do first.</summary>
+        /// <summary>Overdue: open, not waiting, and due before today.</summary>
+        public static bool IsOverdue(TaskItem t, DateTime now) =>
+            t.Status != Status.Done && t.Status != Status.Waiting && t.Due is DateTime d && d.Date < now.Date;
+
+        /// <summary>
+        /// Every overdue task from every list that is not archived, oldest first (Morgan's issue 14). Low-energy
+        /// mode, a rough day and a list kept out of Today never hide these: an overdue task must never get lost.
+        /// </summary>
+        public List<TaskItem> Overdue(DateTime now) => Data.Tasks
+            .Where(t => IsOverdue(t, now) && Data.Lists.FirstOrDefault(l => l.Name == t.List)?.Archived != true)
+            .OrderBy(t => t.Due).ThenBy(Rank).ToList();
+
+        /// <summary>Everything on Today once, to do first: planned for today, then overdue, then due today.</summary>
         public List<TaskItem> TodayAll(DateTime now)
         {
             var (todo, due) = Today(now);
-            return todo.Concat(due.Where(t => !todo.Contains(t))).ToList();
+            var all = todo.ToList();
+            foreach (var t in Overdue(now).Concat(due)) if (!all.Contains(t)) all.Add(t);
+            return all;
         }
 
         /// <summary>The Sunday that ends this week (weeks start on Monday).</summary>
@@ -511,6 +527,8 @@ namespace BusyBunny
         {
             var (done, total, pd, pt) = Progress(now);
             var parts = new List<string> { done + " of " + total + " done today" };
+            int late = Overdue(now).Count;
+            if (late > 0) parts.Add(late + " overdue");
             if (!shortMode && pt > 0) parts.Add(pd * 100 / pt + " percent of today's effort");
             var meeting = Data.Tasks.Where(t => t.IsMeeting && t.Status != Status.Done && t.Due > now).OrderBy(t => t.Due).FirstOrDefault();
             if (meeting?.Due is DateTime md)
@@ -543,8 +561,10 @@ namespace BusyBunny
             if (t.Priority > 0 && t.Priority <= scale.Length) parts.Add(shortMode ? "P" + t.Priority : scale[t.Priority - 1] + " " + t.Priority);
             if (t.DoDate is DateTime p && t.Status != Status.Done)
                 parts.Add((shortMode ? "do " : "planned for ") + Words.Day(p, now));
-            if (t.Due is DateTime d)
-                parts.Add((t.IsMeeting ? "" : "due ") + Words.Day(d, now) + (t.DueHasTime ? " at " + Words.Time(d) : ""));
+            if (t.Due is DateTime d && IsOverdue(t, now) && !t.IsMeeting)
+                parts.Add(shortMode ? "overdue, due " + Words.Day(d, now) : "overdue, it was due " + Words.Day(d, now));
+            else if (t.Due is DateTime d2)
+                parts.Add((t.IsMeeting ? "" : "due ") + Words.Day(d2, now) + (t.DueHasTime ? " at " + Words.Time(d2) : ""));
             // Subtasks show on the line itself, so they are never out of sight (Morgan's issue 7).
             if (t.Subtasks.Count > 0)
                 parts.Add(t.Subtasks.Count(s => s.Done) + " of " + t.Subtasks.Count + (shortMode ? " steps" : t.Subtasks.Count == 1 ? " step done" : " steps done"));

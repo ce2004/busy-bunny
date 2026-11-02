@@ -61,7 +61,7 @@ namespace BusyBunny
     /// <summary>Plain-language dates, typos forgiven: see Language.ParseDate.</summary>
     public static class Dates
     {
-        public static (DateTime? When, bool HasTime) Parse(string text, DateTime now) => Language.ParseDate(text, now);
+        public static (DateTime? When, bool HasTime) Parse(string text, DateTime now, Status? week = null) => Language.ParseDate(text, now, week: week);
     }
 
     /// <summary>

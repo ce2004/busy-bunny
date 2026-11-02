@@ -126,13 +126,17 @@ namespace BusyBunny
             }, System.Windows.Threading.DispatcherPriority.Input);
         }
 
+        /// <summary>Task, Put in a category: for the chosen task, or every selected one (Morgan's issue 14), all from one list.</summary>
         private void PutInCategory()
         {
-            if (CurrentOrSay() is not TaskItem t) return;
+            var tasks = ChosenTasks();
+            if (tasks.Count == 0) { CurrentOrSay(); return; }
+            var t = tasks[0];
+            if (tasks.Any(x => x.List != t.List)) { Say("The selected tasks are on different lists. Pick tasks from one list, then put them in one of its categories.", true); return; }
             var l = _store.ListOf(t);
             if (l.Sections.Count == 0) { Say(t.List + " has no categories yet. View, Add a category to this list makes one.", true); return; }
             var choices = new[] { "No category" }.Concat(l.Sections).ToList();
-            var w = Layout.Dialog(this, "Put in a category");
+            var w = Layout.Dialog(this, tasks.Count > 1 ? "Put " + tasks.Count + " tasks in a category" : "Put in a category");
             var box = new ComboBox { ItemsSource = choices, SelectedIndex = Math.Max(0, choices.IndexOf(t.Section)) };
             var ok = Layout.Button("OK", isDefault: true);
             var cancel = Layout.Button("Cancel", isCancel: true);
@@ -141,23 +145,31 @@ namespace BusyBunny
             buttons.Children.Add(ok);
             buttons.Children.Add(cancel);
             var panel = new StackPanel { Margin = new Thickness(14) };
-            panel.Children.Add(Layout.Row("Category for " + t.Name, box));
+            panel.Children.Add(Layout.Row(tasks.Count > 1 ? "Category for the " + tasks.Count + " selected tasks" : "Category for " + t.Name, box));
             panel.Children.Add(buttons);
             w.Content = panel;
             w.Loaded += (_, _) => box.Focus();
-            if (w.ShowDialog() == true) SetCategory(t, box.SelectedIndex <= 0 ? "" : choices[box.SelectedIndex]);
+            if (w.ShowDialog() == true) SetCategory(tasks, box.SelectedIndex <= 0 ? "" : choices[box.SelectedIndex]);
             else if (_lastList != null) TextViewer.Select(_lastList, Math.Max(0, _lastList.SelectedIndex));
         }
 
-        private void SetCategory(TaskItem t, string section)
+        private void SetCategory(TaskItem t, string section) => SetCategory(new List<TaskItem> { t }, section);
+
+        private void SetCategory(List<TaskItem> tasks, string section)
         {
-            if (t.Section == section) { Say(section.Length == 0 ? "It has no category already." : "It is already in " + section + ".", true); return; }
-            _store.Remember("putting " + t.Name + " in a category");
-            t.Section = section;
-            t.TouchedAt = DateTime.Now;
+            var move = tasks.Where(t => t.Section != section).ToList();
+            if (move.Count == 0)
+            {
+                Say(tasks.Count > 1 ? (section.Length == 0 ? "None of them has a category already." : "They are all in " + section + " already.")
+                    : section.Length == 0 ? "It has no category already." : "It is already in " + section + ".", true);
+                return;
+            }
+            string what = move.Count == 1 ? move[0].Name : move.Count + " tasks";
+            _store.Remember("putting " + what + " in a category");
+            foreach (var t in move) { t.Section = section; t.TouchedAt = DateTime.Now; }
             SaveAndRefresh();
-            if (_lastList != null) TextViewer.Select(_lastList, Math.Max(0, Math.Min(_lastList.SelectedIndex, _lastList.Items.Count - 1)));
-            Say(section.Length == 0 ? t.Name + " has no category now." : "Put " + t.Name + " in " + section + ".");
+            if (_lastList != null && _lastList.Items.Count > 0) TextViewer.Select(_lastList, Math.Max(0, Math.Min(_lastList.SelectedIndex, _lastList.Items.Count - 1)));
+            Say(section.Length == 0 ? what + (move.Count == 1 ? " has" : " have") + " no category now." : "Put " + what + " in " + section + ".");
         }
 
         // ---- Subtasks (issue 7) ----

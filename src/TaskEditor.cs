@@ -257,20 +257,51 @@ namespace BusyBunny
             type.SelectionChanged += (_, _) => ApplyType();
             ApplyType();
 
+            // Sections with headings (Morgan's issue 14): NVDA says each group's name on the way in, and
+            // Control Down and Control Up jump from one section to the next.
             var panel = new StackPanel { Margin = new Thickness(14) };
-            panel.Children.Add(Layout.Row("Task _name", name));
-            panel.Children.Add(Layout.Row("Task t_ype", type));
-            panel.Children.Add(Layout.Row("_List", lists));
-            panel.Children.Add(Layout.Row("Ca_tegory", section));
-            panel.Children.Add(Layout.Row("_Tag", tags));
-            panel.Children.Add(Layout.Row("_Status", statuses));
-            panel.Children.Add(Layout.Row("_Priority", priority));
-            foreach (var k in new[] { "due", "dodate", "size", "energy", "weight", "repeat", "remind", "remindrepeat" }) panel.Children.Add(rows[k]);
-            panel.Children.Add(Layout.Row("Not_es", notes));
+            var sections = new List<(GroupBox Box, Control[] Fields)>();
+            void Section(string title, Control[] fields, params UIElement[] items)
+            {
+                var header = new TextBlock { Text = title, FontWeight = FontWeights.Bold };
+                AutomationProperties.SetHeadingLevel(header, AutomationHeadingLevel.Level2);
+                var inner = new StackPanel();
+                foreach (var i in items) inner.Children.Add(i);
+                var box = new GroupBox { Header = header, Content = inner, Margin = new Thickness(0, 0, 0, 8), Padding = new Thickness(6, 4, 6, 2) };
+                AutomationProperties.SetName(box, title);
+                panel.Children.Add(box);
+                sections.Add((box, fields));
+            }
+            Section("Task", new Control[] { name, type, lists, section, tags },
+                Layout.Row("Task _name", name), Layout.Row("Task t_ype", type), Layout.Row("_List", lists), Layout.Row("Ca_tegory", section), Layout.Row("_Tag", tags));
+            Section("Status and priority", new Control[] { statuses, priority, size, energy, weight },
+                Layout.Row("_Status", statuses), Layout.Row("_Priority", priority), rows["size"], rows["energy"], rows["weight"]);
+            Section("Dates", new Control[] { due, doDate }, rows["due"], rows["dodate"]);
+            Section("Repeat and reminder", new Control[] { repeat, remind, remindRepeat }, rows["repeat"], rows["remind"], rows["remindrepeat"]);
+            Section("Notes", new Control[] { notes }, Layout.Row("Not_es", notes));
+            AutomationProperties.SetHelpText(name, "Control Down and Control Up jump between the sections of this form: task, status and priority, dates, repeat, notes, subtasks and comments.");
+            w.PreviewKeyDown += (_, e) =>
+            {
+                if (Keyboard.Modifiers != ModifierKeys.Control || e.Key is not (Key.Down or Key.Up)) return;
+                e.Handled = true;
+                int at = sections.FindIndex(s => s.Box.IsKeyboardFocusWithin);
+                bool down = e.Key == Key.Down;
+                for (int i = at + (down ? 1 : -1); i >= 0 && i < sections.Count; i += down ? 1 : -1)
+                {
+                    if (sections[i].Box.Visibility != Visibility.Visible) continue;
+                    var field = sections[i].Fields.FirstOrDefault(f => f.IsVisible && f.IsEnabled && f.Focusable);
+                    if (field == null) continue;
+                    field.Focus();
+                    Speech.Say(w, ((TextBlock)sections[i].Box.Header).Text + " section.", true);
+                    return;
+                }
+                Speech.Say(w, down ? "No more sections. Add is below." : "This is the first section.", true);
+            };
 
             Button B(string text, Action act) { var b = Layout.Button(text); b.Click += (_, _) => act(); return b; }
-            panel.Children.Add(Layout.Row("S_ubtasks", subList));
-            panel.Children.Add(Layout.Row("New su_btask", newSub));
+            var subRows = new StackPanel();
+            subRows.Children.Add(Layout.Row("S_ubtasks", subList));
+            subRows.Children.Add(Layout.Row("New su_btask", newSub));
             var subButtons = new StackPanel { Orientation = Orientation.Horizontal };
             subButtons.Children.Add(B("Add s_ubtask", AddSub));
             subButtons.Children.Add(B("Rena_me subtask", () =>
@@ -299,14 +330,13 @@ namespace BusyBunny
                 FillSubs(i);
                 Speech.Say(w, "Deleted subtask " + gone + ".", true);
             }));
-            panel.Children.Add(subButtons);
+            subRows.Children.Add(subButtons);
+            Section("Subtasks", new Control[] { subList, newSub }, subRows);
             newSub.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter && newSub.Text.Trim().Length > 0) { e.Handled = true; AddSub(); } };
 
-            panel.Children.Add(Layout.Row("Co_mments", commentList));
-            panel.Children.Add(Layout.Row("New comme_nt", newComment));
             var commentButtons = new StackPanel { Orientation = Orientation.Horizontal };
             commentButtons.Children.Add(B("Add c_omment", AddComment));
-            panel.Children.Add(commentButtons);
+            Section("Comments", new Control[] { commentList, newComment }, Layout.Row("Co_mments", commentList), Layout.Row("New comme_nt", newComment), commentButtons);
             newComment.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter && newComment.Text.Trim().Length > 0) { e.Handled = true; AddComment(); } };
 
             var ok = Layout.Button(editing == null ? "Add" : "Save", isDefault: true);
@@ -327,13 +357,45 @@ namespace BusyBunny
             w.Content = new ScrollViewer { Content = panel, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, MaxHeight = SystemParameters.WorkArea.Height - 80, Focusable = false };
 
             TaskItem? made = null;
-            ok.Click += (_, _) =>
+            bool asking = false;
+            // A date Busy Bunny cannot read goes to Smarter Bunny when it is set up: it fills in the
+            // date it understood, says it, and the form carries on.
+            async System.Threading.Tasks.Task<bool> Rescue(TextBox box, string what, Status week, bool withTime)
             {
+                if (!SmartBunny.CanReadDates) return false;
+                asking = true;
+                Speech.Say(w, "Bunny is working out that " + what + ".", true);
+                try
+                {
+                    var got = await SmartBunny.ReadDateAsync(box.Text, DateTime.Now, week);
+                    if (got is not (DateTime d, bool t)) return false;
+                    box.Text = Show(d, t && withTime);
+                    Speech.Say(w, "Bunny read the " + what + " as " + Words.Day(d, DateTime.Now) + (t && withTime ? " at " + Words.Time(d) : "") + ".");
+                    return true;
+                }
+                catch { return false; }
+                finally { asking = false; }
+            }
+            ok.Click += async (_, _) =>
+            {
+                if (asking) return;
                 if (name.Text.Trim().Length == 0) { Speech.Say(w, "Type a name for the task first.", true); name.Focus(); return; }
-                var (when, hasTime) = Dates.Parse(due.Text, DateTime.Now);
-                if (due.Text.Trim().Length > 0 && when == null) { Speech.Say(w, "Busy Bunny did not understand that due date. Try tomorrow, Friday, or 10/20.", true); due.Focus(); return; }
-                var (doWhen, _) = Dates.Parse(doDate.Text, DateTime.Now);
-                if (doDate.Text.Trim().Length > 0 && doWhen == null) { Speech.Say(w, "Busy Bunny did not understand that do date. Try tomorrow, Friday, or 10/20.", true); doDate.Focus(); return; }
+                // A day on its own follows the status (Morgan's issue 14): Next week and Friday is next week's Friday.
+                var week = (Status)Math.Max(0, statuses.SelectedIndex);
+                var (when, hasTime) = Dates.Parse(due.Text, DateTime.Now, week);
+                if (due.Text.Trim().Length > 0 && when == null)
+                {
+                    if (await Rescue(due, "due date", week, true)) ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                    else { Speech.Say(w, "Busy Bunny did not understand that due date. Try tomorrow, Friday, next Monday, or 10/20.", true); due.Focus(); }
+                    return;
+                }
+                var (doWhen, _) = Dates.Parse(doDate.Text, DateTime.Now, week);
+                if (doDate.Text.Trim().Length > 0 && doWhen == null)
+                {
+                    if (await Rescue(doDate, "do date", week, false)) ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                    else { Speech.Say(w, "Busy Bunny did not understand that do date. Try tomorrow, Friday, next Monday, or 10/20.", true); doDate.Focus(); }
+                    return;
+                }
                 var (remindWhen, remindTime) = Dates.Parse(remind.Text, DateTime.Now);
                 if (remind.Text.Trim().Length > 0 && remindWhen == null) { Speech.Say(w, "Busy Bunny did not understand that reminder. Try tomorrow at 3, or 10/20 at 8:30 am.", true); remind.Focus(); return; }
                 if (remindWhen != null && !remindTime) remindWhen = remindWhen.Value.AddHours(9);
