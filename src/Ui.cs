@@ -66,6 +66,10 @@ namespace BusyBunny
         public bool BunnyAskBeforeDelete { get; set; } = true;
         /// <summary>Let Bunny read dates the form does not understand.</summary>
         public bool BunnyReadsDates { get; set; } = true;
+        /// <summary>What happens when Bunny answers: 0 reads the answer out loud, 1 just says Bunny answered, 2 says nothing (Morgan's issue 15).</summary>
+        public int BunnyVoice { get; set; }
+        /// <summary>Bunny's personality, one of SmartBunny.Personalities.</summary>
+        public string BunnyPersonality { get; set; } = "";
 
         public static string FilePath => Path.Combine(Store.Folder, "settings.json");
 
@@ -113,7 +117,9 @@ namespace BusyBunny
             if (Muted) return;
             try
             {
+                // Panels have no automation peer, so their lines would be lost: then the window says it.
                 var peer = UIElementAutomationPeer.FromElement(from) ?? UIElementAutomationPeer.CreatePeerForElement(from);
+                if (peer == null && Window.GetWindow(from) is Window w) peer = UIElementAutomationPeer.FromElement(w) ?? UIElementAutomationPeer.CreatePeerForElement(w);
                 peer?.RaiseNotificationEvent(AutomationNotificationKind.Other,
                     interrupt ? AutomationNotificationProcessing.ImportantMostRecent : AutomationNotificationProcessing.All,
                     text, "BusyBunny");

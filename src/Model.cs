@@ -72,6 +72,8 @@ namespace BusyBunny
         public bool InToday { get; set; } = true;
         /// <summary>Archived lists keep their tasks but have no tab and show nowhere.</summary>
         public bool Archived { get; set; }
+        /// <summary>Kept private from Smarter Bunny (Morgan's issue 15): its tasks are never sent to Claude.</summary>
+        public bool PrivateFromBunny { get; set; }
         /// <summary>A sound name for finishing its tasks, or empty for the usual Task done sound.</summary>
         public string FinishSound { get; set; } = "";
         /// <summary>A sound pack for adding, saving and finishing its tasks (Morgan's issue 6): empty for the one used everywhere, Sounds.MatchScale for the pack that fits its scale, or a pack name.</summary>

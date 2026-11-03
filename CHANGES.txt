@@ -1,3 +1,10 @@
+0.9.0
+Bug fixed: if you pressed Test the key in Options, Smarter Bunny, nothing seemed to happen, so it looked like the key was gone. Now a window tells you whether the key works, the button says Testing while it checks, and a key that works is saved straight away. The page also says when a key is saved and the last four letters of it.
+New feature: choose what happens when Bunny answers: read the whole answer out loud, just say Bunny answered, or say nothing so you can read it in the answers box with NVDA or braille. It is in Options, Smarter Bunny.
+New feature: Bunny's personality. Pick Cheerful friend, Calm and gentle, Hype coach, Dry and witty, Straight to the point or Study buddy in Options, Smarter Bunny, or just ask Bunny to change it.
+New feature: private lists. In Options, Smarter Bunny, tick any list Bunny should never see, like appointments. Its tasks are never sent to Claude, and Bunny cannot change them.
+New feature: see everything Bunny remembers about you in Options, Smarter Bunny, and forget one note with Delete or Forget this note, or all of them at once.
+Changed: Bunny now warns you early about big deadlines you have not started, helps with just the first two minutes when you are stuck, turns pasted assignment instructions or rubrics into subtasks, adds a whole pasted syllabus, plans test review over several days, and answers grade questions from your grade weights.
 0.8.0
 New feature: Talk to Bunny. At the bottom of the main screen, or Control Shift A, you can type to Bunny and it answers out loud. Ask it to add a task, move things to next week, break a big assignment into steps, plan your day, change a setting, or just tell you what to do first. It can check on you every few hours in a small window and remembers what helps you. It needs your own Claude API key: Options, Smarter Bunny. Control Z undoes anything Bunny changed.
 New feature: Help, Request a feature opens a new GitHub issue for an idea. Bunny points you there when you ask for something Busy Bunny cannot do yet.

@@ -33,6 +33,23 @@ namespace BusyBunny
         public const string PageName = "Smarter Bunny";
         private static SmartBunny? _me;
 
+        /// <summary>Bunny's personalities (Morgan's issue 15): the name she picks, and how Claude is told to sound.</summary>
+        public static readonly (string Name, string How)[] Personalities =
+        {
+            ("Cheerful friend", "a funny, kind friend who is good at planning, warm and upbeat"),
+            ("Calm and gentle", "calm, soft and patient, like a kind counselor; slow things down, no pressure, lots of reassurance"),
+            ("Hype coach", "an energetic coach who pumps her up, celebrates loudly and pushes her to get going"),
+            ("Dry and witty", "dry, deadpan and clever, with understated jokes, still kind underneath"),
+            ("Straight to the point", "brief and practical: as few words as possible, no small talk, just what to do next"),
+            ("Study buddy", "a fellow student studying alongside her, casual and encouraging, who likes to quiz her and plan study sessions"),
+        };
+        private string Personality => Personalities.FirstOrDefault(p => p.Name.Equals(Cfg.BunnyPersonality, StringComparison.OrdinalIgnoreCase)).Name ?? Personalities[0].Name;
+        public static readonly string[] Voices = { "Read the whole answer out loud", "Just say Bunny answered", "Say nothing, I'll read it in the answers box" };
+
+        /// <summary>Whether Bunny may see a task: not on a list she keeps private from Bunny.</summary>
+        private static bool Seen(Store store, TaskItem t) => !store.ListOf(t).PrivateFromBunny;
+        private bool Seen(TaskItem t) => Seen(S, t);
+
         private MainWindow _w = null!;
         private Settings Cfg => _w.AppSettings;
         private Store S => _w.Store;
@@ -72,7 +89,7 @@ namespace BusyBunny
             AutomationProperties.SetName(_ask, "Talk to Bunny");
             AutomationProperties.SetHelpText(_ask, "Ask Bunny anything, or tell it what to do, like add PSY reading due Friday, or what should I do first. Enter sends.");
             AutomationProperties.SetName(_answers, "Bunny's answers");
-            AutomationProperties.SetHelpText(_answers, "What you and Bunny said, newest at the bottom. Bunny also says its answers out loud.");
+            AutomationProperties.SetHelpText(_answers, "What you and Bunny said, newest at the bottom. Options, Smarter Bunny chooses whether Bunny also reads its answers out loud.");
             _ask.PreviewKeyDown += (_, e) =>
             {
                 if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.None) return;
@@ -159,7 +176,7 @@ namespace BusyBunny
 
         private const string CheckInPrompt =
             "(Check-in time. She did not type this: Busy Bunny asks you to check on her now.) Look at her day first, with find_tasks for overdue and today. " +
-            "Then use ask_user once to check on her: how she is doing, her energy, or something specific like an overdue task, with a few short choices and room to type. " +
+            "Also look for big deadlines in the next two weeks that she has not started. Then use ask_user once to check on her: how she is doing, her energy, or something specific like an overdue task, with a few short choices and room to type. " +
             "Answer what she says. If something would clearly help, like moving a task, splitting a big one into subtasks, or low-energy mode, offer it, and only do it if she agrees in an ask_user answer. " +
             "If she closes the window without answering, leave her be and say so in a few words. Keep it short and kind.";
 
@@ -171,7 +188,7 @@ namespace BusyBunny
         {
             _busy = true;
             int before = _history.Count;
-            Speech.Say(_w, "Bunny is thinking.");
+            if (Cfg.BunnyVoice == 0) Speech.Say(_w, "Bunny is thinking.");
             string reply;
             try
             {
@@ -192,7 +209,8 @@ namespace BusyBunny
             }
             Log("Bunny: " + reply);
             if (focusBack != null && _w.IsActive && _w.OwnedWindows.Count == 0) focusBack.Focus();
-            Speech.Say(_w, reply, true);
+            if (Cfg.BunnyVoice == 0) Speech.Say(_w, reply, true);
+            else if (Cfg.BunnyVoice == 1) Speech.Say(_w, "Bunny answered.", true);
         }
 
         private static string Problem(Exception e) => e switch
@@ -316,13 +334,15 @@ namespace BusyBunny
 @"You are Bunny, the helper inside Busy Bunny, a Windows to-do app made for Morgan, a blind psychology student who uses the NVDA screen reader and braille. Conner built the app for her. You talk to her through the Talk to Bunny box on the main screen, and your answers are read aloud by her screen reader.
 
 How you talk:
-Write plain spoken sentences, short and warm, like a funny, kind friend who is good at planning. Two to five sentences is usually right. Never use Markdown, headings, bullets, tables, emoji, the pound sign or the asterisk. Say dates as words, like Friday, November 6, never as numbers with slashes. Do not read out task ids. Match the roast dial in the context line: 0 is plain and gentle, 1 gentle, 2 lightly teasing, 3 spicy, 4 savage but never mean about her worth, her disability or her health.
+Write plain spoken sentences, short and warm, in the personality she picked, which the context line gives. Two to five sentences is usually right. Never use Markdown, headings, bullets, tables, emoji, the pound sign or the asterisk. Say dates as words, like Friday, November 6, never as numbers with slashes. Do not read out task ids. Match the roast dial in the context line: 0 is plain and gentle, 1 gentle, 2 lightly teasing, 3 spicy, 4 savage but never mean about her worth, her disability or her health.
 
 What you can do:
 You can look at and change her tasks, lists, categories, settings and day with your tools, and you should just do what she asks instead of telling her how. Look things up with find_tasks or get_overview before changing them; never guess an id. After changing things, say briefly what you did, and that Control Z undoes it when that helps. If her request is unclear in a way that matters, like which of two tasks, ask in your reply or with ask_user. Use ask_user when a small window with choices is easier than typing, and for check-ins. You can keep short notes about her with remember, like goals, what helps her focus, or class names; keep them useful and kind, and never store passwords or health details she did not ask you to keep.
 
 Being helpful beyond the list:
-Help her plan: suggest what to do first, break big assignments into subtasks, spread work across the week with do dates, notice overdue and piled-up tasks, and offer low-energy mode or a rough day when she sounds worn out. Celebrate wins. Be honest when a plan does not fit the hours she has. If she seems in real distress or talks about harming herself, be caring, encourage her to reach out to someone she trusts, and mention that in the US she can call or text 988.
+Help her plan: suggest what to do first, break big assignments into subtasks, spread work across the week with do dates, notice overdue and piled-up tasks, and offer low-energy mode or a rough day when she sounds worn out. Celebrate wins. Be honest when a plan does not fit the hours she has.
+When she cannot get started, help with just the first two minutes: one tiny, concrete step at a time, and ask her to tell you when it is done. When she pastes assignment instructions or a rubric, turn every requirement into a subtask so nothing worth points is missed. When she pastes a syllabus or a class schedule, add each dated item as a task with its due date, list and category, after checking get_overview for her lists. When she has a test coming, offer a study plan: short review tasks with do dates spread over the days before it, not all the night before. Watch for big deadlines: a large or multi-day task, a test, or anything worth a lot of the grade, due within two weeks and not started yet (no do date, no subtasks done). Mention it early with one small first step. For grade questions, use the grade weights on her tasks; you only know what is in Busy Bunny, so say so when you are guessing.
+Some of her lists may be private: you cannot see their tasks and must not ask what is on them. If she seems in real distress or talks about harming herself, be caring, encourage her to reach out to someone she trusts, and mention that in the US she can call or text 988.
 
 Limits:
 You can only use features Busy Bunny already has. You cannot add new features, buttons, sounds or screens, change how the app works, or reach other apps, email or the internet. When she asks for something the app cannot do, say so plainly, and tell her she can ask for it with Help, Request a feature, which opens a new issue on GitHub; offer to open it with open_feature_request. Never pretend to have done something you did not do. You cannot see or change the API key.
@@ -335,8 +355,11 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             var sb = new StringBuilder();
             sb.Append("(Context from Busy Bunny, not typed by her: now is ").Append(now.ToString("dddd, MMMM d, yyyy, h:mm tt", CultureInfo.InvariantCulture))
               .Append(". ").Append(S.Summary(now)).Append(" Roast dial: ").Append(Cfg.RoastLevel).Append('.');
-            if (_w.TabNames.Count > 0 && _w.OpenListName is string open) sb.Append(" She is on the ").Append(open).Append(" tab.");
-            if (_w.ChosenTask is TaskItem t) sb.Append(" Her cursor is on the task [").Append(Short(t)).Append("] ").Append(S.Line(t, now)).Append('.');
+            string who = Personality;
+            sb.Append(" Your personality: ").Append(who).Append(", ").Append(Personalities.First(p => p.Name == who).How).Append('.');
+            bool privateOpen = _w.OpenListName is string ol && S.Data.Lists.Any(l => l.Name == ol && l.PrivateFromBunny);
+            if (_w.TabNames.Count > 0 && _w.OpenListName is string open && !privateOpen) sb.Append(" She is on the ").Append(open).Append(" tab.");
+            if (_w.ChosenTask is TaskItem t) sb.Append(Seen(t) ? " Her cursor is on the task [" + Short(t) + "] " + S.Line(t, now) + "." : " Her cursor is on a private task.");
             if (S.Data.BunnyNotes.Count > 0) sb.Append(" Your notes about her: ").Append(string.Join(" | ", S.Data.BunnyNotes)).Append('.');
             sb.Append(')');
             return sb.ToString();
@@ -370,7 +393,9 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             sb.AppendLine("Summary: " + S.Summary(now));
             sb.AppendLine("Tabs: " + string.Join(", ", _w.TabNames) + ".");
             sb.AppendLine("Lists, in tab order:");
-            foreach (var l in S.Data.Lists.Where(l => !l.Archived))
+            int hidden = S.Data.Lists.Count(l => l.PrivateFromBunny && !l.Archived);
+            if (hidden > 0) sb.AppendLine(hidden + (hidden == 1 ? " list is" : " lists are") + " private: you cannot see them or their tasks.");
+            foreach (var l in S.Data.Lists.Where(l => !l.Archived && !l.PrivateFromBunny))
             {
                 int open = S.Data.Tasks.Count(t => t.List == l.Name && t.Status != Status.Done);
                 sb.Append("  ").Append(l.Name);
@@ -379,7 +404,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 sb.Append(". Categories: ").Append(l.Sections.Count == 0 ? "none" : string.Join(", ", l.Sections));
                 sb.Append(". New tasks start as ").Append(Words.Of(l.DefaultStatus)).Append(l.InToday ? "." : ". Kept out of Today.").AppendLine();
             }
-            var archived = S.Data.Lists.Where(l => l.Archived).Select(l => l.Name).ToList();
+            var archived = S.Data.Lists.Where(l => l.Archived && !l.PrivateFromBunny).Select(l => l.Name).ToList();
             if (archived.Count > 0) sb.AppendLine("Archived lists: " + string.Join(", ", archived) + ".");
             if (S.Data.Tags.Count > 0) sb.AppendLine("Tags: " + string.Join(", ", S.Data.Tags.Select(t => t.Name + (t.Description.Length > 0 ? " (" + t.Description + ")" : ""))) + ".");
             if (S.Data.Classes.Count > 0)
@@ -401,6 +426,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             ["emojis_on"] = Cfg.EmojisOn, ["finals_mode"] = Cfg.FinalsMode, ["morning_check_in"] = Cfg.MorningCheckIn, ["warn_when_urgent_more_than"] = Cfg.UrgentWarnAbove,
             ["hours_available"] = S.Data.HoursAvailable, ["keep_in_tray"] = Cfg.KeepInTray, ["follow_up_days"] = Cfg.FollowUpDays,
             ["check_for_updates"] = Cfg.CheckForUpdatesAtStart, ["bunny_check_in_hours"] = Cfg.BunnyCheckHours, ["bunny_asks_before_deleting"] = Cfg.BunnyAskBeforeDelete,
+            ["bunny_personality"] = Personality, ["bunny_reads_answers_out_loud"] = Cfg.BunnyVoice == 0,
         };
 
         // ---- Tools ----
@@ -490,6 +516,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         hours_available = Int("Hours she has for work on a typical day, 1 to 14."), keep_in_tray = Bool("Keep running in the tray when closed."),
                         follow_up_days = Int("Days before nudging about a task waiting on someone."), check_for_updates = Bool("Check for updates automatically."),
                         bunny_check_in_hours = Int("Hours between your check-ins, 0 for never."), bunny_asks_before_deleting = Bool("Ask her before you delete tasks."),
+                        bunny_personality = OneOf("Your personality.", Personalities.Select(p => p.Name).ToArray()),
+                        bunny_reads_answers_out_loud = Bool("Whether her screen reader reads your answers out loud, or just says Bunny answered."),
                     }),
                 T("set_day", "Sets up a day: normal, vacation (everything off Today) or a rough day (only what is due soon or on Today shows), its hours, or its kind of day.",
                     new
@@ -549,8 +577,9 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             foreach (var raw in ids)
             {
                 string id = raw.Trim().Trim('[', ']').Replace("-", "").ToLowerInvariant();
-                var hits = id.Length >= 4 ? store.Data.Tasks.Where(t => t.Id.ToString("N").StartsWith(id)).ToList() : new();
-                if (hits.Count == 0) hits = store.Data.Tasks.Where(t => t.Name.Equals(raw.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
+                var seen = store.Data.Tasks.Where(t => Seen(store, t)).ToList();
+                var hits = id.Length >= 4 ? seen.Where(t => t.Id.ToString("N").StartsWith(id)).ToList() : new();
+                if (hits.Count == 0) hits = seen.Where(t => t.Name.Equals(raw.Trim(), StringComparison.OrdinalIgnoreCase)).ToList();
                 if (hits.Count == 0) throw new Exception("No task with the id " + raw + ". Use find_tasks to get ids.");
                 if (hits.Count > 1) throw new Exception(raw + " matches " + hits.Count + " tasks. Use the ids from find_tasks.");
                 if (!found.Contains(hits[0])) found.Add(hits[0]);
@@ -584,6 +613,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         "all" => S.Data.Tasks,
                         _ => S.Data.Tasks.Where(t => t.Status != Status.Done).OrderBy(t => t.Status).ThenBy(t => t.Due ?? DateTime.MaxValue),
                     };
+                    q = q.Where(Seen);
                     if (list.Length > 0) q = q.Where(t => t.List.Equals(list, StringComparison.OrdinalIgnoreCase));
                     if (text.Length > 0)
                     {
@@ -603,7 +633,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
 
                 case "add_task":
                 {
-                    string listName = Get(a, "list") ?? _w.OpenListName ?? S.ActiveLists.FirstOrDefault()?.Name ?? "Homework";
+                    string listName = Get(a, "list") ?? (_w.OpenListName is string ol && S.Data.Lists.Any(l => l.Name == ol && !l.PrivateFromBunny) ? ol : null) ?? S.ActiveLists.FirstOrDefault(l => !l.PrivateFromBunny)?.Name ?? "Homework";
                     var list = ListNamed(listName);
                     var t = new TaskItem { List = list.Name, Status = list.DefaultStatus, StatusSince = now };
                     ApplyFields(S, t, a, now);
@@ -747,8 +777,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
 
         private TaskList ListNamed(string name) => ListNamed(S, name);
         private static TaskList ListNamed(Store store, string name) =>
-            store.Data.Lists.FirstOrDefault(l => l.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))
-            ?? throw new Exception("No list called " + name + ". Lists: " + string.Join(", ", store.Data.Lists.Where(l => !l.Archived).Select(l => l.Name)) + ".");
+            store.Data.Lists.FirstOrDefault(l => !l.PrivateFromBunny && l.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))
+            ?? throw new Exception("No list called " + name + " that you can see. Lists: " + string.Join(", ", store.Data.Lists.Where(l => !l.Archived && !l.PrivateFromBunny).Select(l => l.Name)) + ".");
 
         /// <summary>Puts the fields Claude gave onto a task. Throws, saying what is wrong, before changing anything it cannot.</summary>
         public static void ApplyFields(Store store, TaskItem t, IReadOnlyDictionary<string, JsonElement> a, DateTime now)
@@ -815,18 +845,19 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
         {
             string name = (Get(a, "list") ?? "").Trim();
             if (name.Length == 0) throw new Exception("No list name given.");
-            S.Remember("Bunny changing the list " + name);
             var l = S.Data.Lists.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (l != null && l.PrivateFromBunny) throw new Exception("That list is private from you. Only she can change it, in Settings.");
+            S.Remember("Bunny changing the list " + name);
             if (l == null)
             {
-                if (GetBool(a, "create") != true) throw new Exception("No list called " + name + ". Set create to true to make it. Lists: " + string.Join(", ", S.Data.Lists.Select(x => x.Name)) + ".");
+                if (GetBool(a, "create") != true) throw new Exception("No list called " + name + ". Set create to true to make it. Lists: " + string.Join(", ", S.Data.Lists.Where(x => !x.PrivateFromBunny).Select(x => x.Name)) + ".");
                 l = new TaskList { Name = name };
                 S.Data.Lists.Add(l);
             }
             if (Get(a, "new_name") is string nn && nn.Trim().Length > 0 && nn.Trim() != l.Name)
             {
                 string fresh = nn.Trim();
-                if (S.Data.Lists.Any(x => x != l && x.Name.Equals(fresh, StringComparison.OrdinalIgnoreCase))) throw new Exception("There is already a list called " + fresh + ".");
+                if (S.Data.Lists.Any(x => x != l && x.Name.Equals(fresh, StringComparison.OrdinalIgnoreCase))) throw new Exception("That name is taken. Pick another.");
                 foreach (var t in S.Data.Tasks.Where(t => t.List == l.Name)) t.List = fresh;
                 foreach (var sub in S.Data.Lists.Where(x => x.Parent == l.Name)) sub.Parent = fresh;
                 l.Name = fresh;
@@ -898,6 +929,12 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     case "check_for_updates" when b != null: c.CheckForUpdatesAtStart = b.Value; break;
                     case "bunny_check_in_hours" when n != null: c.BunnyCheckHours = Math.Clamp(n.Value, 0, 24); break;
                     case "bunny_asks_before_deleting" when b != null: c.BunnyAskBeforeDelete = b.Value; break;
+                    case "bunny_personality":
+                        string want = Get(a, key) ?? "";
+                        c.BunnyPersonality = Personalities.FirstOrDefault(p => p.Name.Equals(want.Trim(), StringComparison.OrdinalIgnoreCase)).Name
+                            ?? throw new Exception("No personality called " + want + ". Pick one of: " + string.Join(", ", Personalities.Select(p => p.Name)) + ".");
+                        break;
+                    case "bunny_reads_answers_out_loud" when b != null: c.BunnyVoice = b.Value ? 0 : 1; break;
                     default: throw new Exception("Cannot change " + key + ". Settings that can change: " + string.Join(", ", SettingValues().Keys) + ".");
                 }
                 done.Add(key + " " + SettingValues()[key]);
@@ -969,25 +1006,31 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             private readonly Store _store;
             private readonly Settings _cfg;
             private readonly PasswordBox _key = new();
-            private readonly ComboBox _check = new();
+            private readonly TextBlock _keyState = new() { TextWrapping = TextWrapping.Wrap, Width = 440, Margin = new Thickness(0, 6, 0, 0) };
+            private readonly ComboBox _check = new(), _voice = new(), _who = new();
             private readonly CheckBox _askDelete, _dates;
+            private readonly List<(TaskList List, CheckBox Box)> _private = new();
+            private readonly List<string> _notes;
+            private readonly ListBox _noteList = new() { MaxHeight = 120 };
+            private bool _notesChanged;
             private readonly StackPanel _panel = new();
-            private bool _clearNotes;
+            private readonly ScrollViewer _scroll;
             private static readonly int[] Hours = { 0, 1, 2, 3, 4, 6, 8 };
 
             public string Name => PageName;
-            public FrameworkElement Content => _panel;
+            public FrameworkElement Content => _scroll;
 
             public Page(Store store, Settings cfg)
             {
                 _store = store;
                 _cfg = cfg;
+                _scroll = new ScrollViewer { Content = _panel, MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false };
                 var about = new TextBox
                 {
                     IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Width = 440,
                     Text = "Smarter Bunny lets you talk to Bunny in the Talk to Bunny box on the main screen. Bunny can add and change tasks, plan your week, check on you, and change settings for you. " +
                            "It uses Claude, by Anthropic, with your own Claude API key. The API is pay as you go and separate from a Claude plan: get a key at console.anthropic.com, under API keys. " +
-                           "The key is kept encrypted on this computer, for your Windows account only. Your tasks are sent to Claude when you talk to Bunny or it checks on you.",
+                           "The key is kept encrypted on this computer, for your Windows account only. Your tasks are sent to Claude when you talk to Bunny or it checks on you, except the lists you keep private below.",
                 };
                 AutomationProperties.SetName(about, "About Smarter Bunny");
                 _panel.Children.Add(about);
@@ -995,6 +1038,13 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _key.Password = saved;
                 AutomationProperties.SetHelpText(_key, saved.Length > 0 ? "A key is saved. Paste a new one to replace it." : "Paste your Claude API key here. It starts with sk-ant.");
                 _panel.Children.Add(Layout.Row("Claude _API key", _key, 440));
+                ShowKeyState(saved);
+                _key.PasswordChanged += (_, _) =>
+                {
+                    string now = _key.Password.Trim();
+                    _keyState.Text = now.Length == 0 ? "The key box is empty. Press OK to remove the saved key." : now == Unprotect(_cfg.BunnyKey) ? KeyLine(now) : "A new key is in the box. Test it, or press OK to save it.";
+                };
+                _panel.Children.Add(_keyState);
                 var buttons = new WrapPanel { Width = 440 };
                 var test = Layout.Button("_Test the key");
                 test.Click += async (_, _) => await Test(test);
@@ -1010,6 +1060,15 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 foreach (var b in new[] { test, get, forget }) buttons.Children.Add(b);
                 _panel.Children.Add(buttons);
 
+                _voice.ItemsSource = Voices;
+                _voice.SelectedIndex = Math.Clamp(cfg.BunnyVoice, 0, Voices.Length - 1);
+                AutomationProperties.SetHelpText(_voice, "Bunny's answers always go in the Bunny's answers box on the main screen. This is what your screen reader says when one comes in.");
+                _panel.Children.Add(Layout.Row("When Bunny ans_wers", _voice, 440));
+                _who.ItemsSource = Personalities.Select(p => p.Name + ": " + p.How).ToList();
+                _who.SelectedIndex = Math.Max(0, Array.FindIndex(Personalities, p => p.Name.Equals(cfg.BunnyPersonality, StringComparison.OrdinalIgnoreCase)));
+                AutomationProperties.SetHelpText(_who, "How Bunny talks to you. The roast dial in the Fun menu still sets how much it teases.");
+                _panel.Children.Add(Layout.Row("Bunny's _personality", _who, 440));
+
                 _check.ItemsSource = Hours.Select(h => h == 0 ? "Never" : h == 1 ? "Every hour" : "Every " + h + " hours").ToList();
                 _check.SelectedIndex = Math.Max(0, Array.IndexOf(Hours, cfg.BunnyCheckHours) is int i && i >= 0 ? i : 3);
                 AutomationProperties.SetHelpText(_check, "Bunny checks on you in a small window, between 9 in the morning and 9 at night, when Busy Bunny is in front.");
@@ -1019,27 +1078,80 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _panel.Children.Add(_askDelete);
                 _panel.Children.Add(_dates);
 
-                var notes = new TextBox
+                var lists = new StackPanel();
+                foreach (var l in store.Data.Lists)
                 {
-                    IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, Width = 440, MaxHeight = 120, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
-                    Text = store.Data.BunnyNotes.Count == 0 ? "Nothing yet." : string.Join(Environment.NewLine, store.Data.BunnyNotes.Select((n, i) => (i + 1) + ". " + n)),
-                };
-                _panel.Children.Add(Layout.Row("What Bunny _remembers about you", notes, 440));
+                    var cb = new CheckBox { Content = l.Name + (l.Archived ? ", archived" : ""), IsChecked = l.PrivateFromBunny, Margin = new Thickness(0, 2, 0, 2) };
+                    _private.Add((l, cb));
+                    lists.Children.Add(cb);
+                }
+                var group = new GroupBox { Header = "Private lists: Bunny never sees their tasks", Content = lists, Margin = new Thickness(0, 6, 0, 6), Width = 440 };
+                _panel.Children.Add(group);
+
+                _notes = store.Data.BunnyNotes.ToList();
+                FillNotes();
+                _noteList.KeyDown += (_, e) => { if (e.Key == Key.Delete) { e.Handled = true; ForgetNote(); } };
+                AutomationProperties.SetHelpText(_noteList, "Delete forgets the note you are on.");
+                _panel.Children.Add(Layout.Row("What Bunny _remembers about you", _noteList, 440));
+                var noteButtons = new WrapPanel { Width = 440 };
+                var forgetOne = Layout.Button("Forget this n_ote");
+                forgetOne.Click += (_, _) => ForgetNote();
                 var clear = Layout.Button("C_lear what Bunny remembers");
-                clear.HorizontalAlignment = HorizontalAlignment.Left;
-                clear.Click += (_, _) => { _clearNotes = true; notes.Text = "Nothing, once you press OK."; Speech.Say(_panel, "Bunny will forget its notes when you press OK.", true); };
-                _panel.Children.Add(clear);
+                clear.Click += (_, _) =>
+                {
+                    _notes.Clear();
+                    _notesChanged = true;
+                    FillNotes();
+                    Speech.Say(_panel, "Bunny will forget all its notes when you press OK.", true);
+                };
+                noteButtons.Children.Add(forgetOne);
+                noteButtons.Children.Add(clear);
+                _panel.Children.Add(noteButtons);
+            }
+
+            private void FillNotes()
+            {
+                _noteList.ItemsSource = _notes.Count == 0 ? new List<string> { "Nothing yet." } : _notes.ToList();
+                _noteList.IsEnabled = true;
+                if (_notes.Count > 0) _noteList.SelectedIndex = 0;
+            }
+
+            private void ForgetNote()
+            {
+                int i = _noteList.SelectedIndex;
+                if (_notes.Count == 0 || i < 0 || i >= _notes.Count) { Speech.Say(_panel, "There is no note to forget.", true); return; }
+                _notes.RemoveAt(i);
+                _notesChanged = true;
+                FillNotes();
+                if (_notes.Count > 0) _noteList.SelectedIndex = Math.Min(i, _notes.Count - 1);
+                Speech.Say(_panel, "Bunny will forget that note when you press OK. " + (_notes.Count == 0 ? "No notes left." : _notes.Count + (_notes.Count == 1 ? " note left." : " notes left.")), true);
+                _noteList.Focus();
+            }
+
+            private static string KeyLine(string key) => key.Length == 0 ? "No key is saved yet." : "A key is saved, ending in " + key[^4..] + ".";
+            private void ShowKeyState(string key) => _keyState.Text = KeyLine(key);
+
+            private void Tell(string message, bool good)
+            {
+                var owner = Window.GetWindow(_panel);
+                if (owner != null) MessageBox.Show(owner, message, PageName, MessageBoxButton.OK, good ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                else MessageBox.Show(message, PageName, MessageBoxButton.OK, good ? MessageBoxImage.Information : MessageBoxImage.Warning);
             }
 
             private async Task Test(Button test)
             {
                 string key = _key.Password.Trim();
-                if (key.Length == 0) { Speech.Say(_panel, "Paste a key in the API key box first.", true); _key.Focus(); return; }
+                if (key.Length == 0) { Tell("Paste your Claude API key in the API key box first, then press Test the key.", false); _key.Focus(); return; }
+                if (!key.StartsWith("sk-ant-")) { Tell("That does not look like a Claude API key. Claude API keys start with sk-ant.", false); _key.Focus(); return; }
                 test.IsEnabled = false;
-                Speech.Say(_panel, "Asking Claude.", true);
+                test.Content = "Testing...";
+                Speech.Say(_panel, "Testing the key with Claude. This takes a few seconds.", true);
+                string message;
+                bool worked = false;
                 try
                 {
                     var client = new AnthropicClient { ApiKey = key, Timeout = TimeSpan.FromSeconds(60) };
+                    if (Environment.GetEnvironmentVariable("BUSYBUNNY_CLAUDE_URL") is string url && url.Length > 0) client = new AnthropicClient { ApiKey = key, Timeout = TimeSpan.FromSeconds(60), BaseUrl = url };
                     var r = await client.Messages.Create(new MessageCreateParams
                     {
                         Model = ModelId,
@@ -1048,10 +1160,22 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         Messages = [new UserMessageParam { Content = "You are Bunny, a cheerful helper in a to-do app. Say hello in one short sentence, no emoji." }],
                     });
                     string hi = Clean(string.Concat(r.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
-                    Speech.Say(_panel, "The key works. Bunny says: " + hi + " Press OK to save it.", true);
+                    // A key that works is saved at once, so it cannot get lost.
+                    if (key != Unprotect(_cfg.BunnyKey)) { _cfg.BunnyKey = Protect(key); _cfg.BunnyLastCheck = DateTime.Now; }
+                    _cfg.Save();
+                    ShowKeyState(key);
+                    worked = true;
+                    message = "The key works, and it is saved. Bunny says: " + hi;
                 }
-                catch (Exception e) { Speech.Say(_panel, "That did not work. " + Problem(e), true); }
-                finally { test.IsEnabled = true; test.Focus(); }
+                catch (AnthropicUnauthorizedException) { message = "Claude did not accept that key. Copy it again from console.anthropic.com, under API keys, and paste it in the API key box."; }
+                catch (Exception e) { message = "That key did not work. " + Problem(e); }
+                finally
+                {
+                    test.Content = "_Test the key";
+                    test.IsEnabled = true;
+                }
+                Tell(message, worked);
+                test.Focus();
             }
 
             public string? Validate()
@@ -1069,10 +1193,13 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     _cfg.BunnyKey = Protect(key);
                     _cfg.BunnyLastCheck = DateTime.Now; // the first check-in comes later, not the moment it is set up
                 }
+                _cfg.BunnyVoice = Math.Max(0, _voice.SelectedIndex);
+                _cfg.BunnyPersonality = Personalities[Math.Max(0, _who.SelectedIndex)].Name;
                 _cfg.BunnyCheckHours = Hours[Math.Max(0, _check.SelectedIndex)];
                 _cfg.BunnyAskBeforeDelete = _askDelete.IsChecked == true;
                 _cfg.BunnyReadsDates = _dates.IsChecked == true;
-                if (_clearNotes) _store.Data.BunnyNotes.Clear();
+                foreach (var (list, box) in _private) list.PrivateFromBunny = box.IsChecked == true;
+                if (_notesChanged) _store.Data.BunnyNotes = _notes.ToList();
                 _cfg.Save();
             }
         }
@@ -1105,6 +1232,16 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             try { ApplyFields(st, t, new Dictionary<string, JsonElement> { ["category"] = J("\"Nope\"") }, now); } catch { threw = true; }
             Check(threw && t.Section == "PSY 101", "an unknown category must be refused");
             Check(Find(st, new[] { t.Id.ToString("N")[..8] }).Single() == t, "find by short id");
+            // A private list: Bunny cannot find its tasks, move tasks onto it, or add to it.
+            st.Data.Lists[0].PrivateFromBunny = true;
+            bool hid = false;
+            try { Find(st, new[] { t.Id.ToString("N")[..8] }); } catch { hid = true; }
+            Check(hid, "a task on a private list must stay hidden");
+            bool refused = false;
+            try { ListNamed(st, st.Data.Lists[0].Name); } catch { refused = true; }
+            Check(refused, "a private list must be refused");
+            st.Data.Lists[0].PrivateFromBunny = false;
+            Check(Personalities.Length == 6 && Voices.Length == 3, "personalities and voices");
             Check(StatusOf("this week") == Status.ThisWeek && StatusOf("done_not_submitted") == Status.DoneNotSubmitted, "status words");
         }
     }
