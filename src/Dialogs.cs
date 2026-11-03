@@ -91,8 +91,9 @@ namespace BusyBunny
             musicVolume.SelectedIndex = Math.Max(0, Array.IndexOf(new[] { 3, 5, 10, 15, 20, 30 }, settings.MusicVolume) is int mi && mi >= 0 ? mi : 2);
             panel.Children.Add(music);
             panel.Children.Add(Layout.Row("Music v_olume", musicVolume));
-            var pack = new ComboBox { ItemsSource = Sounds.PackNames };
-            pack.SelectedIndex = Math.Max(0, Array.IndexOf(Sounds.PackNames, settings.SoundPack));
+            var packs = Sounds.PackNames.Where(p => Sounds.PackOpen(p) || p == settings.SoundPack).ToList();
+            var pack = new ComboBox { ItemsSource = packs };
+            pack.SelectedIndex = Math.Max(0, packs.IndexOf(settings.SoundPack));
             panel.Children.Add(Layout.Row("Sound pac_k (sets every sound below)", pack));
             var add = Layout.Button("Add my own sound _file...");
             add.HorizontalAlignment = HorizontalAlignment.Left;

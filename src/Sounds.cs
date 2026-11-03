@@ -405,7 +405,9 @@ namespace BusyBunny
         // ---- Sound packs (spec 12b.3 and 19.11): a pack sets the choice for every event ----
 
         public const string Classic = "Classic";
-        public static readonly string[] PackNames = { Classic, "Bunny pack", "Space", "Coffee", "Stove", "Halloween", "Winter holidays", "Valentine's" };
+        public static readonly string[] PackNames = { Classic, "Bunny pack", "Space", "Coffee", "Stove", "Halloween", "Winter holidays", "Valentine's", "Pizzicato party", "Flute meadow", "Organ hall", "Cello cavern", "Fireside", "Music room", "Starlight", "Library hush" };
+        /// <summary>Whether a pack can be picked: the collectible ones (Morgan's issue 17) open with streaks and burrow rooms. PlayTime sets this.</summary>
+        public static Func<string, bool> PackOpen = _ => true;
 
         private static readonly Dictionary<string, string[]> PackSounds = new()
         {
@@ -422,6 +424,22 @@ namespace BusyBunny
                 "Strings, minor chord", "Cello, minor chord", "Singing bells, minor falling", "Singing bells, creep", "Cello, minor sigh" },
             ["Winter holidays"] = new[] { "Singing bells, rising", "Singing bells, two up", "Singing bells, sparkle", "Singing bells, sparkle", "Singing bells, four up",
                 "Singing bells, chord high", "Singing bells, rising", "Singing bells, bounce", "Singing bells, sparkle", "Singing bells, sigh" },
+            ["Pizzicato party"] = new[] { Angelic, "Pizzicato strings, two up", "Pizzicato strings, rising", "Pizzicato strings, sparkle", "Pizzicato strings, four up",
+                "Strings, chord high", "Pizzicato strings, chord high", "Pizzicato strings, bounce", "Pizzicato strings, sparkle", "Pizzicato strings, sigh", "Pizzicato strings, single", "Pizzicato strings, two down" },
+            ["Flute meadow"] = new[] { Angelic, "Flute, two up", "Flute, rising", "Flute, sparkle", "Flute, four up",
+                "Flute, chord high", "Strings, chord high", "Flute, bounce", "Flute, sparkle", "Flute, sigh", "Flute, single", "Flute, two down" },
+            ["Organ hall"] = new[] { Angelic, "Organ, two up", "Organ, rising", "Organ, sparkle", "Organ, four up",
+                "Organ, chord high", "Organ, chord low", "Organ, bounce", "Organ, sparkle", "Organ, sigh", "Organ, single", "Organ, two down" },
+            ["Cello cavern"] = new[] { Angelic, "Cello, two up", "Cello, rising", "Cello, sparkle", "Cello, four up",
+                "Cello, chord high", "Cello, chord low", "Cello, bounce", "Singing bells, sparkle", "Cello, sigh", "Cello, single", "Cello, two down" },
+            ["Fireside"] = new[] { Angelic, "Soft piano, two up", "Cello, rising", "Soft piano, sparkle", "Soft piano, four up",
+                "Cello, chord high", "Stove, light", "Soft piano, bounce", "Soft piano, sparkle", "Cello, sigh", "Stove, click", "Soft piano, two down" },
+            ["Music room"] = new[] { "Xylophone, rising", "Piano, two up", "Xylophone, rising", "Xylophone, sparkle", "Piano, four up",
+                "Piano and strings, chord high", "Xylophone, chord high", "Xylophone, bounce", "Xylophone, sparkle", "Piano, sigh", "Xylophone, single", "Piano, two down" },
+            ["Starlight"] = new[] { Angelic, "Singing bells, two up", "Flute, rising", "Singing bells, sparkle", "Singing bells, four up",
+                "Singing bells, chord high", "Space, orbit", "Flute, bounce", "Singing bells, sparkle", "Flute, sigh", "Space, blip", "Singing bells, two down" },
+            ["Library hush"] = new[] { Angelic, "Soft piano, two up", "Soft piano, rising", "Flute, sparkle", "Soft piano, four up",
+                "Flute, chord high", "Soft piano, chord high", "Soft piano, bounce", "Flute, sparkle", "Soft piano, sigh", "Soft piano, single", "Soft piano, two down" },
             ["Valentine's"] = new[] { "Piano and strings, rising", "Soft piano, two up", "Piano and strings, rising", "Soft piano, sparkle", "Soft piano, four up",
                 "Strings, chord high", "Piano and strings, chord high", "Soft piano, bounce", "Soft piano, sparkle", "Soft piano, sigh" },
         };

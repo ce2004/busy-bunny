@@ -246,6 +246,8 @@ namespace BusyBunny
         public GameState Game { get; set; } = new();
         /// <summary>What Smarter Bunny keeps in mind about her: goals, what helps, what to avoid. She can read and clear it.</summary>
         public List<string> BunnyNotes { get; set; } = new();
+        /// <summary>The burrow, Vex the rival, bets, quests and collected sound packs.</summary>
+        public PlayState Play { get; set; } = new();
 
         public DayInfo Day(DateTime d)
         {

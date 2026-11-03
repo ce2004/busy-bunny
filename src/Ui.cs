@@ -71,6 +71,12 @@ namespace BusyBunny
         /// <summary>Bunny's personality, one of SmartBunny.Personalities.</summary>
         public string BunnyPersonality { get; set; } = "";
 
+        // ---- Adventures (Morgan's issue 17) ----
+        /// <summary>Vex, the rival bunny, trash-talks after tasks.</summary>
+        public bool RivalOn { get; set; } = true;
+        /// <summary>The dramatic narrator announces big finishes.</summary>
+        public bool NarratorOn { get; set; } = true;
+
         public static string FilePath => Path.Combine(Store.Folder, "settings.json");
 
         public static Settings Load()

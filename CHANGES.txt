@@ -1,3 +1,12 @@
+0.10.0
+New feature: Fun, Adventures. Everything below lives there.
+New feature: the burrow. Spend points on rooms for your bunny, like a mossy reading nook, a carrot pantry or a crackling fireplace. Walk through them with the arrow keys: each one is described by touch and sound and plays its own sound. Spending never lowers your level.
+New feature: Vex, your rival bunny. Vex earns points all week and trash-talks after you finish things. Pass Vex and it grumbles; beat Vex for the week and it has to admit defeat in a letter, and you get 15 points. Vex rests on your rough days and vacations, and you can turn the trash talk off in the same menu.
+New feature: bets. Bet points that you will finish a task by a time, like 3 pm or in 2 hours. Finish in time and you get double back. Miss it and Vex takes them.
+New feature: mystery boxes. Open one to unwrap a hidden quick win, and finish it today for 5 bonus points.
+New feature: quest weeks. A week with four or more things due becomes an adventure, like Midterm Mountain, with a chapter for each task and a little more story every time you clear one. Clear them all for 25 points.
+New feature: the dramatic narrator. Finishing something big gets a movie trailer announcement. With Smarter Bunny set up, Claude writes a fresh one each time.
+New feature: sound pack collection. Streaks of 3, 7, 14 and 21 days and some burrow rooms unlock eight new sound packs, like Pizzicato party and Starlight. Pick them in Options, Sounds once you have them.
 0.9.0
 Bug fixed: if you pressed Test the key in Options, Smarter Bunny, nothing seemed to happen, so it looked like the key was gone. Now a window tells you whether the key works, the button says Testing while it checks, and a key that works is saved straight away. The page also says when a key is saved and the last four letters of it.
 New feature: choose what happens when Bunny answers: read the whole answer out loud, just say Bunny answered, or say nothing so you can read it in the answers box with NVDA or braille. It is in Options, Smarter Bunny.

@@ -301,6 +301,26 @@ namespace BusyBunny
             return s.Trim();
         }
 
+        /// <summary>A short piece of writing for the game (the narrator, Vex's letters), or null when Bunny is not set up or it fails.</summary>
+        public static async Task<string?> WriteAsync(string request)
+        {
+            if (_me == null || !Ready) return null;
+            try
+            {
+                var response = await _me.Client().Messages.Create(new MessageCreateParams
+                {
+                    Model = ModelId,
+                    MaxTokens = 3000,
+                    OutputConfig = new OutputConfig { Effort = Effort.Low },
+                    System = "You write short, funny lines for Busy Bunny, a to-do app for Morgan, a blind psychology student. Her screen reader reads them aloud. Plain sentences only: no Markdown, emoji, quotation marks around the whole thing, pound signs or asterisks. Never mean about her worth, disability or health.",
+                    Messages = [new UserMessageParam { Content = request }],
+                });
+                string text = Clean(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
+                return text.Length is > 0 and < 1200 ? text : null;
+            }
+            catch { return null; }
+        }
+
         /// <summary>A date phrase the form could not read, worked out by Claude. Null when it is not a date.</summary>
         public static async Task<(DateTime When, bool HasTime)?> ReadDateAsync(string text, DateTime now, Status week)
         {
@@ -348,7 +368,7 @@ Limits:
 You can only use features Busy Bunny already has. You cannot add new features, buttons, sounds or screens, change how the app works, or reach other apps, email or the internet. When she asks for something the app cannot do, say so plainly, and tell her she can ask for it with Help, Request a feature, which opens a new issue on GitHub; offer to open it with open_feature_request. Never pretend to have done something you did not do. You cannot see or change the API key.
 
 Busy Bunny in brief:
-Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overdue and Focus now), Upcoming, Board, Search, and one tab per list, each with its categories. Statuses: Today, This week, Next week, Done not submitted, Waiting on someone, Done. A do date is the day she plans to do a task; on that day it shows on Today. Each list has its own priority scale, highest first, like Coffee: Triple shot, Double shot, Single shot, Decaf. Task types: general, assignment, test, meeting, event, personal goal. Sizes: small, medium, large, multi-day. Energy: easy or brain heavy. Keys: Control N quick add, F2 edit, Control D done, Control 1 to 6 set status, Delete, Control Z undo, Control R read my day, Control F search, Control Shift A talk to Bunny, Control Comma settings, Shift with arrows to select several tasks. The game gives karma points, levels, streaks and badges for finishing tasks. Fun menu has the kind of day, rough day, and everything is too much. View menu has low-energy mode and shuffle mode.";
+Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overdue and Focus now), Upcoming, Board, Search, and one tab per list, each with its categories. Statuses: Today, This week, Next week, Done not submitted, Waiting on someone, Done. A do date is the day she plans to do a task; on that day it shows on Today. Each list has its own priority scale, highest first, like Coffee: Triple shot, Double shot, Single shot, Decaf. Task types: general, assignment, test, meeting, event, personal goal. Sizes: small, medium, large, multi-day. Energy: easy or brain heavy. Keys: Control N quick add, F2 edit, Control D done, Control 1 to 6 set status, Delete, Control Z undo, Control R read my day, Control F search, Control Shift A talk to Bunny, Control Comma settings, Shift with arrows to select several tasks. The game gives karma points, levels, streaks and badges for finishing tasks. Fun, Adventures has the burrow (rooms bought with points), Vex the rival bunny, bets on finishing a task by a time, mystery boxes, quest weeks, the dramatic narrator and the sound pack collection. Fun menu has the kind of day, rough day, and everything is too much. View menu has low-energy mode and shuffle mode.";
 
         private string Context(DateTime now)
         {

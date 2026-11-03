@@ -127,7 +127,7 @@ namespace BusyBunny
             const string UsualSound = "Usual Task done sound";
             var finish = new ComboBox { ItemsSource = new[] { UsualSound }.Concat(Sounds.All).ToList() };
             // Morgan's issue 6: a sound pack for each tab, for adding, saving and finishing its tasks.
-            var packChoices = new[] { "", Sounds.MatchScale }.Concat(Sounds.PackNames).ToList();
+            var packChoices = new[] { "", Sounds.MatchScale }.Concat(Sounds.PackNames.Where(p => Sounds.PackOpen(p) || store.Data.Lists.Any(l => l.SoundPack == p))).ToList();
             var pack = new ComboBox();
             AutomationProperties.SetHelpText(pack, "The sounds for adding, saving and finishing this list's tasks. Arrow through them to hear each one finish a task.");
             var typeBoxes = Enum.GetValues<TaskType>().ToDictionary(t => t, t => new CheckBox { Content = TypeName(t), Margin = new Thickness(0, 2, 0, 2) });

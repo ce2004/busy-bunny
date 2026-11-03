@@ -52,6 +52,16 @@ At the bottom of the main screen, or Control Shift A. Type what you want and pre
 It needs your own Claude API key, from console.anthropic.com (pay as you go, separate from a Claude plan). Put it in Options, Settings, Smarter Bunny, and press Test the key to check it. There you also choose how often Bunny checks on you, whether its answers are read out loud, its personality, lists to keep private from Bunny, and what Bunny remembers about you. The key is kept encrypted on your computer. When you talk to Bunny, your tasks are sent to Claude, except the ones on private lists.
 
 
+Adventures (Fun, Adventures)
+
+The burrow: spend points on rooms for your bunny and walk through them with the arrow keys; each room has its own sound. Spending never lowers your level.
+Vex, your rival bunny: earns points all week and trash-talks you. Beat Vex for the week and it writes you a letter admitting defeat.
+Bets: bet points that you finish a task by a time. Win double, or lose them to Vex.
+Mystery box: a hidden quick win to unwrap, worth 5 bonus points if you finish it today.
+This week's quest: a big week becomes an adventure with a chapter for each task.
+The dramatic narrator announces big finishes, and streaks and burrow rooms unlock new sound packs.
+
+
 Keys
 
 Alt opens the menus.
