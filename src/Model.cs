@@ -246,6 +246,9 @@ namespace BusyBunny
         public GameState Game { get; set; } = new();
         /// <summary>What Smarter Bunny keeps in mind about her: goals, what helps, what to avoid. She can read and clear it.</summary>
         public List<string> BunnyNotes { get; set; } = new();
+        /// <summary>What Smarter Bunny learned about her from her tasks and history, written by Claude, refreshed weekly.</summary>
+        public string BunnyProfile { get; set; } = "";
+        public DateTime BunnyLearned { get; set; }
         /// <summary>The burrow, Vex the rival, bets, quests and collected sound packs.</summary>
         public PlayState Play { get; set; } = new();
 

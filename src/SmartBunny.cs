@@ -108,7 +108,9 @@ namespace BusyBunny
             w.AddMenuItem("File", "Start a ne_w talk with Bunny", NewTalk);
             w.AddMenuItem("Options", "Smarter _Bunny...", () => w.OpenSettingsAt(PageName));
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.A, FocusAsk, "Control Shift A: Talk to Bunny. Type, then Enter. Bunny can add and change tasks, settings and more");
-            w.MinuteTick += () => { if (ShouldCheckIn(DateTime.Now)) CheckIn(byHand: false); };
+            w.MinuteTick += () => { var now = DateTime.Now; if (ShouldCheckIn(now)) CheckIn(byHand: false); else Auto(now); };
+            w.Started += Soon;
+            w.AddMenuItem("File", "Bunny, get to _know me again", () => { if (!Ready) { CheckIn(true); return; } _ = Learn(first: true); });
             w.NewDay += _ => _history.Clear();
         }
 
@@ -149,6 +151,175 @@ namespace BusyBunny
             _ask.Clear();
             Log("You: " + text);
             _ = Run(text, focusBack: _ask);
+        }
+
+        // ---- Getting to know her ----
+
+        private bool _learning;
+        private DateTime _learnFailed;
+
+        /// <summary>Soon after the key is set, or after startup windows close: learn her, then brief her.</summary>
+        public void Soon()
+        {
+            var t = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
+            t.Tick += (_, _) => { t.Stop(); Auto(DateTime.Now); };
+            t.Start();
+        }
+
+        /// <summary>The first time Bunny can, it learns her. After that it relearns weekly and gives a daily briefing.</summary>
+        private void Auto(DateTime now)
+        {
+            if (!Ready || _busy || _learning) return;
+            if (!_w.IsVisible || !_w.IsActive || _w.OwnedWindows.Count > 0) return;
+            if ((now - _learnFailed).TotalMinutes < 60) return;
+            if (S.Data.BunnyLearned == default) { _ = Learn(first: true); return; }
+            if ((now - S.Data.BunnyLearned).TotalDays >= 7) { _ = Learn(first: false); return; }
+            if (Cfg.BunnyBriefing && Cfg.BunnyBriefedDay != S.Key(now) && now.Hour >= 5 && now.Hour < 22) Briefing(now);
+        }
+
+        private void Briefing(DateTime now)
+        {
+            Cfg.BunnyBriefedDay = S.Key(now);
+            Cfg.Save();
+            Log("Bunny's briefing for " + now.ToString("dddd", CultureInfo.InvariantCulture) + ":");
+            _ = Run(BriefingPrompt, focusBack: null);
+        }
+
+        private const string BriefingPrompt =
+            "(Daily briefing. She just opened Busy Bunny for the first time today; she did not type this.) Using what you have learned about her, and find_tasks for today, overdue and this_week, " +
+            "give her a short, personal briefing: the shape of her day (class times today, her hours), the two or three things that matter most and when to do them given her habits, " +
+            "any big deadline coming that she has not started, and one line that sounds like you. Under 90 words. Do not use ask_user and do not change anything.";
+
+        private const string LearnPrompt =
+@"You are Bunny, the helper inside Busy Bunny, a to-do app for Morgan, a blind psychology student. You are studying her app data to get to know her: her schedule (class times, which days are packed), when she gets things done (time of day, weekdays), how she plans (do dates, finishing early or late, what slips into overdue), her classes and the big deadlines coming, and what seems to help her.
+
+Write two parts, in plain text with no Markdown, pound signs or asterisks.
+First a line that says PROFILE: and then a compact profile for your own future use: 8 to 14 short lines, each one pattern or fact plus how to use it to help her. For example: Finishes most work between 7 and 11 at night, so plan brain-heavy tasks for evenings. Only what the data supports; mark guesses as guesses. Keep what is still true from what you knew before.
+Then a line that says WELCOME: and then, only when asked for, a welcome for her to hear: 4 to 6 sentences in her chosen personality that show you really get her, with two or three specific observations from her data that would make her say how did it know that, one thing you will do to help this week, and an invitation to tell you anything you got wrong. When no welcome is asked for, write WELCOME: and nothing after it.";
+
+        /// <summary>Habits from her history, worked out here so Claude gets numbers, not guesses. Private lists are left out.</summary>
+        public static string Habits(Store s, DateTime now)
+        {
+            bool Hidden(string list) => s.Data.Lists.Any(l => l.Name == list && l.PrivateFromBunny);
+            var done = s.Data.Log.Where(e => e.Kind == "Done" && e.When > now.AddDays(-120) && !Hidden(e.List)).ToList();
+            var sb = new StringBuilder();
+            sb.AppendLine("Tasks finished in the last 120 days: " + done.Count + ".");
+            if (done.Count > 0)
+            {
+                string Part(int h) => h >= 5 && h < 12 ? "morning" : h < 17 && h >= 12 ? "afternoon" : h >= 17 && h < 22 ? "evening" : "late night";
+                sb.AppendLine("When she finishes things: " + string.Join(", ", done.GroupBy(e => Part(e.When.Hour)).OrderByDescending(g => g.Count()).Select(g => g.Key + " " + g.Count())) + ".");
+                sb.AppendLine("Busiest hours: " + string.Join(", ", done.GroupBy(e => e.When.Hour).OrderByDescending(g => g.Count()).Take(3).Select(g => g.Key + ":00 (" + g.Count() + ")")) + ".");
+                sb.AppendLine("By weekday: " + string.Join(", ", done.GroupBy(e => e.When.DayOfWeek).OrderByDescending(g => g.Count()).Select(g => g.Key + " " + g.Count())) + ".");
+                sb.AppendLine("By list: " + string.Join(", ", done.GroupBy(e => e.List).OrderByDescending(g => g.Count()).Take(6).Select(g => g.Key + " " + g.Count())) + ".");
+                var tags = done.Where(e => e.Tag.Length > 0).GroupBy(e => e.Tag).OrderByDescending(g => g.Count()).Take(6).ToList();
+                if (tags.Count > 0) sb.AppendLine("By tag: " + string.Join(", ", tags.Select(g => g.Key + " " + g.Count())) + ".");
+                int days = done.Select(e => e.When.Date).Distinct().Count();
+                sb.AppendLine("Active days: " + days + ", about " + Math.Round(done.Count / (double)Math.Max(1, days), 1) + " tasks on a day she works.");
+            }
+            var finished = s.Data.Tasks.Where(t => t.Status == Status.Done && t.Due != null && t.DoneAt != null && !Hidden(t.List)).ToList();
+            if (finished.Count > 0)
+            {
+                int late = finished.Count(t => t.DoneAt!.Value.Date > t.Due!.Value.Date);
+                int early = finished.Count(t => t.DoneAt!.Value.Date < t.Due!.Value.Date);
+                sb.AppendLine("Finished tasks with a due date: " + finished.Count + ", " + early + " early, " + (finished.Count - early - late) + " on the day, " + late + " late.");
+            }
+            var open = s.Data.Tasks.Where(t => t.Status != Status.Done && !Hidden(t.List) && !s.ListOf(t).Archived).ToList();
+            if (open.Count > 0)
+            {
+                sb.AppendLine("Open tasks: " + open.Count + ", " + open.Count(t => Store.IsOverdue(t, now)) + " overdue, on average " + Math.Round(open.Average(t => (now - t.CreatedAt).TotalDays)) + " days old.");
+                var snoozed = open.Where(t => t.Snoozes > 0).OrderByDescending(t => t.Snoozes).Take(3).ToList();
+                if (snoozed.Count > 0) sb.AppendLine("Pushed back most: " + string.Join(", ", snoozed.Select(t => t.Name + " (" + t.Snoozes + " times)")) + ".");
+                int planned = open.Count(t => t.DoDate != null);
+                sb.AppendLine("Open tasks with a do date planned: " + planned + " of " + open.Count + ".");
+            }
+            int rough = s.Data.Days.Count(kv => DateTime.TryParse(kv.Key, out var d) && d > now.AddDays(-30) && d <= now && kv.Value.Mode == DayMode.RoughDay);
+            if (rough > 0) sb.AppendLine("Rough days in the last 30 days: " + rough + ".");
+            return sb.ToString();
+        }
+
+        /// <summary>Splits Claude's answer into the profile and the welcome.</summary>
+        public static (string Profile, string Welcome) ParseLearned(string text)
+        {
+            int p = text.IndexOf("PROFILE:", StringComparison.OrdinalIgnoreCase);
+            int w = text.IndexOf("WELCOME:", StringComparison.OrdinalIgnoreCase);
+            string profile = p < 0 ? (w < 0 ? text : text[..w]) : w > p ? text[(p + 8)..w] : text[(p + 8)..];
+            string welcome = w < 0 ? "" : text[(w + 8)..];
+            profile = Clean(profile);
+            return (profile.Length > 3000 ? profile[..3000] : profile, Clean(welcome));
+        }
+
+        /// <summary>Bunny studies her lists, schedule, tasks and history, and keeps what it learned. The first time, it welcomes her.</summary>
+        public async Task<bool> Learn(bool first, bool welcome = true)
+        {
+            if (_learning || !Ready) return false;
+            _learning = true;
+            if (first) { Log("Bunny is getting to know you."); Say("Bunny is getting to know you. Give it a moment."); }
+            try
+            {
+                var now = DateTime.Now;
+                string tasks = string.Join("\n", S.Data.Tasks.Where(t => Seen(t) && t.Status != Status.Done && !S.ListOf(t).Archived)
+                    .OrderBy(t => t.Due ?? DateTime.MaxValue).Take(150).Select(t => Describe(t, now)));
+                string ask = "Her chosen personality for you: " + Personality + ", " + Personalities.First(p => p.Name == Personality).How + ".\n\n" +
+                    "Overview:\n" + Overview(now) + "\nHabits from her history:\n" + Habits(S, now) + "\nHer open tasks:\n" + (tasks.Length > 0 ? tasks : "none yet") +
+                    (S.Data.BunnyProfile.Length > 0 ? "\n\nWhat you knew before:\n" + S.Data.BunnyProfile : "") +
+                    (first && welcome ? "\n\nThis is the first time you are meeting her properly: write the welcome." : "\n\nNo welcome this time.");
+                var response = await Client().Messages.Create(new MessageCreateParams
+                {
+                    Model = ModelId,
+                    MaxTokens = 16000,
+                    OutputConfig = new OutputConfig { Effort = Effort.Medium },
+                    System = LearnPrompt,
+                    Messages = [new UserMessageParam { Content = ask }],
+                });
+                var (profile, hello) = ParseLearned(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
+                if (profile.Length == 0) throw new Exception("Bunny came back with nothing.");
+                S.Data.BunnyProfile = profile;
+                S.Data.BunnyLearned = now;
+                S.Save();
+                if (first && welcome && hello.Length > 0) Welcome(hello);
+                return true;
+            }
+            catch (Exception e)
+            {
+                _learnFailed = DateTime.Now;
+                if (first) { Log("Bunny: " + Problem(e)); Say(Problem(e)); }
+                return false;
+            }
+            finally { _learning = false; }
+        }
+
+        private void Say(string text)
+        {
+            if (Cfg.BunnyVoice == 0) Speech.Say(_w, text, true);
+            else if (Cfg.BunnyVoice == 1) Speech.Say(_w, "Bunny answered.", true);
+        }
+
+        private void Welcome(string hello)
+        {
+            Log("Bunny: " + hello);
+            Sounds.Play(Sounds.Event.SurpriseReward);
+            var w = Layout.Dialog(_w, "Bunny got to know you");
+            var panel = new StackPanel { Margin = new Thickness(14), Width = 460 };
+            var text = new TextBox { Text = hello, IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Margin = new Thickness(0, 0, 0, 8) };
+            AutomationProperties.SetName(text, "Bunny says");
+            panel.Children.Add(text);
+            var row = new WrapPanel();
+            var love = Layout.Button("_Love it", isDefault: true);
+            love.Click += (_, _) => w.DialogResult = true;
+            var more = Layout.Button("_Tell Bunny more");
+            bool talk = false;
+            more.Click += (_, _) => { talk = true; w.DialogResult = true; };
+            var see = Layout.Button("See what Bunny _learned");
+            see.Click += (_, _) => TextViewer.Show(w, "What Bunny learned about you", S.Data.BunnyProfile.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(l => l.Trim()).ToList());
+            row.Children.Add(love);
+            row.Children.Add(more);
+            row.Children.Add(see);
+            row.Children.Add(Layout.Button("Close", isCancel: true));
+            panel.Children.Add(row);
+            w.Content = panel;
+            w.Loaded += (_, _) => { text.Focus(); text.CaretIndex = 0; if (Cfg.BunnyVoice != 2) Speech.Say(w, hello, true); };
+            w.ShowDialog();
+            if (talk) { _ask.Focus(); _w.Say("Talk to Bunny. Tell it about your week, your classes, or anything it got wrong.", true); }
         }
 
         // ---- Check-ins ----
@@ -380,6 +551,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             bool privateOpen = _w.OpenListName is string ol && S.Data.Lists.Any(l => l.Name == ol && l.PrivateFromBunny);
             if (_w.TabNames.Count > 0 && _w.OpenListName is string open && !privateOpen) sb.Append(" She is on the ").Append(open).Append(" tab.");
             if (_w.ChosenTask is TaskItem t) sb.Append(Seen(t) ? " Her cursor is on the task [" + Short(t) + "] " + S.Line(t, now) + "." : " Her cursor is on a private task.");
+            if (S.Data.BunnyProfile.Length > 0) sb.Append(" What you have learned about her: ").Append(S.Data.BunnyProfile.Replace("\n", " | ")).Append('.');
             if (S.Data.BunnyNotes.Count > 0) sb.Append(" Your notes about her: ").Append(string.Join(" | ", S.Data.BunnyNotes)).Append('.');
             sb.Append(')');
             return sb.ToString();
@@ -446,7 +618,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             ["emojis_on"] = Cfg.EmojisOn, ["finals_mode"] = Cfg.FinalsMode, ["morning_check_in"] = Cfg.MorningCheckIn, ["warn_when_urgent_more_than"] = Cfg.UrgentWarnAbove,
             ["hours_available"] = S.Data.HoursAvailable, ["keep_in_tray"] = Cfg.KeepInTray, ["follow_up_days"] = Cfg.FollowUpDays,
             ["check_for_updates"] = Cfg.CheckForUpdatesAtStart, ["bunny_check_in_hours"] = Cfg.BunnyCheckHours, ["bunny_asks_before_deleting"] = Cfg.BunnyAskBeforeDelete,
-            ["bunny_personality"] = Personality, ["bunny_reads_answers_out_loud"] = Cfg.BunnyVoice == 0,
+            ["bunny_personality"] = Personality, ["bunny_reads_answers_out_loud"] = Cfg.BunnyVoice == 0, ["bunny_daily_briefing"] = Cfg.BunnyBriefing,
         };
 
         // ---- Tools ----
@@ -537,6 +709,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         follow_up_days = Int("Days before nudging about a task waiting on someone."), check_for_updates = Bool("Check for updates automatically."),
                         bunny_check_in_hours = Int("Hours between your check-ins, 0 for never."), bunny_asks_before_deleting = Bool("Ask her before you delete tasks."),
                         bunny_personality = OneOf("Your personality.", Personalities.Select(p => p.Name).ToArray()),
+                        bunny_daily_briefing = Bool("Your short briefing the first time she opens Busy Bunny each day."),
                         bunny_reads_answers_out_loud = Bool("Whether her screen reader reads your answers out loud, or just says Bunny answered."),
                     }),
                 T("set_day", "Sets up a day: normal, vacation (everything off Today) or a rough day (only what is due soon or on Today shows), its hours, or its kind of day.",
@@ -955,6 +1128,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                             ?? throw new Exception("No personality called " + want + ". Pick one of: " + string.Join(", ", Personalities.Select(p => p.Name)) + ".");
                         break;
                     case "bunny_reads_answers_out_loud" when b != null: c.BunnyVoice = b.Value ? 0 : 1; break;
+                    case "bunny_daily_briefing" when b != null: c.BunnyBriefing = b.Value; break;
                     default: throw new Exception("Cannot change " + key + ". Settings that can change: " + string.Join(", ", SettingValues().Keys) + ".");
                 }
                 done.Add(key + " " + SettingValues()[key]);
@@ -1028,7 +1202,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             private readonly PasswordBox _key = new();
             private readonly TextBlock _keyState = new() { TextWrapping = TextWrapping.Wrap, Width = 440, Margin = new Thickness(0, 6, 0, 0) };
             private readonly ComboBox _check = new(), _voice = new(), _who = new();
-            private readonly CheckBox _askDelete, _dates;
+            private readonly CheckBox _askDelete, _dates, _briefing;
+            private bool _forgetProfile;
             private readonly List<(TaskList List, CheckBox Box)> _private = new();
             private readonly List<string> _notes;
             private readonly ListBox _noteList = new() { MaxHeight = 120 };
@@ -1095,8 +1270,39 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _panel.Children.Add(Layout.Row("Bunny _checks on me", _check));
                 _askDelete = new CheckBox { Content = "Ask me before Bunny _deletes a task", IsChecked = cfg.BunnyAskBeforeDelete, Margin = new Thickness(0, 6, 0, 4) };
                 _dates = new CheckBox { Content = "Bunny reads dates the task form does not under_stand", IsChecked = cfg.BunnyReadsDates, Margin = new Thickness(0, 4, 0, 4) };
+                _briefing = new CheckBox { Content = "A short _briefing from Bunny the first time I open Busy Bunny each day", IsChecked = cfg.BunnyBriefing, Margin = new Thickness(0, 4, 0, 4) };
                 _panel.Children.Add(_askDelete);
                 _panel.Children.Add(_dates);
+                _panel.Children.Add(_briefing);
+
+                var learned = new TextBox
+                {
+                    IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, Width = 440, MaxHeight = 140, VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+                    Text = store.Data.BunnyProfile.Length == 0 ? "Nothing yet. Bunny gets to know you the first time it can, then every week." : store.Data.BunnyProfile,
+                };
+                _panel.Children.Add(Layout.Row("What Bunny _knows about you, from your tasks and habits", learned, 440));
+                var learnButtons = new WrapPanel { Width = 440 };
+                var again = Layout.Button("Learn about me agai_n");
+                again.Click += async (_, _) =>
+                {
+                    if (_me == null) return;
+                    string key = _key.Password.Trim();
+                    if (key.Length == 0 || key != Unprotect(_cfg.BunnyKey)) { Tell("Save a working key first: press Test the key, then try again.", false); return; }
+                    again.IsEnabled = false;
+                    again.Content = "Learning...";
+                    Speech.Say(_panel, "Bunny is studying your tasks. This takes a little while.", true);
+                    bool ok = await _me.Learn(first: false);
+                    again.Content = "Learn about me agai_n";
+                    again.IsEnabled = true;
+                    if (ok) { learned.Text = store.Data.BunnyProfile; _forgetProfile = false; }
+                    Tell(ok ? "Bunny updated what it knows about you. It is in the box above." : "Bunny could not do that right now. Check the key and the internet, then try again.", ok);
+                    again.Focus();
+                };
+                var forgetLearned = Layout.Button("Forget what B_unny learned");
+                forgetLearned.Click += (_, _) => { _forgetProfile = true; learned.Text = "Forgotten, once you press OK."; Speech.Say(_panel, "Bunny will forget what it learned when you press OK. It learns again next week, or when you ask.", true); };
+                learnButtons.Children.Add(again);
+                learnButtons.Children.Add(forgetLearned);
+                _panel.Children.Add(learnButtons);
 
                 var lists = new StackPanel();
                 foreach (var l in store.Data.Lists)
@@ -1218,6 +1424,10 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _cfg.BunnyCheckHours = Hours[Math.Max(0, _check.SelectedIndex)];
                 _cfg.BunnyAskBeforeDelete = _askDelete.IsChecked == true;
                 _cfg.BunnyReadsDates = _dates.IsChecked == true;
+                _cfg.BunnyBriefing = _briefing.IsChecked == true;
+                if (_forgetProfile) { _store.Data.BunnyProfile = ""; _store.Data.BunnyLearned = DateTime.Now; }
+                bool newKey = key.Length > 0 && _store.Data.BunnyLearned == default;
+                if (newKey) _me?.Soon();
                 foreach (var (list, box) in _private) list.PrivateFromBunny = box.IsChecked == true;
                 if (_notesChanged) _store.Data.BunnyNotes = _notes.ToList();
                 _cfg.Save();
@@ -1262,6 +1472,12 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             Check(refused, "a private list must be refused");
             st.Data.Lists[0].PrivateFromBunny = false;
             Check(Personalities.Length == 6 && Voices.Length == 3, "personalities and voices");
+            var (prof, hello) = ParseLearned("PROFILE:\nWorks best at night.\nLoves PSY.\nWELCOME: Hi **Morgan**!");
+            Check(prof == "Works best at night.\nLoves PSY." && hello == "Hi Morgan!", "learned gave " + prof + " / " + hello);
+            Check(ParseLearned("PROFILE: one fact\nWELCOME:").Welcome.Length == 0, "no welcome");
+            st.Data.Log.Add(new LogEntry { When = now.AddDays(-1).Date.AddHours(20), Kind = "Done", List = "Homework", Points = 5 });
+            string habits = Habits(st, now);
+            Check(habits.Contains("finished in the last 120 days: 1") && habits.Contains("evening 1"), "habits gave " + habits);
             Check(StatusOf("this week") == Status.ThisWeek && StatusOf("done_not_submitted") == Status.DoneNotSubmitted, "status words");
         }
     }

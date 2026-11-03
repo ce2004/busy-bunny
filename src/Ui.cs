@@ -70,6 +70,9 @@ namespace BusyBunny
         public int BunnyVoice { get; set; }
         /// <summary>Bunny's personality, one of SmartBunny.Personalities.</summary>
         public string BunnyPersonality { get; set; } = "";
+        /// <summary>A short briefing from Bunny the first time Busy Bunny opens each day.</summary>
+        public bool BunnyBriefing { get; set; } = true;
+        public string BunnyBriefedDay { get; set; } = "";
 
         // ---- Adventures (Morgan's issue 17) ----
         /// <summary>Vex, the rival bunny, trash-talks after tasks.</summary>

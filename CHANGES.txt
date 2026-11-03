@@ -1,3 +1,7 @@
+0.11.0
+New feature: Bunny gets to know you. The first time Busy Bunny opens with your Claude key, Bunny studies your lists, class times, tasks and habits, like when you get things done and what tends to slip, then tells you what it noticed. It keeps learning every week and uses all of it whenever you talk to it. File, Bunny, get to know me again asks it to look again.
+New feature: a daily briefing. The first time you open Busy Bunny each day, Bunny tells you the shape of your day and the two or three things that matter most, planned around your habits. Turn it off in Options, Smarter Bunny.
+New feature: Options, Smarter Bunny shows everything Bunny has learned about you, with buttons to learn again or forget it. Private lists are never part of it.
 0.10.0
 New feature: Fun, Adventures. Everything below lives there.
 New feature: the burrow. Spend points on rooms for your bunny, like a mossy reading nook, a carrot pantry or a crackling fireplace. Walk through them with the arrow keys: each one is described by touch and sound and plays its own sound. Spending never lowers your level.
