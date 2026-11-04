@@ -90,7 +90,7 @@ namespace BusyBunny
     /// <summary>The rules, kept apart from the window so the self-test can run them.</summary>
     public static class Engine
     {
-        public static readonly HashSet<string> KarmaKinds = new() { "Done", "Bonus", "Challenge", "Comeback" };
+        public static readonly HashSet<string> KarmaKinds = new() { "Done", "Bonus", "Challenge", "Comeback", Ledger.FunKind };
 
         // ---- Points and levels ----
 
@@ -247,6 +247,7 @@ namespace BusyBunny
                 g.LevelAnnounced = levelAfter;
                 o.Add(Game.LevelUp, "Level up! You are level " + levelAfter + ": " + LevelName(levelAfter) + ".");
                 o.Ask(Sounds.Event.LevelUp);
+                GameEvents.RaiseLevelUp(levelAfter);
             }
 
             // Daily goal and streak.
@@ -259,6 +260,7 @@ namespace BusyBunny
                 o.Add(Game.Goals, "Daily goal reached: " + dayAfter + " of " + goal + ". You can stop now, or keep going. The bunny has no opinion.");
                 o.Ask(Sounds.Event.DailyGoal);
                 var (cur, longest) = Streaks(d, now);
+                GameEvents.RaiseStreakChanged(cur);
                 if (cur >= 2)
                 {
                     o.Add(Game.Goals, "Streak extended: " + cur + " days in a row.");
@@ -313,7 +315,10 @@ namespace BusyBunny
             }
 
             foreach (var b in EarnBadges(store, now, task))
+            {
                 o.Add(Game.Badge, "Badge earned: " + b.Name + ". " + b.How);
+                GameEvents.RaiseBadgeEarned(b.Name);
+            }
             return o;
         }
 
@@ -330,7 +335,7 @@ namespace BusyBunny
             // A bet won in time whose deadline has passed stays won, winnings and all: un-finishing by mistake
             // at night must not hand Vex a bet she won in the afternoon. Bets still before their deadline reopen.
             var keepWon = p.Bets.Any(b => b.TaskId == t.Id && b.State == "Won" && b.By <= now);
-            var mine = d.Log.Where(e => e.TaskId == t.Id && e.Kind is "Done" or "Bonus" or "Comeback" or "Challenge" or "Boss"
+            var mine = d.Log.Where(e => e.TaskId == t.Id && (e.Kind is "Done" or "Bonus" or "Comeback" or "Challenge" or "Boss" or Ledger.FunKind)
                 && !(keepWon && e.Kind == "Bonus" && e.Text.StartsWith("Won the bet on "))).ToList();
             bool changed = mine.Count > 0;
             var days = mine.Select(e => e.When.Date).ToHashSet();
@@ -571,10 +576,12 @@ namespace BusyBunny
             store ??= w?.Store;
             (int Priority, string Text)? best = Fun.Count == 0 ? null : Fun.OrderBy(f => f.Priority).First();
             var late = Late.OrderBy(l => l.Priority).FirstOrDefault();
-            if (late != null && (best == null || late.Priority < best.Value.Priority)) { late.Chosen = true; best = null; }
+            // In Calm mode a late line (the narrator) is never chosen: it is only kept.
+            if (late != null && !BusyBunny.Calm.FunPaused && (best == null || late.Priority < best.Value.Priority)) { late.Chosen = true; best = null; }
             foreach (var l in Late) l.Decided = true;
             string text = _points && _gained > 0 && store != null ? _gained + (_gained == 1 ? " point, " : " points, ") + Engine.Total(store.Data) + " total." : "";
-            if (best != null) text += (text.Length > 0 ? " " : "") + best.Value.Text;
+            // Calm mode keeps every fun line for What happened today and speaks none; the points line stays.
+            if (best != null && !BusyBunny.Calm.FunPaused) text += (text.Length > 0 ? " " : "") + best.Value.Text;
             if (store != null) foreach (var f in Fun) Note(store, f.Text);
             var sound = _sound.Sound;
             Fun.Clear();
@@ -600,29 +607,16 @@ namespace BusyBunny
             g.Happened.Add(DateTime.Now.ToString("h:mm tt") + ": " + line);
         }
 
-        // ---- Calm rules (spec 8.1) ----
+        // ---- Calm rules (spec 8.1): kept for older callers, the rules live in Calm ----
 
-        /// <summary>
-        /// Whether a line she did not ask for must stay quiet now: quiet hours (10 at night to 8 in the morning),
-        /// a class going on, a sprint, vacation or a rough day.
-        /// </summary>
-        public static bool Calm(Store s, DateTime now)
-        {
-            if (now.Hour >= 22 || now.Hour < 8) return true;
-            if (FocusTools.SprintRunning) return true;
-            if (s.Data.Days.TryGetValue(s.Key(now), out var day) && day.Mode is DayMode.Vacation or DayMode.RoughDay) return true;
-            return s.Data.Classes.Any(c => c.Days.Contains(now.DayOfWeek) && c.Start <= now.TimeOfDay && now.TimeOfDay < c.End);
-        }
+        /// <summary>Whether a line she did not ask for must stay quiet now (Calm.Hush says why).</summary>
+        public static bool Calm(Store s, DateTime now) => BusyBunny.Calm.Hush(s, Engines.Settings, now) != null;
 
-        /// <summary>Whether one unprompted line may be spoken now: not calm, and under 3 today. Counts it when it may.</summary>
+        /// <summary>Whether one unprompted line may be spoken now, under today's cap. Counts it when it may.</summary>
         public static bool MaySpeakUnprompted(Store s, DateTime now)
         {
-            if (Calm(s, now)) return false;
-            var g = s.Data.Game;
-            string today = s.Key(now);
-            if (g.UnpromptedDay != today) { g.UnpromptedDay = today; g.UnpromptedCount = 0; }
-            if (g.UnpromptedCount >= 3) return false;
-            g.UnpromptedCount++;
+            if (!BusyBunny.Calm.CanSpeakUnprompted(s, Engines.Settings, now)) return false;
+            BusyBunny.Calm.Count(s, now);
             return true;
         }
     }

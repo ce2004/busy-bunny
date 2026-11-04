@@ -67,6 +67,25 @@ namespace BusyBunny
             return d.ShowDialog() == true ? box.SelectedIndex : -1;
         }
 
+        private static Action? _okNow, _after;
+        private static bool _okDone;
+
+        /// <summary>
+        /// For a button on a Settings page that opens something else (Settings, Tasks: Paste tasks and the rest):
+        /// presses OK, so every change she made is kept and Settings closes, then runs act. When a page has a problem
+        /// Settings stays open, says it, and act does not run (false). With Settings not open, act just runs.
+        /// </summary>
+        public static bool SaveAndThen(Action act)
+        {
+            if (_okNow == null) { act(); return true; }
+            _after = act;
+            _okDone = false;
+            _okNow();
+            if (_okDone) return true;
+            _after = null;
+            return false;
+        }
+
         /// <summary>Shows Settings, opened at a list's section when one is given; focus "scale" starts on its priority scale. True when OK was pressed.</summary>
         public static bool Show(Window owner, Store store, Settings settings, string? startList = null, string? focus = null)
         {
@@ -468,8 +487,10 @@ namespace BusyBunny
                 store.Data.Lists = made;
                 foreach (var page in pages) page.Apply();
                 settings.Save();
+                _okDone = true;
                 w.DialogResult = true;
             };
+            _okNow = () => ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
 
             int pageAt = startList == null ? -1 : pages.FindIndex(p => p.Name == startList);
             int start = startList == null ? 0 : pageAt >= 0 ? pageAt + 1 : lists.FindIndex(l => l.Name == startList) + 1 + P;
@@ -480,7 +501,14 @@ namespace BusyBunny
                 if (focus == "scale" && current != null) { scales.Focus(); Speech.Say(w, current.Name + ": " + Scales.Rank(current.Levels), false); }
                 else section.Focus();
             };
-            return w.ShowDialog() == true;
+            bool saved;
+            try { saved = w.ShowDialog() == true; }
+            finally { _okNow = null; }
+            var after = _after;
+            _after = null;
+            // After Settings has closed and focus is back: the window the button asked for.
+            if (saved && after != null) owner.Dispatcher.BeginInvoke(after, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            return saved;
         }
     }
 }

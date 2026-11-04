@@ -205,6 +205,8 @@ namespace BusyBunny
             minute.Start();
             Closed += (_, _) => { _closing = true; minute.Stop(); };
             AddTabMenus();
+            // Before any feature attaches, so Engines.Store and the short forms work in every Attach.
+            Engines.Use(this);
             foreach (var f in Features.All) f.Attach(this);
             _newDayFor = DateTime.Now.Date;
             Refresh();
@@ -362,7 +364,7 @@ namespace BusyBunny
 
         private readonly Dictionary<string, MenuItem> _menus = new();
         private Separator? _exitSeparator;
-        /// <summary>Adds an item to a top menu: File, Task, View, Fun, Options or Help. In File it goes above Exit, which stays last.</summary>
+        /// <summary>Adds an item to a top menu: File, Task, View, Day, Fun, Options or Help. In File it goes above Exit, which stays last.</summary>
         public MenuItem AddMenuItem(string menu, string header, Action act, string gesture = "")
         {
             var top = _menus[menu];
@@ -458,9 +460,8 @@ namespace BusyBunny
             var file = new MenuItem { Header = "_File" };
             file.Items.Add(Item("_Quick add a task...", QuickAddTask, "Ctrl+N"));
             file.Items.Add(Item("Rea_d my day", () => Speech.Say(this, _store.Summary(DateTime.Now, _settings.ShortMode), true), "Ctrl+R"));
+            // Open the backups folder and Start over with the sample tasks moved to Settings, Tasks (sweep 11.6).
             file.Items.Add(new Separator());
-            file.Items.Add(Item("Open the backups _folder", () => Open(Store.BackupFolder)));
-            file.Items.Add(Item("Start over with the _sample tasks...", ResetSample));
             _exitSeparator = new Separator();
             file.Items.Add(_exitSeparator);
             // No Alt+F4 here: with Keep in tray on, Alt F4 only hides the window, and Exit really quits.
@@ -515,10 +516,13 @@ namespace BusyBunny
             help.Items.Add(Item("Report a problem on _GitHub", () => Open(Updater.Website + "/issues/new")));
             help.Items.Add(Item("Request a _feature", () => RequestFeature()));
 
+            // The Day menu (sweep 11.7): rough day, kind of day, vacation and the other day tools, filled by their features.
+            // Alt Y: Alt D is To do today on the Today tab.
+            var day = new MenuItem { Header = "Da_y", Visibility = Visibility.Collapsed };
             var fun = new MenuItem { Header = "F_un", Visibility = Visibility.Collapsed };
             var bar = new Menu();
-            foreach (var m in new[] { file, task, view, fun, options, help }) bar.Items.Add(m);
-            _menus["File"] = file; _menus["Task"] = task; _menus["View"] = view; _menus["Fun"] = fun; _menus["Options"] = options; _menus["Help"] = help;
+            foreach (var m in new[] { file, task, view, day, fun, options, help }) bar.Items.Add(m);
+            _menus["File"] = file; _menus["Task"] = task; _menus["View"] = view; _menus["Day"] = day; _menus["Fun"] = fun; _menus["Options"] = options; _menus["Help"] = help;
             return bar;
         }
 
@@ -563,7 +567,8 @@ namespace BusyBunny
             if (mods == ModifierKeys.Shift && key == Key.F1) { e.Handled = true; ShowChanges(); return; }
             if (mods == ModifierKeys.None && key == Key.F2) { e.Handled = true; EditTask(); return; }
             if (mods == ModifierKeys.Control && key == Key.OemComma) { e.Handled = true; OpenSettings(null); return; }
-            if (mods == ModifierKeys.None && key == Key.Delete && Keyboard.FocusedElement is ListBoxItem) { e.Handled = true; DeleteTask(); }
+            // Only on a task: Delete on a line of the Bunny tab must never delete the task chosen earlier.
+            if (mods == ModifierKeys.None && key == Key.Delete && Keyboard.FocusedElement is ListBoxItem { Tag: Guid }) { e.Handled = true; DeleteTask(); }
             if (mods == ModifierKeys.None && key == Key.Enter && Keyboard.FocusedElement is ListBoxItem { Tag: Guid })
             {
                 e.Handled = true;
@@ -787,9 +792,16 @@ namespace BusyBunny
         private ListBoxItem? _focusedItem;
 
         /// <summary>The task the cursor is on in the list used last (with several selected, the one last moved to).</summary>
+        /// <summary>
+        /// Focus is on a line that is not a task (the Bunny tab, a feature's own list): then no key acts on the task
+        /// chosen earlier in another list (Control D, Control 1 to 6, F2, Delete).
+        /// </summary>
+        private static bool OnNonTaskLine => Keyboard.FocusedElement is ListBoxItem item && item is not ComboBoxItem && item.Tag is not Guid;
+
         private TaskItem? Current()
         {
             if (_lastChosen != null) return _lastChosen;
+            if (OnNonTaskLine) return null;
             var lb = _lastList;
             if (lb == null) return null;
             object? item = _focusedItem != null && lb.Items.Contains(_focusedItem) ? _focusedItem : lb.SelectedItem;
@@ -801,6 +813,7 @@ namespace BusyBunny
         private List<TaskItem> ChosenTasks()
         {
             if (_lastChosen != null) return new() { _lastChosen };
+            if (OnNonTaskLine) return new();
             if (_lastList is ListBox lb && lb.SelectedItems.Count > 1)
             {
                 var ids = lb.SelectedItems.OfType<ListBoxItem>().Select(i => i.Tag).OfType<Guid>().ToHashSet();
@@ -1061,6 +1074,12 @@ namespace BusyBunny
             OpenSettings(list);
         }
 
+        /// <summary>Control Z, as from the main window: for feature windows like Bunny's world, so undo works without closing them.</summary>
+        public void UndoLastChange() => Undo();
+
+        /// <summary>Where focus is now, to go back to after a window of a feature closes: call the result to go back.</summary>
+        public Action KeepFocus() => RememberFocus();
+
         /// <summary>Opens Settings at a page by its name (like Tags) or at a list by its name.</summary>
         public void OpenSettingsAt(string? name) => OpenSettings(name);
 
@@ -1258,6 +1277,9 @@ namespace BusyBunny
 
         /// <summary>Saves now. Store.Save never throws: a failed save is announced and retried by DataSafety.</summary>
         private void Save() => _store.Save();
+
+        /// <summary>Settings, Tasks: replaces every task with the sample tasks, after asking. Control Z undoes it.</summary>
+        public void StartOverWithSample() => ResetSample();
 
         private void ResetSample()
         {

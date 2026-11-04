@@ -89,6 +89,30 @@ namespace BusyBunny
         /// <summary>The first-run line about tasks staying on each PC has been said.</summary>
         public bool PcNoteSaid { get; set; }
 
+        // ---- Calm rules and the toolbox (sweep 8.1, Part 4) ----
+        /// <summary>Calm mode: every fun feature pauses at once, keeping all progress.</summary>
+        public bool CalmMode { get; set; }
+        /// <summary>Lines nobody asked for, from every feature together, at most this many a day.</summary>
+        public int UnpromptedCap { get; set; } = 3;
+        /// <summary>Quiet hours, from this hour (24-hour clock) until QuietEnd.</summary>
+        public int QuietStart { get; set; } = 22;
+        public int QuietEnd { get; set; } = 8;
+        /// <summary>Toolbox tools turned off in Settings, Fun and tools, by id.</summary>
+        public List<string> ToolsOff { get; set; } = new();
+        /// <summary>Tools turned on that start off, by id.</summary>
+        public List<string> ToolsOn { get; set; } = new();
+        /// <summary>Her favorite tools, by id, in the order she marked them.</summary>
+        public List<string> ToolFavorites { get; set; } = new();
+        /// <summary>When each tool was last used, by id.</summary>
+        public Dictionary<string, DateTime> ToolUsed { get; set; } = new();
+        /// <summary>The town she typed for the weather, and where it is (looked up once). Never found automatically.</summary>
+        public string WeatherTown { get; set; } = "";
+        /// <summary>The daily limit on Claude writing fun lines (BunnyWrite and the narrator): all features together, and each one. Only answers that came back count.</summary>
+        public int BunnyWriteDaily { get; set; } = 40;
+        public int BunnyWritePerFeature { get; set; } = 10;
+        public double WeatherLat { get; set; }
+        public double WeatherLon { get; set; }
+
         public static string FilePath => Path.Combine(Store.Folder, "settings.json");
 
         /// <summary>Something to tell her after starting, like settings that came back from their spare copy. Null when all was well.</summary>
@@ -161,6 +185,7 @@ namespace BusyBunny
             SoundChoices ??= new(); BoardShow ??= new(); NudgeDates ??= new(); PhraseUsed ??= new(); Unlocked ??= new();
             SoundPack ??= "Classic"; PackHinted ??= ""; EndOfDay ??= "week"; LastResetDay ??= ""; LastRhythmDay ??= "";
             FinalsOffered ??= ""; BunnyKey ??= ""; BunnyPersonality ??= ""; BunnyBriefedDay ??= ""; BackupCopyFolder ??= "";
+            ToolsOff ??= new(); ToolsOn ??= new(); ToolFavorites ??= new(); ToolUsed ??= new(); WeatherTown ??= "";
         }
 
         /// <summary>

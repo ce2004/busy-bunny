@@ -42,13 +42,17 @@ namespace BusyBunny
                 return d.Mode == DayMode.RoughDay && t.Status != Status.Today && !s.DueSoon(t, now);
             });
 
-            w.AddMenuItem("File", "_Morning check-in...", () => CheckIn(true), "Ctrl+Shift+M");
-            w.AddMenuItem("File", "Weekday _plan for today...", () => Rhythm.Suggest(w, true));
+            // The Day menu (sweep 11.7); the day tools are in the toolbox too.
+            w.AddMenuItem("Day", "_Rough day", Tools.Guard("roughday", RoughDay));
+            w.AddMenuItem("Day", "Set the _kind of day...", Tools.Guard("kindofday", SetKindOfDay), "Ctrl+Shift+Y");
+            w.AddMenuItem("Day", "_Vacation mode...", Tools.Guard("vacation", Vacation));
+            w.AddMenuItem("Day", "_Morning check-in...", () => CheckIn(true), "Ctrl+Shift+M");
+            w.AddMenuItem("Day", "Weekday _plan for today...", () => Rhythm.Suggest(w, true));
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.M, () => CheckIn(true), "Control Shift M: morning check-in");
-            w.AddMenuItem("Fun", "Set the _kind of day...", SetKindOfDay, "Ctrl+Shift+Y");
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.Y, SetKindOfDay, "Control Shift Y: set the kind of day");
-            w.AddMenuItem("Fun", "_Rough day", RoughDay);
-            w.AddMenuItem("Fun", "_Vacation mode...", Vacation);
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.Y, Tools.Guard("kindofday", SetKindOfDay), "Control Shift Y: set the kind of day");
+            Tools.Register(new BunnyTool("kindofday", "Set the kind of day", Drawers.Plan, "Pick how today feels, from Fox at the door to Burrow nap.", SetKindOfDay) { MovedFrom = "the Fun menu", Keys = "Control Shift Y" });
+            Tools.Register(new BunnyTool("roughday", "Rough day", Drawers.Rest, "Moves what can wait and keeps your streak safe.", RoughDay) { MovedFrom = "the Fun menu" });
+            Tools.Register(new BunnyTool("vacation", "Vacation mode", Drawers.Rest, "Clears Today for days off, streak and all kept.", Vacation) { MovedFrom = "the Fun menu" });
 
             w.Started += OnStarted;
             w.NewDay += OnNewDay;
@@ -114,8 +118,10 @@ namespace BusyBunny
             var s = _w.AppSettings;
             string key = _w.Store.Key(now);
             if (s.LastResetDay == key) return;
+            bool hadADay = s.LastResetDay.Length > 0;
             s.LastResetDay = key;
             s.Save();
+            if (hadADay) GameEvents.RaiseDayEnded(_w.Store, now.Date.AddDays(-1));
             int n = Reset(_w.Store, now, s.EndOfDay);
             if (n == 0) return;
             string things = n == 1 ? "1 unfinished task" : n + " unfinished tasks";
@@ -162,6 +168,7 @@ namespace BusyBunny
             }
             store.Remember("morning check-in");
             day.CheckedIn = true;
+            GameEvents.RaiseDayStarted(store, now);
             day.Energy = Energies[Math.Max(0, energy.SelectedIndex)].ToLowerInvariant();
             double h = HoursOf(hours);
             day.Hours = Math.Abs(h - store.Data.HoursAvailable) < 0.01 ? 0 : h;

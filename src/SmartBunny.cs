@@ -91,6 +91,8 @@ namespace BusyBunny
         private DateTime _deadline;
         // Points and fun lines from Bunny's tools, held until Bunny's answer is said.
         private readonly List<string> _held = new();
+        // A toolbox tool Bunny was asked to open: it opens once Bunny's whole answer is in and said.
+        private BunnyTool? _openAfter;
 
         // ---- The key, encrypted for this Windows user ----
 
@@ -473,6 +475,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             _stop = stop;
             int talk = _talk;
             _held.Clear();
+            _openAfter = null;
             int before = _history.Count;
             if (Cfg.BunnyVoice == 0 && !quiet) Speech.Say(_w, "Bunny is thinking.");
             var slow = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
@@ -517,6 +520,12 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             else if (Cfg.BunnyVoice == 1) Speech.Say(_w, "Bunny answered.", true);
             if (_held.Count > 0) Speech.Say(_w, string.Join(" ", _held));
             _held.Clear();
+            if (_openAfter is BunnyTool tool && ok)
+            {
+                _openAfter = null;
+                _ = _w.Dispatcher.BeginInvoke(() => Tools.Use(_w, tool), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            }
+            _openAfter = null;
             return ok;
         }
 
@@ -793,7 +802,7 @@ Limits:
 You can only use features Busy Bunny already has. You cannot add new features, buttons, sounds or screens, change how the app works, or reach other apps, email or the internet. When she asks for something the app cannot do, say so plainly, and tell her she can ask for it with Help, Request a feature, which opens a new issue on GitHub; offer to open it with open_feature_request. Never pretend to have done something you did not do. You cannot see or change the API key, and only she can change whether you ask before deleting.
 
 Busy Bunny in brief:
-Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overdue and Focus now), Upcoming, Board, Search, and one tab per list, each with its categories. Statuses: Today, This week, Next week, Done not submitted, Waiting on someone, Done. A do date is the day she plans to do a task; on that day it shows on Today. Each list has its own priority scale, highest first, like Coffee: Triple shot, Double shot, Single shot, Decaf. Task types: general, assignment, test, meeting, event, personal goal. Sizes: small, medium, large, multi-day. Energy: easy or brain heavy. Keys: Control N quick add, F2 edit, Control D done, Control 1 to 6 set status, Delete, Control Z undo, Control R read my day, Control F search, Control Shift A talk to Bunny, Control Comma settings, Shift with arrows to select several tasks. The game gives karma points, levels, streaks and badges for finishing tasks. Fun, Adventures has the burrow (rooms bought with points), Vex the rival bunny, bets on finishing a task by a time, mystery boxes, quest weeks, the dramatic narrator and the sound pack collection. Fun menu has the kind of day, rough day, and everything is too much. View menu has low-energy mode and shuffle mode.";
+Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overdue and Focus now), Upcoming, Bunny (visit your bunny, Bunny's world and the adventures), Search, Board, and one tab per list, each with its categories. Statuses: Today, This week, Next week, Done not submitted, Waiting on someone, Done. A do date is the day she plans to do a task; on that day it shows on Today. Each list has its own priority scale, highest first, like Coffee: Triple shot, Double shot, Single shot, Decaf. Task types: general, assignment, test, meeting, event, personal goal. Sizes: small, medium, large, multi-day. Energy: easy or brain heavy. Keys: Control N quick add, F2 edit, Control D done, Control 1 to 6 set status, Delete, Control Z undo, Control R read my day, Control F search, Control Shift A talk to Bunny, Control Comma settings, Shift with arrows to select several tasks. The game gives karma points, levels, streaks and badges for finishing tasks. The Bunny Toolbox (Control Shift H, or Fun, Open the toolbox) holds every fun and strategy tool in drawers: sprints, pick one for me, everything is too much, quick wins, the scoreboard, badges, the burrow, Vex the rival bunny, bets, mystery boxes, quest weeks and more; open_toolbox_tool opens one. The Bunny tab, after Upcoming, has visit your bunny, Bunny's world and the adventures. The Day menu has rough day, the kind of day, vacation mode, low-energy mode, finals week mode, time per class and the morning check-in. Options, Settings, Tasks has importing, exporting and backups. View menu has shuffle mode.";
 
         private static string PersonalityOf(Settings cfg) => Personalities.FirstOrDefault(p => p.Name.Equals(cfg.BunnyPersonality, StringComparison.OrdinalIgnoreCase)).Name ?? Personalities[0].Name;
 
@@ -1016,6 +1025,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 T("forget", "Removes your notes about her: one by its number from get_overview, or all.", new { number = Int("The note's number."), all = Bool("True removes every note.") }),
                 T("open_tab", "Opens a tab on the main screen, like Today, Focus, Overdue is on Today, Board, Upcoming, or a list's tab, and puts her in its tasks.", new { name = Str("The tab's name.") }, "name"),
                 T("bunny_changes_today", "Every change you made for her today, newest first, one line each. She can undo your latest one from File, Bunny changes today.", new { }),
+                T("open_toolbox_tool", "Opens one tool from her Bunny Toolbox by its id or name, as if she picked it there. When she is stuck or asks what might help, suggest one tool by name, never a list of ten, and open it only when she wants it. Her tools: " + Tools.ForBunny(_me?.Cfg ?? new Settings()) + ".",
+                    new { tool = Str("The tool's id or name.") }, "tool"),
                 T("open_feature_request", "Opens a new feature request on GitHub in her browser, for something Busy Bunny cannot do yet. Only when she agrees.", new { idea = Str("A short title for the idea.") }, "idea"),
             };
         }
@@ -1464,6 +1475,16 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     return pick != null && _w.OpenTab(pick) ? "Opened the " + pick + " tab." : "There is no tab called " + tab + ". Tabs: " + string.Join(", ", tabs) + ".";
                 }
 
+                case "open_toolbox_tool":
+                {
+                    string want = (Get(a, "tool") ?? "").Trim();
+                    var tool = want.Length == 0 ? null : Tools.Find(want);
+                    if (tool == null || !Tools.IsOn(Cfg, tool)) return "There is no tool called " + want + " in her toolbox. Her tools: " + Tools.ForBunny(Cfg) + ".";
+                    // It opens once your whole answer is in and said, so its window never covers what you say.
+                    _openAfter = tool;
+                    return tool.Name + " opens for her as soon as your answer is said.";
+                }
+
                 case "open_feature_request":
                 {
                     Speech.Muted = false;
@@ -1849,7 +1870,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _panel.Children.Add(Layout.Row("When Bunny ans_wers", _voice, 440));
                 _who.ItemsSource = Personalities.Select(p => p.Name + ": " + p.How).ToList();
                 _who.SelectedIndex = Math.Max(0, Array.FindIndex(Personalities, p => p.Name.Equals(cfg.BunnyPersonality, StringComparison.OrdinalIgnoreCase)));
-                AutomationProperties.SetHelpText(_who, "How Bunny talks to you. The roast dial in the Fun menu still sets how much it teases.");
+                AutomationProperties.SetHelpText(_who, "How Bunny talks to you. The roast dial in Options, Settings, Bunny's voice still sets how much it teases.");
                 _panel.Children.Add(Layout.Row("Bunny's _personality", _who, 440));
 
                 _check.ItemsSource = Hours.Select(h => h == 0 ? "Never" : h == 1 ? "Every hour" : "Every " + h + " hours").ToList();
@@ -2046,7 +2067,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
         public void SelfTest(Store store)
         {
             void Check(bool ok, string what) { if (!ok) throw new Exception("Smarter Bunny: " + what); }
-            Check(ToolList().Count == 17, "tool list");
+            Check(ToolList().Count == 18, "tool list");
             Check(Clean("**Hi** there # friend\n- one\n- two") == "Hi there  friend\none\ntwo", "clean gave " + Clean("**Hi** there # friend\n- one\n- two"));
             Check(ParseWhen("2026-11-03 14:30") == (new DateTime(2026, 11, 3, 14, 30, 0), true), "time");
             Check(ParseWhen("2026-11-03") == (new DateTime(2026, 11, 3), false), "date");

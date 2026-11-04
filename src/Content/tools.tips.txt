@@ -1,0 +1,9 @@
+Control Shift H opens the toolbox from anywhere in Busy Bunny.
+
+In the toolbox, Control D marks a tool as a favorite, and favorites show first.
+
+Type a few letters in the toolbox list to jump to a tool by name.
+
+The Search box in the toolbox finds a tool in any drawer.
+
+Settings, Fun and tools turns any tool off, and Calm mode pauses every fun feature at once.

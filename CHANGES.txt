@@ -1,3 +1,20 @@
+0.13.0
+New feature: the Bunny Toolbox. Press Control Shift H anywhere, or Fun, Open the toolbox. Every fun and strategy tool is in a drawer, like I am stuck, Get going, Plan, Rest and rough days, Wins and records, Bunny's world, Games and Notes to self, one line each with what it does. Pick a drawer at the top, or type in the search box to find a tool in any drawer. Enter uses it, Control D makes it a favorite, and Escape takes you back to where you were. Your favorites and the tools you used lately come first.
+New feature: the Bunny tab, after Upcoming. It has Visit your bunny, Bunny's world, the burrow, this week's quest, Vex, bets, the mystery box and your sound packs, one line each. Enter opens the one you are on.
+New feature: Bunny's world. A list of places: Enter goes into one, Escape comes back out. The burrow and the parking lot are the first two, with many more on the way.
+New feature: a Day menu (Alt Y) with everything about your day: rough day, the kind of day, vacation mode, the morning check-in, the weekday plan, time per class, low-energy mode, finals week mode and the end-of-day reset.
+New feature: Options, Settings, Fun and tools. Calm mode pauses every fun feature at once and keeps all your progress. You can also pick how many times a day Busy Bunny may speak up by itself (3 to start), your quiet hours (10 at night to 8 in the morning to start), your town for the weather in Bunny's world, and turn any tool on or off.
+New feature: Options, Settings, Tasks has paste tasks, import your braille lists, import a syllabus, export as plain text, export and restore a backup, the backups folder and the sample tasks, all in one place.
+New feature: ask Bunny to open a tool for you, like open the two-minute dare. When you are stuck, Bunny can suggest one tool by name.
+New feature: Help, New in Busy Bunny, Help, Every tool in the toolbox, and Help, Where things moved, so nothing you use gets lost.
+Changed: the burrow starts by telling you how many points you have to spend and how much Karma you earned all time, like 340 points to spend, 2,180 Karma earned all time, and tells you again after you build something.
+Changed: Visit your bunny starts with the newest thing your bunny did.
+Changed: the parking lot is now a room in Bunny's world. Hear everything you parked, turn a thought into a task, let it go, or clear them all; Control Z undoes it. Control Shift K still parks a thought from anywhere.
+Changed: the Fun menu now has just Open the toolbox and your favorites. The setup guide is in the Help menu. Every shortcut you used still works.
+Bug fixed: pressing Delete on a line that was not a task could delete the task you had chosen before. Now Delete only works on a task.
+New feature: turn any tool off in Options, Settings, Fun and tools, and it is gone everywhere: from the toolbox, the Bunny tab, its shortcut and anything it does by itself, until you turn it back on.
+New feature: in Fun and tools you can also cap how many short bits Bunny writes for the fun features each day, so your Claude credit lasts.
+Changed: the Fun page in Settings is now called Bunny's voice.
 0.12.0
 This version is the big bug hunt Morgan asked for in issue 18: every file was read line by line, about 100 problems were fixed, and every fix was checked again by a second reviewer.
 Bug fixed: tasks on private lists could still reach Bunny through the summary line, like the name of a test or the time of a meeting, and through the narrator, list names, tags and old talk history. Now nothing from a private list is ever sent, lists inside a private list are private too, and a test checks it every release.

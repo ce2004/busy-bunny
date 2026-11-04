@@ -20,7 +20,7 @@ namespace BusyBunny
             ("Classes", "Classes: when each class meets, so Busy Bunny can say how long until the next one."),
             ("Weekday plans", "Weekday plans: what you usually do on each day, so each morning starts half planned."),
             ("Morning and evening", "Morning and evening: the morning check-in and what happens to unfinished tasks overnight."),
-            ("Fun", "Fun: how hard Busy Bunny roasts you, and emoji at big moments."),
+            ("Bunny's voice", "Bunny's voice: how hard Busy Bunny roasts you, and emoji at big moments."),
             ("Bunny and goals", "Bunny and goals: your bunny's name and your daily and weekly goals."),
             ("Reminders", "Reminders: staying in the notification area so reminders still come."),
             (SmartBunny.PageName, "Smarter Bunny: talk to Bunny with your own Claude API key. Before you add a key, tick the lists Bunny should never see, and pick the hours it may check on you."),
@@ -29,7 +29,7 @@ namespace BusyBunny
 
         public void Attach(MainWindow w)
         {
-            w.AddMenuItem("File", "Setup _guide...", () => Show(w));
+            w.AddMenuItem("Help", "_Setup guide...", () => Show(w));
             w.Started += () =>
             {
                 if (w.AppSettings.SetupGuideShown) return;
@@ -45,7 +45,7 @@ namespace BusyBunny
             var intro = new TextBox
             {
                 IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Width = 480,
-                Text = "Welcome to Busy Bunny. None of this is required, and all of it can wait. Choose a step and press Enter to set it up; you come back here after. Done when you are done. File, Setup guide brings this back.",
+                Text = "Welcome to Busy Bunny. None of this is required, and all of it can wait. Choose a step and press Enter to set it up; you come back here after. Done when you are done. Help, Setup guide brings this back.",
             };
             AutomationProperties.SetName(intro, "Welcome");
             var steps = new ListBox { Height = 260, Width = 480 };

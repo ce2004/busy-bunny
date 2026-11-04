@@ -115,18 +115,20 @@ namespace BusyBunny
         public void Attach(MainWindow w)
         {
             _w = w;
-            w.AddMenuItem("Fun", "S_tart a sprint...", StartOrCheckSprint, "Ctrl+Shift+T");
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.T, StartOrCheckSprint, "Control Shift T: start a sprint, or hear the time left");
-            w.AddMenuItem("Fun", "Time per c_lass...", ShowTimePerClass);
-            w.AddMenuItem("Fun", "_Pick one for me", Roulette, "Ctrl+Shift+U");
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.U, Roulette, "Control Shift U: pick one task for me at random from the urgent ones");
-            w.AddMenuItem("Fun", "_Quick wins", QuickWins, "Ctrl+Shift+Q");
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.Q, QuickWins, "Control Shift Q: the Quick wins drawer, tiny tasks to build momentum");
-            w.AddMenuItem("Fun", "Everything is too _much", Overwhelm, "Ctrl+Shift+O");
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.O, Overwhelm, "Control Shift O: everything is too much, show me one small task");
+            // Out of the Fun menu and into the toolbox (sweep 2.7); every key still works.
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.T, Tools.Guard("sprint", StartOrCheckSprint), "Control Shift T: start a sprint, or hear the time left");
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.U, Tools.Guard("pickone", Roulette), "Control Shift U: pick one task for me at random from the urgent ones");
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.Q, Tools.Guard("quickwins", QuickWins), "Control Shift Q: the Quick wins drawer, tiny tasks to build momentum");
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.O, Tools.Guard("toomuch", Overwhelm), "Control Shift O: everything is too much, show me one small task");
+            Tools.Register(new BunnyTool("pickone", "Pick one for me", Drawers.Stuck, "Picks one urgent task at random, so you do not have to choose.", Roulette) { MovedFrom = "the Fun menu", Keys = "Control Shift U" });
+            Tools.Register(new BunnyTool("toomuch", "Everything is too much", Drawers.Stuck, "Shows just one small task and hides the rest for now.", Overwhelm) { MovedFrom = "the Fun menu", Keys = "Control Shift O" });
+            Tools.Register(new BunnyTool("sprint", "Start a sprint", Drawers.GetGoing, "A short timed burst of work, 5 to 45 minutes. Again tells you the time left.", StartOrCheckSprint) { MovedFrom = "the Fun menu", Keys = "Control Shift T" });
+            Tools.Register(new BunnyTool("quickwins", "Quick wins", Drawers.GetGoing, "Tiny tasks of two minutes or less, to get moving.", QuickWins) { MovedFrom = "the Fun menu", Keys = "Control Shift Q" });
+            Tools.Register(new BunnyTool("timeperclass", "Time per class", Drawers.Plan, "How many sprint minutes went to each class this week and semester.", ShowTimePerClass) { MovedFrom = "the Fun menu" });
+            w.AddMenuItem("Day", "Time per c_lass...", Tools.Guard("timeperclass", ShowTimePerClass));
             w.AddMenuItem("Task", "Quic_k win (on or off)", ToggleQuickWin);
 
-            _lowMenu = w.AddMenuItem("View", "_Low-energy mode", () => SetLow(!Cfg.LowEnergy, true), "Ctrl+Shift+L");
+            _lowMenu = w.AddMenuItem("Day", "Low-_energy mode", () => SetLow(!Cfg.LowEnergy, true), "Ctrl+Shift+L");
             _lowMenu.IsCheckable = true;
             _lowMenu.IsChecked = Cfg.LowEnergy;
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.L, () => SetLow(!Cfg.LowEnergy, true), "Control Shift L: low-energy mode on or off");
@@ -188,6 +190,8 @@ namespace BusyBunny
             _sprintTimer.Start();
             SprintRunning = true;
             _w.Say("Sprint started: " + _sprintMinutes + " minutes" + (_sprintTask != null ? " on " + _sprintTask.Name : "") + ". Control Shift T tells you the time left.", true);
+            GameEvents.RaiseSprintStarted(_sprintMinutes, _sprintTask);
+            if (_sprintTask != null) GameEvents.RaiseTaskStarted(_sprintTask);
         }
 
         private void StopSprint()
@@ -227,6 +231,7 @@ namespace BusyBunny
             });
             _w.SaveAndRefresh();
             Sounds.Play(Sounds.Event.SprintFinished);
+            GameEvents.RaiseSprintDone(minutes);
             if (slept) { _w.Say("Your sprint ended while the laptop was asleep. The " + minutes + " minutes before that counted."); return; }
             _w.Say("Sprint over, " + _sprintMinutes + " minutes. That counts as a win even if" + (t != null ? " " + t.Name + " is" : " the task is") + " not done. Showing up was the hard part.");
         }

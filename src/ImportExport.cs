@@ -32,13 +32,56 @@ namespace BusyBunny
         public void Attach(MainWindow w)
         {
             _w = w;
-            w.AddMenuItem("File", "_Paste tasks...", PasteTasks, "Ctrl+Shift+V");
-            w.AddMenuItem("File", "Import my _braille lists...", ImportBraille);
-            w.AddMenuItem("File", "Import a s_yllabus...", ImportSyllabus);
-            w.AddMenuItem("File", "Export as p_lain text...", ExportText);
-            w.AddMenuItem("File", "E_xport a backup...", ExportBackup);
-            w.AddMenuItem("File", "_Restore from a backup...", RestoreBackup);
+            // Moved out of the File menu into Options, Settings, Tasks (sweep 11.6); Control Shift V still pastes.
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.V, PasteTasks, "Control Shift V: paste tasks from a list or from Claude");
+        }
+
+        // ---- Options, Settings, Tasks (sweep 11.6) ----
+
+        public IEnumerable<ISettingsPage> SettingsPages(Store store, Settings settings) { yield return new TasksPage(this); }
+
+        /// <summary>
+        /// Getting tasks in and out, and backups. Each button presses OK first (keeping every change made in Settings),
+        /// then opens its window once Settings has closed.
+        /// </summary>
+        private sealed class TasksPage : ISettingsPage
+        {
+            public TasksPage(ImportExport f)
+            {
+                var panel = new StackPanel();
+                panel.Children.Add(new TextBlock { Text = "Each button saves your settings and closes Settings first, then opens.", TextWrapping = TextWrapping.Wrap, MaxWidth = 420, Margin = new Thickness(0, 4, 0, 4) });
+                void Add(string text, string help, Action act)
+                {
+                    var b = Layout.Button(text);
+                    b.HorizontalAlignment = HorizontalAlignment.Left;
+                    AutomationProperties.SetHelpText(b, help);
+                    b.Click += (_, _) => SettingsWindow.SaveAndThen(act);
+                    panel.Children.Add(b);
+                }
+                Add("_Paste tasks...", "Tasks from a list or from Claude, one per line. Control Shift V does this from the main window.", f.PasteTasks);
+                Add("Import my _braille lists...", "Lists written on your braille display.", f.ImportBraille);
+                Add("Import a s_yllabus...", "Finds the dates and assignments in a syllabus.", f.ImportSyllabus);
+                Add("Export as p_lain text...", "Every task as a plain text file.", f.ExportText);
+                Add("E_xport a backup...", "A copy of all your tasks, to keep or to move to your other computer.", f.ExportBackup);
+                Add("_Restore from a backup...", "Brings back a backup you exported, or a daily one. Control Z undoes it.", f.RestoreBackup);
+                Add("Open the backups _folder", "The daily backups, the last 30 days.", () => OpenFolder(f._w, Store.BackupFolder));
+                Add("Start over with the sa_mple tasks...", "Replaces every task with the sample tasks, after asking. Control Z undoes it.", () => f._w.StartOverWithSample());
+                Content = panel;
+            }
+
+            public string Name => "Tasks";
+            public FrameworkElement Content { get; }
+            public void Apply() { }
+        }
+
+        private static void OpenFolder(MainWindow w, string folder)
+        {
+            try
+            {
+                Directory.CreateDirectory(folder);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
+            }
+            catch (Exception e) { w.Say("Could not open it: " + e.Message, true); }
         }
 
         // ---- Parsing ----

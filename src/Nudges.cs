@@ -92,6 +92,7 @@ namespace BusyBunny
             PushBack(t, DateTime.Now);
             string when = t.DoDate is DateTime d ? "do date " + Words.Day(d, DateTime.Now) : "due " + Words.Day(t.Due!.Value, DateTime.Now);
             _w.SaveAndRefresh();
+            GameEvents.RaiseSnoozed(t);
             _w.Say("Pushed " + t.Name + " back a day, now " + when + ". Pushed " + t.Snoozes + (t.Snoozes == 1 ? " time." : " times."), true);
             if (t.Snoozes >= 3) Ask(t);
         }

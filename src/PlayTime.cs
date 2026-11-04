@@ -71,7 +71,6 @@ namespace BusyBunny
         private Settings Cfg => _w.AppSettings;
         private PlayState P => _w.Store.Data.Play;
         private readonly Random _rng = new();
-        private MenuItem? _rivalMenu, _narratorMenu;
 
         public const string Rival = "Vex";
         public const string MysteryLead = "Mystery box cleared: ", QuestLead = "Quest cleared: ";
@@ -79,6 +78,23 @@ namespace BusyBunny
         // ---- Points to spend ----
 
         public static int Wallet(Data d) => Math.Max(0, Engine.Total(d) - d.Play.Spent);
+
+        /// <summary>Sweep 11.1: like 340 points to spend, 2,180 Karma earned all time. Read first in the burrow and at the market.</summary>
+        public static string SpendLine(Data d) => Wallet(d).ToString("N0") + " points to spend, " + Engine.Total(d).ToString("N0") + " Karma earned all time";
+
+        /// <summary>The burrow in Bunny's world: the points line, each room (Enter plays its sound and says how it feels), then building one.</summary>
+        private List<PlaceThing> BurrowThings(Store s)
+        {
+            var things = new List<PlaceThing> { new(SpendLine(s.Data), "Spending never lowers your level", owner => Speech.Say(owner, SpendLine(s.Data) + ".", true)) };
+            foreach (var r in Built(s.Data.Play))
+            {
+                var room = r;
+                things.Add(new PlaceThing(room.Name, room.Feel, owner => { if (Sounds.Enabled) Sounds.PlayNamed(room.Sound); Speech.Say(owner, room.Feel, true); }));
+            }
+            things.Add(new PlaceThing("The parking lot", s.Data.Parking.Count + (s.Data.Parking.Count == 1 ? " thought parked" : " thoughts parked") + ". Enter goes in", owner => WorldWindow.GoTo(owner, "parking")));
+            things.Add(new PlaceThing("Build a room", "the rooms you can build and what they cost", owner => ShowBurrow(owner)));
+            return things;
+        }
 
         // ---- The burrow ----
 
@@ -255,26 +271,32 @@ namespace BusyBunny
         {
             _w = w;
             Sounds.PackOpen = p => !Collectible.Contains(p) || P.Packs.Contains(p);
-            var top = w.AddMenuItem("Fun", "Adve_ntures", () => { });
-            MenuItem Item(string header, Action act)
+            // Out of the Fun menu (sweep 2.7): the toolbox, the Bunny tab and Bunny's world.
+            Tools.Register(new BunnyTool("world", "Bunny's world", Drawers.World, "Walk through the places in Bunny's world.", () => WorldWindow.Show(_w)));
+            Tools.Register(new BunnyTool("burrow", "The burrow", Drawers.World, "Your rooms, points to spend, and rooms to build.", () => ShowBurrow()) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("packs", "Sound pack collection", Drawers.World, "The sound packs you have collected and the ones still hidden.", ShowCollection) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("rival", "Rival: " + Rival, Drawers.Games, "This week's score against " + Rival + ", and any letter " + Rival + " left.", ShowRival) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("bet", "Make a bet", Drawers.Games, "Bet points that you finish a task in time. Win double.", MakeBet) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("mysterybox", "Open a mystery box", Drawers.Games, "Picks a task; finish it today for a bonus.", MysteryBox) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("quest", "This week's quest", Drawers.Games, "The story of this week's quest and how far you are.", ShowQuest) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("rivaltalk", Rival + " trash talk", Drawers.Games, "Enter turns " + Rival + "'s teasing after tasks on or off.", () =>
             {
-                var m = new MenuItem { Header = header };
-                m.Click += (_, _) => act();
-                top.Items.Add(m);
-                return m;
-            }
-            Item("The _burrow...", ShowBurrow);
-            Item("_Rival: " + Rival + "...", ShowRival);
-            Item("Make a b_et...", MakeBet);
-            Item("Open a _mystery box...", MysteryBox);
-            Item("This week's _quest...", ShowQuest);
-            Item("Sound pack _collection...", ShowCollection);
-            top.Items.Add(new Separator());
-            _rivalMenu = Item(Rival + " _trash talks", () => { Cfg.RivalOn = _rivalMenu!.IsChecked; Cfg.Save(); _w.Say(Cfg.RivalOn ? Rival + " is back, and already smug." : Rival + " is quiet now. You can still check the score in Adventures.", true); });
-            _rivalMenu.IsCheckable = true;
-            _narratorMenu = Item("Dramatic _narrator", () => { Cfg.NarratorOn = _narratorMenu!.IsChecked; Cfg.Save(); _w.Say(Cfg.NarratorOn ? "The narrator clears its throat." : "The narrator takes a vow of silence.", true); });
-            _narratorMenu.IsCheckable = true;
-            top.SubmenuOpened += (_, _) => { _rivalMenu.IsChecked = Cfg.RivalOn; _narratorMenu.IsChecked = Cfg.NarratorOn; };
+                Cfg.RivalOn = !Cfg.RivalOn; Cfg.Save();
+                _w.Say(Cfg.RivalOn ? Rival + " trash talk is on now. " + Rival + " is back, and already smug." : Rival + " trash talk is off now. You can still check the score in the toolbox, Games.", true);
+            }) { MovedFrom = "the Fun menu, Adventures", State = () => Cfg.RivalOn ? "on" : "off" });
+            Tools.Register(new BunnyTool("narrator", "Dramatic narrator", Drawers.Games, "Enter turns the movie trailer voice for big finishes on or off.", () =>
+            {
+                Cfg.NarratorOn = !Cfg.NarratorOn; Cfg.Save();
+                _w.Say(Cfg.NarratorOn ? "The dramatic narrator is on now. It clears its throat." : "The dramatic narrator is off now. It takes a vow of silence.", true);
+            }) { MovedFrom = "the Fun menu, Adventures", State = () => Cfg.NarratorOn ? "on" : "off" });
+            BunnyTab.Register("Bunny's world", "the places in Bunny's world, with the burrow and the parking lot", () => WorldWindow.Show(_w), "world");
+            BunnyTab.Register("The burrow", "your rooms, points to spend, and rooms to build", () => ShowBurrow(), "burrow");
+            BunnyTab.Register("This week's quest", "the story so far", ShowQuest, "quest");
+            BunnyTab.Register("Rival: " + Rival, "this week's score", ShowRival, "rival");
+            BunnyTab.Register("Make a bet", "bet points that you finish a task in time", MakeBet, "bet");
+            BunnyTab.Register("Open a mystery box", "finish its task today for a bonus", MysteryBox, "mysterybox");
+            BunnyTab.Register("Sound pack collection", "the packs you have and the ones still hidden", ShowCollection, "packs");
+            World.Places.Register(new Place("burrow", "The burrow", s => SpendLine(s.Data) + ". " + Built(s.Data.Play).Count() + " of " + Rooms.Length + " rooms built", _ => true, BurrowThings));
 
             w.StatusChanged += OnStatus;
             w.Started += () => { Daily(DateTime.Now, quiet: true); };
@@ -294,13 +316,13 @@ namespace BusyBunny
             {
                 int hers = Engine.PointsInWeek(S.Data, lastWeek);
                 int vex = RivalScore(S.Data, lastWeek.AddHours(23.99), lastWeek);
-                if (hers > 0)
+                if (hers > 0 && Tools.IsOn("rival"))
                 {
                     if (hers > vex)
                     {
                         P.RivalWins++;
                         P.RivalLetter = DefeatLetter(S.Data.Game.BunnyName == "Bun" ? "rival" : S.Data.Game.BunnyName + "'s human", hers, vex);
-                        said.Add(Rival + " left you a letter. You won last week, " + hers + " to " + vex + ". Read it in Fun, Adventures, Rival.");
+                        said.Add(Rival + " left you a letter. You won last week, " + hers + " to " + vex + ". Read it on the Bunny tab, Rival.");
                         Game.Award(_w, 15, "Beat " + Rival + " last week", silent: true);
                     }
                     else { P.RivalLosses++; said.Add(Rival + " won last week, " + vex + " to " + hers + ", and will not shut up about it."); }
@@ -309,12 +331,13 @@ namespace BusyBunny
                 if (P.RivalWeek != thisWeek) { P.RivalWeek = thisWeek; P.RivalExtra = 0; }
                 foreach (var old in P.RivalExtraByWeek.Keys.Where(k => string.CompareOrdinal(k, WeekKey(now.AddDays(-21))) < 0).ToList()) P.RivalExtraByWeek.Remove(old);
             }
-            if (StartQuest(S, now)) said.Add("This is a big week. Your quest: " + P.QuestName + ", " + P.QuestTasks.Count + " chapters. Fun, Adventures, This week's quest tells the story.");
+            if (Tools.IsOn("quest") && StartQuest(S, now)) said.Add("This is a big week. Your quest: " + P.QuestName + ", " + P.QuestTasks.Count + " chapters. The Bunny tab, This week's quest, tells the story.");
             foreach (var pack in CollectStreakPacks(S.Data, now)) said.Add("You collected the " + pack + " sound pack. Pick it in Options, Sounds.");
             S.Save();
             foreach (var line in said) Game.Note(S, line);
-            if (said.Count > 0 && !quiet) _w.Say(string.Join(" ", said));
-            else if (said.Count > 0) _w.Dispatcher.BeginInvoke(() => _w.Say(string.Join(" ", said)), DispatcherPriority.ApplicationIdle);
+            // Nobody asked for these: the calm rules decide (Calm mode, quiet hours, class, the daily cap); otherwise they wait in What happened today.
+            if (said.Count > 0 && !quiet) Calm.SayUnprompted(_w, string.Join(" ", said), noted: true);
+            else if (said.Count > 0) _w.Dispatcher.BeginInvoke(() => Calm.SayUnprompted(_w, string.Join(" ", said), noted: true), DispatcherPriority.ApplicationIdle);
         }
 
         // ---- When a task is finished ----
@@ -365,11 +388,11 @@ namespace BusyBunny
             foreach (var pack in CollectStreakPacks(S.Data, now))
             {
                 Game.Queue(_w, Game.Goals, "New sound pack collected: " + pack + ". Pick it in Options, Sounds.");
-                Sounds.Play(Sounds.Event.SurpriseReward);
+                if (!Calm.FunPaused) Sounds.Play(Sounds.Event.SurpriseReward);
             }
 
-            // Vex.
-            if (Cfg.RivalOn)
+            // Vex, unless Calm mode is on or a Vex tool is turned off.
+            if (Cfg.RivalOn && !Calm.FunPaused && Tools.IsOn("rival") && Tools.IsOn("rivaltalk"))
             {
                 string week = WeekKey(now);
                 int hers = Engine.PointsInWeek(S.Data, now), vex = RivalScore(S.Data, now);
@@ -384,7 +407,7 @@ namespace BusyBunny
             S.Save();
 
             // The narrator waits its turn: it speaks only when nothing more important was said for this finish.
-            if (Cfg.NarratorOn && Big(t)) _ = Narrate(t, now, Game.QueueLate(_w, Game.Goals));
+            if (Cfg.NarratorOn && !Calm.FunPaused && Tools.IsOn("narrator") && Big(t)) _ = Narrate(t, now, Game.QueueLate(_w, Game.Goals));
         }
 
         /// <summary>The quest's tasks that still exist and are not archived.</summary>
@@ -403,9 +426,10 @@ namespace BusyBunny
         {
             string last = S.Data.Log.Where(e => e.Kind == "Done" && e.TaskId != t.Id).OrderByDescending(e => e.When).FirstOrDefault()?.Text ?? "";
             string line = Trailer(t, now, last, _rng.Next(4));
-            if (MayNarrateWithClaude(S, t)
+            // Claude writes it only within the daily limit for Bunny's writing (Settings, Fun and tools); a failed try costs nothing.
+            if (MayNarrateWithClaude(S, t) && SmartBunny.Ready && BunnyWrite.MayAsk(S, "narrator", now)
                 && await SmartBunny.WriteAsync("Write one dramatic movie trailer announcement, under 45 words, for Morgan finishing this: " + S.Line(t, now) +
-                ". Start like a trailer voice, such as In a world where. Make it funny and proud.", about: t) is string written) line = written;
+                ". Start like a trailer voice, such as In a world where. Make it funny and proud.", about: t) is string written) { line = written; BunnyWrite.Counted(S, "narrator", now); }
             await Task.Delay(400);
             if (!slot.Decided) await Task.Delay(1500);
             if (slot.Chosen) _w.Say("The narrator: " + line);
@@ -478,16 +502,16 @@ namespace BusyBunny
 
         // ---- Windows ----
 
-        private void ShowBurrow()
+        private void ShowBurrow(Window? owner = null)
         {
-            var w = Layout.Dialog(_w, "The burrow");
+            var w = Layout.Dialog(owner ?? _w, "The burrow");
             var panel = new StackPanel { Margin = new Thickness(14), Width = 480 };
             var wallet = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
             var rooms = new ListBox { Height = 200 };
             var shop = new ListBox { Height = 160 };
             void Fill()
             {
-                wallet.Text = "You have " + Wallet(S.Data) + " points to spend. Spending never lowers your level.";
+                wallet.Text = SpendLine(S.Data) + ". Spending never lowers your level.";
                 rooms.ItemsSource = Built(P).Select(r => r.Name + ". " + r.Feel).ToList();
                 var left = Rooms.Where(r => !Built(P).Contains(r)).ToList();
                 shop.ItemsSource = left.Count == 0 ? new List<string> { "Every room is built. The burrow is complete." }
@@ -510,6 +534,7 @@ namespace BusyBunny
                     // The focused item went with the old list: put focus back on the shop, near where she was.
                     int count = shop.Items.Count;
                     if (count > 0) TextViewer.Select(shop, Math.Min(i, count - 1));
+                    said += " " + SpendLine(S.Data) + ".";
                 }
                 Speech.Say(w, said, true);
             }

@@ -2,6 +2,21 @@ Busy Bunny bug list
 
 This file keeps track of the bugs found in Busy Bunny, how each one was fixed, and what could not be tested. It was asked for by Morgan in sweep 9.12. It is plain text so that NVDA and a braille display can read it easily. Each bug is one line: what went wrong, then the word Fixed with how it was fixed. New rounds of bug hunting get a new section at the top.
 
+Version 0.13.0, November 4, 2026
+
+Found by the second reviewer of the new toolbox and engines, all fixed before release:
+
+On the Bunny tab, Control D, Control 1 to 6 and F2 could change a task you had chosen on another tab. Fixed: task keys do nothing on a line that is not a task.
+Calm mode did not quiet the older fun features, like cheers, Vex and the narrator. Fixed: Calm mode pauses all of them, and start-of-day lines follow the daily limit and quiet hours.
+Asking Bunny to open a tool opened it while Bunny was still answering. Fixed: the tool opens after Bunny finishes.
+Control Z could remove a points multiplier, or reset the daily count of lines Busy Bunny says by itself. Fixed: undo leaves those alone.
+A locked world file could be treated as damaged and replaced with an older backup. Fixed: it is kept and you are told.
+Some new lines were read before NVDA finished reading where focus landed. Fixed: they wait until it is quiet.
+Clear the parking lot cleared everything with no question. Fixed: it asks first, and No is the default.
+
+What was tested: the automatic self-test, and the real app on the x64 server driven with UI Automation: the toolbox opens with Control Shift H, focus lands on the first tool, arrows and search work, Escape goes back to the task you were on; the Day menu and Bunny tab are there; Quick add saves; File, Exit closes cleanly.
+What could not be tested: NVDA and braille were not used; no ARM64 machine.
+
 Version 0.12.0, November 4, 2026
 
 Your tasks and saving:

@@ -130,6 +130,8 @@ namespace BusyBunny
         public int Points { get; set; }
         public int Minutes { get; set; }
         public Guid? TaskId { get; set; }
+        /// <summary>The feature that paid or spent it through the Ledger (like powerhour), or empty for the app's own points.</summary>
+        public string Feature { get; set; } = "";
     }
 
     public enum DayMode { Normal, Vacation, RoughDay }
@@ -299,7 +301,7 @@ namespace BusyBunny
             Classes.RemoveAll(c => c == null);
             foreach (var c in Classes) { c.Tag ??= ""; c.Days ??= new(); c.Where ??= ""; }
             Log.RemoveAll(e => e == null);
-            foreach (var e in Log) { e.Kind ??= ""; e.Text ??= ""; e.Tag ??= ""; e.List ??= ""; }
+            foreach (var e in Log) { e.Kind ??= ""; e.Text ??= ""; e.Tag ??= ""; e.List ??= ""; e.Feature ??= ""; }
             AccessNudges.RemoveAll(x => x == null);
             Parking.RemoveAll(x => x == null);
             BunnyNotes.RemoveAll(x => x == null);
@@ -370,7 +372,8 @@ namespace BusyBunny
         public Data Data { get; private set; } = new();
         // Undo history, newest last, at most 100 steps and about 50 MB: the whole data file as it was,
         // compressed (a year of tasks is a few MB as text, so 100 plain copies ran to a gigabyte).
-        private readonly List<(byte[] Data, string What)> _undo = new();
+        // Each step also holds the world state (world.json) as it was, so one Control Z puts both back.
+        private readonly List<(byte[] Data, string What, byte[]? World)> _undo = new();
         private long _undoBytes;
         private const long UndoLimit = 50L << 20;
 
@@ -481,7 +484,7 @@ namespace BusyBunny
                         // Never the sample tasks over a real file: empty lists, and the damaged file kept.
                         s.Data = new Data { Lists = Sample.Lists() };
                         s.LoadNote = "Your tasks file was damaged and I found no good backup, so your lists are empty for now." + keptWords +
-                            " Help, Report a problem copies the details, and File, Restore from a backup can bring back a copy you exported.";
+                            " Help, Report a problem copies the details, and Options, Settings, Tasks, Restore from a backup can bring back a copy you exported.";
                     }
                     ErrorLog.Write("Tasks file was damaged at start. " + (good != null ? "Loaded " + from + "." : "No good backup."));
                 }
@@ -716,11 +719,12 @@ namespace BusyBunny
         public void Remember(string what)
         {
             byte[] packed = Pack(JsonSerializer.SerializeToUtf8Bytes(Data, Json));
-            _undo.Add((packed, what));
-            _undoBytes += packed.Length;
+            byte[]? world = _world == null ? null : Pack(_world.Snapshot());
+            _undo.Add((packed, what, world));
+            _undoBytes += packed.Length + (world?.Length ?? 0);
             while (_undo.Count > 1 && (_undo.Count > 100 || _undoBytes > UndoLimit))
             {
-                _undoBytes -= _undo[0].Data.Length;
+                _undoBytes -= _undo[0].Data.Length + (_undo[0].World?.Length ?? 0);
                 _undo.RemoveAt(0);
             }
         }
@@ -760,6 +764,14 @@ namespace BusyBunny
             Save();
         }
 
+        // ---- The world (src\Engine\World.cs) ----
+
+        private WorldState? _world;
+        /// <summary>Bunny's world, saved as world.json next to the tasks file. Loaded the first time it is used.</summary>
+        public WorldState World => _world ??= WorldState.Load(WorldFile, MyBackups);
+        /// <summary>world.json in the data folder; a test store keeps it next to its own file.</summary>
+        public string WorldFile => PathOverride == null ? Path.Combine(Folder, "world.json") : PathOverride + ".world.json";
+
         /// <summary>How many steps Control Z can go back.</summary>
         public int UndoCount => _undo.Count;
 
@@ -772,9 +784,9 @@ namespace BusyBunny
         public string? Undo()
         {
             if (_undo.Count == 0) return null;
-            var (packed, what) = _undo[^1];
+            var (packed, what, world) = _undo[^1];
             _undo.RemoveAt(_undo.Count - 1);
-            _undoBytes -= packed.Length;
+            _undoBytes -= packed.Length + (world?.Length ?? 0);
             var back = JsonSerializer.Deserialize<Data>(Unpack(packed), Json)!.Normalize();
             var current = Data;
             var now = DateTime.Now;
@@ -789,9 +801,16 @@ namespace BusyBunny
                     t.RemindDay = c.RemindDay;
                 }
             foreach (var n in current.AccessNudges) if (!back.AccessNudges.Contains(n)) back.AccessNudges.Add(n);
+            // What was said stays said: the daily cap of unprompted lines and What happened today are not hers to undo.
+            back.Game.UnpromptedDay = current.Game.UnpromptedDay;
+            back.Game.UnpromptedCount = current.Game.UnpromptedCount;
+            back.Game.HappenedDay = current.Game.HappenedDay;
+            back.Game.Happened = current.Game.Happened;
             Data = back;
             Tidy();
             Save();
+            // The world goes back with the tasks; a step remembered before the world was loaded leaves it as it is.
+            if (world != null && _world != null) _world.Restore(Unpack(world));
             return what;
         }
 

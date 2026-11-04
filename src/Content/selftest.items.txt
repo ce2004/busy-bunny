@@ -1,0 +1,9 @@
+name: Brass lamp
+touch: Cool smooth metal with a ridged switch
+sound: A soft click and a faint hum
+looks: A warm yellow glow
+
+name: Wool rug
+touch: Thick and springy under your paws
+sound: Almost nothing, it swallows footsteps
+looks: Rust red with a cream border

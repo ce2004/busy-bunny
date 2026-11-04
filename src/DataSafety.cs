@@ -130,7 +130,7 @@ namespace BusyBunny
             if (!reallyClosing || _sessionEnding) return;
             var answer = MessageBox.Show(_w,
                 "Busy Bunny could not save your latest changes" + (store.LastSaveError is string why ? ": " + why : ".") +
-                "\n\nIf it closes now, those changes are lost. Close anyway?\n\nChoose No to keep Busy Bunny open while it keeps trying. File, Export a backup can also save a copy somewhere else.",
+                "\n\nIf it closes now, those changes are lost. Close anyway?\n\nChoose No to keep Busy Bunny open while it keeps trying. Options, Settings, Tasks, Export a backup can also save a copy somewhere else.",
                 "Busy Bunny", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
             if (answer != MessageBoxResult.Yes)
             {
@@ -152,7 +152,7 @@ namespace BusyBunny
             {
                 _w.AppSettings.PcNoteSaid = true;
                 _w.AppSettings.Save();
-                notes.Add("One thing to know: your tasks are kept on this PC only, so they will not show up on your other computer by themselves yet. To move them, use File, Export a backup here, then File, Restore from a backup on the other one.");
+                notes.Add("One thing to know: your tasks are kept on this PC only, so they will not show up on your other computer by themselves yet. To move them, use Options, Settings, Tasks, Export a backup here, then Restore from a backup in the same place on the other one.");
             }
             _w.Store.LoadNote = null;
             Settings.LoadNote = null;

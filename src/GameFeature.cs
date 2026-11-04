@@ -19,13 +19,15 @@ namespace BusyBunny
         public void Attach(MainWindow w)
         {
             _w = w;
-            w.AddMenuItem("Fun", "_Scoreboard...", ShowScoreboard, "Ctrl+Shift+G");
-            w.AddMenuItem("Fun", "_Badges...", ShowBadges);
-            w.AddMenuItem("Fun", "V_isit your bunny...", VisitBunny);
-            w.AddMenuItem("Fun", "_Challenges...", ShowChallenge);
-            w.AddMenuItem("Fun", "Semester _Wrapped...", ShowWrapped);
-            w.AddMenuItem("Fun", "What _happened today...", ShowHappened);
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.G, ShowScoreboard, "Ctrl+Shift+G: Scoreboard, your records, level and points");
+            // Out of the Fun menu (sweep 2.7): the toolbox and the Bunny tab.
+            Tools.Register(new BunnyTool("scoreboard", "Scoreboard", Drawers.Wins, "Your level, points, goals, streak and records.", ShowScoreboard) { MovedFrom = "the Fun menu", Keys = "Control Shift G" });
+            Tools.Register(new BunnyTool("badges", "Badges", Drawers.Wins, "The badges you have earned, and how to get the rest.", ShowBadges) { MovedFrom = "the Fun menu" });
+            Tools.Register(new BunnyTool("happened", "What happened today", Drawers.Wins, "Every win, record and fun line from today, newest last.", ShowHappened) { MovedFrom = "the Fun menu" });
+            Tools.Register(new BunnyTool("wrapped", "Semester Wrapped", Drawers.Wins, "A recap of your semester so far.", ShowWrapped) { MovedFrom = "the Fun menu" });
+            Tools.Register(new BunnyTool("visitbunny", "Visit your bunny", Drawers.World, "What your bunny did lately, then how it is doing.", VisitBunny) { MovedFrom = "the Fun menu" });
+            Tools.Register(new BunnyTool("challenges", "Daily challenge", Drawers.Games, "Today's optional challenge, for bonus points.", ShowChallenge) { MovedFrom = "the Fun menu" });
+            BunnyTab.Register("Visit your bunny", "what your bunny did lately, newest first, then how it is doing", VisitBunny, "visitbunny");
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.G, Tools.Guard("scoreboard", ShowScoreboard), "Ctrl+Shift+G: Scoreboard, your records, level and points");
             w.StatusChanged += OnStatus;
             w.Started += () => Engine.RollChallenge(G, DateTime.Now);
             w.NewDay += _ => Engine.RollChallenge(G, DateTime.Now);
@@ -40,6 +42,11 @@ namespace BusyBunny
             var now = DateTime.Now;
             if (Finish(S, t, old, now) is Outcome o) Game.Queue(_w, o);
             S.Save();
+            // The event bus, once the points are in (or taken back), so every handler sees the totals as they now are.
+            bool was = old is Status.Done or Status.DoneNotSubmitted, done = t.Status is Status.Done or Status.DoneNotSubmitted;
+            GameEvents.RaiseStatusChanged(t, old);
+            if (done && !was) GameEvents.RaiseTaskDone(t);
+            else if (was && !done) GameEvents.RaiseTaskUndone(t);
         }
 
         /// <summary>
@@ -152,13 +159,16 @@ namespace BusyBunny
             int total = Engine.Total(S.Data), level = Engine.LevelFor(total);
             G.BunnyVisits++;
             S.Save();
-            var lines = new List<string>
+            // Sweep 11.4: the most recent thing Bunny said or did first, newest first, then how the bunny is.
+            var lines = new List<string>();
+            if (G.HappenedDay == S.Key(now)) lines.AddRange(Enumerable.Reverse(G.Happened).Take(20));
+            lines.AddRange(new List<string>
             {
                 G.BunnyName + " is " + Engine.BunnyStage(level) + ", level " + level + ": " + Engine.LevelName(level) + ".",
                 Mood(S, now),
                 (Engine.Threshold(level + 1) - total) + " more points to level " + (level + 1) + ", when " + G.BunnyName + " grows a little.",
                 "Rename your bunny in Options, Settings, Bunny and goals.",
-            };
+            });
             TextViewer.Show(_w, G.BunnyName, lines);
         }
 

@@ -156,22 +156,29 @@ namespace BusyBunny
 
             w.StatusChanged += (t, old) => { if (t.Status == Status.Done && old != Status.Done) Cheer(w, t); };
 
-            _finalsMenu = w.AddMenuItem("Fun", "_Finals week mode", () => SetFinals(w, _finalsMenu!.IsChecked));
+            _finalsMenu = w.AddMenuItem("Day", "_Finals week mode", () => { if (Tools.IsOn("finals")) SetFinals(w, _finalsMenu!.IsChecked); else { _finalsMenu!.IsChecked = Cfg.FinalsMode; Tools.Guard("finals", () => { })(); } });
             _finalsMenu.IsCheckable = true;
             _finalsMenu.IsChecked = Cfg.FinalsMode;
             if (_finalsMenu.Parent is MenuItem top) top.SubmenuOpened += (_, _) => _finalsMenu.IsChecked = Cfg.FinalsMode;
-            w.AddMenuItem("Fun", "I _did a thing...", () => DidAThing(w), "Ctrl+Shift+I");
-            w.AddMenuItem("Fun", "Park a thou_ght...", () => ParkAThought(w), "Ctrl+Shift+K");
-            w.AddMenuItem("Fun", "View the p_arking lot...", () => ViewParkingLot(w));
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.I, () => DidAThing(w), "Ctrl+Shift+I: I did a thing, log something done that was never on a list");
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.K, () => ParkAThought(w), "Ctrl+Shift+K: park a stray thought without leaving where you are");
+            // Out of the Fun menu (sweep 2.7). The parking lot is a room in Bunny's world now (sweep 11.5).
+            Tools.Register(new BunnyTool("finals", "Finals week mode", Drawers.Plan, "Enter turns extra encouragement for finals on or off.", () => SetFinals(w, !Cfg.FinalsMode)) { MovedFrom = "the Fun menu", State = () => Cfg.FinalsMode ? "on" : "off" });
+            Tools.Register(new BunnyTool("didathing", "I did a thing", Drawers.Notes, "Log something you did that was never on a list. It counts.", () => DidAThing(w)) { MovedFrom = "the Fun menu", Keys = "Control Shift I" });
+            Tools.Register(new BunnyTool("parkthought", "Park a thought", Drawers.Notes, "Write down a stray thought without leaving where you are.", () => ParkAThought(w)) { MovedFrom = "the Fun menu", Keys = "Control Shift K" });
+            Tools.Register(new BunnyTool("parkinglot", "The parking lot", Drawers.Notes, "Every thought you parked: hear them, make one a task, or let them go.", () => WorldWindow.Show(w, "parking")) { MovedFrom = "the Fun menu, as View the parking lot" });
+            World.Places.Register(new Place("parking", "The parking lot",
+                st => st.Data.Parking.Count == 0 ? "a quiet room for stray thoughts, empty right now" : st.Data.Parking.Count + (st.Data.Parking.Count == 1 ? " thought parked" : " thoughts parked"),
+                _ => true, st => ParkingThings(w, st)));
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.I, Tools.Guard("didathing", () => DidAThing(w)), "Ctrl+Shift+I: I did a thing, log something done that was never on a list");
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.K, Tools.Guard("parkthought", () => ParkAThought(w)), "Ctrl+Shift+K: park a stray thought without leaving where you are");
 
+            // Lines nobody asked for go through the calm rules; with the finals tool turned off, nothing is said.
             w.Started += () =>
             {
+                if (!Tools.IsOn("finals")) return;
                 if (Cfg.FinalsMode)
                 {
                     string? line = Phrases.Pick("Finals", Math.Max(0, Cfg.RoastLevel - 1), Cfg.PhraseUsed, Rng);
-                    if (Cfg.RoastLevel > 0 && line != null) w.Say("Finals week mode is on. " + line);
+                    if (Cfg.RoastLevel > 0 && line != null) Calm.SayUnprompted(w, "Finals week mode is on. " + line);
                     return;
                 }
                 OfferFinals(w);
@@ -183,7 +190,7 @@ namespace BusyBunny
         {
             Cfg.FinalsMode = on;
             Cfg.Save();
-            w.Say(on ? "Finals week mode is on. Extra encouragement, as ordered." : "Finals week mode is off.");
+            w.Say(on ? "Finals week mode is on now. Extra encouragement, as ordered." : "Finals week mode is off now.", true);
         }
 
         private void OfferFinals(MainWindow w)
@@ -194,12 +201,14 @@ namespace BusyBunny
             Cfg.FinalsOffered = season;
             Cfg.Save();
             // Spoken, never a pop-up: the Fun menu has the switch.
-            w.Say("A test is due within the week, and it is finals season. Fun menu, Finals week mode turns on extra encouragement.");
+            Calm.SayUnprompted(w, "A test is due within the week, and it is finals season. Day menu, Finals week mode turns on extra encouragement.");
         }
 
         /// <summary>Says the line for a finished task, after the app's own Done line, and now and then a surprise.</summary>
         private static void Cheer(MainWindow w, TaskItem? t)
         {
+            // Calm mode pauses the cheers and surprises.
+            if (Calm.FunPaused) return;
             var now = DateTime.Now;
             var (done, total, _, _) = w.Store.Progress(now);
             string moment = Moment(done, total, t != null && Haunting(t, now), Comeback(w.Store, now));
@@ -254,10 +263,10 @@ namespace BusyBunny
 
         // ---- Parking lot (spec 15.5) ----
 
-        private static void ParkAThought(MainWindow w)
+        private static void ParkAThought(MainWindow w, Window? owner = null)
         {
             var before = Keyboard.FocusedElement;
-            var dlg = Layout.Dialog(w, "Park a thought");
+            var dlg = Layout.Dialog(owner ?? w, "Park a thought");
             var thought = new TextBox();
             var ok = Layout.Button("Park it", isDefault: true);
             var cancel = Layout.Button("Cancel", isCancel: true);
@@ -286,11 +295,42 @@ namespace BusyBunny
             if (saved) w.Say("Parked. " + w.Store.Data.Parking.Count + (w.Store.Data.Parking.Count == 1 ? " thought" : " thoughts") + " in the parking lot.");
         }
 
-        private static void ViewParkingLot(MainWindow w)
+        /// <summary>
+        /// The parking lot room in Bunny's world (sweep 11.5): hear everything, each thought (Enter opens it to make it a
+        /// task or let it go), park a new one, and clear them all. Every change is one Control Z step.
+        /// </summary>
+        private static List<PlaceThing> ParkingThings(MainWindow w, Store store)
+        {
+            var things = new List<PlaceThing>();
+            var parked = store.Data.Parking;
+            if (parked.Count > 0)
+                things.Add(new PlaceThing("Hear everything parked", parked.Count + (parked.Count == 1 ? " thought" : " thoughts"),
+                    owner => Speech.Say(owner, string.Join(". ", parked) + ".", true)));
+            for (int i = 0; i < parked.Count; i++)
+            {
+                int at = i;
+                things.Add(new PlaceThing(parked[i], "Enter opens it, to make it a task or let it go", owner => ViewParkingLot(w, owner, at)));
+            }
+            things.Add(new PlaceThing("Park a new thought", "Control Shift K does this from anywhere", owner => ParkAThought(w, owner)));
+            if (parked.Count > 0)
+                things.Add(new PlaceThing("Clear the parking lot", "asks first, then lets every thought go; Control Z brings them back", owner =>
+                {
+                    int n = store.Data.Parking.Count;
+                    if (MessageBox.Show(owner, "Let go of all " + n + (n == 1 ? " parked thought" : " parked thoughts") + "? Control Z brings them back.", "Clear the parking lot",
+                        MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes) return;
+                    store.Remember("clearing the parking lot");
+                    store.Data.Parking.Clear();
+                    w.SaveAndRefresh();
+                    Speech.Say(owner, "Cleared " + n + (n == 1 ? " thought" : " thoughts") + " from the parking lot. Control Z brings them back.", true);
+                }));
+            return things;
+        }
+
+        private static void ViewParkingLot(MainWindow w, Window? owner = null, int start = 0)
         {
             var store = w.Store;
             if (store.Data.Parking.Count == 0) { w.Say("The parking lot is empty. Control Shift K parks a thought.", true); return; }
-            var dlg = Layout.Dialog(w, "Parking lot");
+            var dlg = Layout.Dialog(owner ?? w, "Parking lot");
             var list = new ListBox { Width = 560, Height = 260 };
             AutomationProperties.SetName(list, "Parked thoughts");
             var lists = new ComboBox { ItemsSource = store.ActiveLists.Select(l => l.Name).ToList() };
@@ -357,7 +397,7 @@ namespace BusyBunny
             buttons.Children.Add(close);
             panel.Children.Add(buttons);
             dlg.Content = panel;
-            dlg.Loaded += (_, _) => Fill(0);
+            dlg.Loaded += (_, _) => Fill(Math.Clamp(start, 0, Math.Max(0, store.Data.Parking.Count - 1)));
             dlg.ShowDialog();
         }
 
@@ -391,7 +431,7 @@ namespace BusyBunny
                 _panel.Children.Add(box);
             }
 
-            public string Name => "Fun";
+            public string Name => "Bunny's voice";
             public FrameworkElement Content => _panel;
 
             public void Apply()
