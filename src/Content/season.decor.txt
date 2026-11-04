@@ -1,0 +1,47 @@
+name: A pinecone garland
+touch: Rough little scales that prick your paw pads, strung on twine that smells of pine sap.
+sound: The cones knock together softly like wooden beads when the door swings.
+
+name: A wreath of dried leaves
+touch: Crisp, papery leaves woven tight around a bendy willow ring.
+sound: It rustles and crackles every time someone knocks.
+
+name: A string of bells
+touch: Smooth cold brass bells on a velvet ribbon, each the size of an acorn.
+sound: A bright jingle with every gust of wind and every visitor.
+
+name: A felt bunting
+touch: Soft felt triangles stitched along a cotton cord, fuzzy at the edges.
+sound: It flaps quietly, like a bird shaking out its wings.
+
+name: Paper lanterns
+touch: Thin crinkly paper over a wire frame, warm from the tiny candle inside.
+sound: The paper ticks and creaks a little as it warms.
+
+name: A carrot wreath
+touch: Smooth, cool carrots bundled with their feathery tops still on, tied with string.
+sound: The tops whisper together, and the squirrel keeps sniffing it.
+
+name: A wind chime of spoons
+touch: Old smooth spoons hung from a driftwood stick, cool and heavy in your paw.
+sound: A clinking, tinkling song that never plays the same tune twice.
+
+name: A ribbon curtain
+touch: Long satin ribbons that slip through your claws like water.
+sound: A soft swish when you walk through it.
+
+name: A moss and flower crown for the door
+touch: Springy damp moss studded with velvety petals.
+sound: Almost silent, except for a bee who has already found it.
+
+name: A garland of popcorn and cranberries
+touch: Light, bumpy popcorn and firm round berries threaded on a long string.
+sound: It crunches if you squeeze it, and a duck keeps trying to eat it.
+
+name: A painted welcome sign
+touch: Smooth sanded wood with raised letters you can trace with a claw.
+sound: It knocks gently against the door on its rope.
+
+name: A clover doormat
+touch: Thick, cushiony clover that springs back under your paws.
+sound: A soft squish with every step, and a sweet green smell.

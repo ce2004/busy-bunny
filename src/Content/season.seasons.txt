@@ -1,0 +1,59 @@
+season: Winter
+touch: The burrow is snug and warm, and the fire crackles while the cold air nips at the window.
+sound: The wind howls softly over the hill, and the kettle hums on the stove.
+looks: Frost covers the window in little feathery patterns.
+
+season: Winter
+touch: The floor is cool, but your socks are thick and fuzzy, and the blanket on the couch is heavy and warm.
+sound: Snow falls so quietly outside that all you hear is {name} munching a carrot.
+looks: The burrow door is half buried in a soft drift of snow.
+
+season: Winter
+touch: A mug of cocoa warms both your paws, and the quilt over your knees is thick and soft.
+sound: Icicles drip slowly outside, plink, plink, as the afternoon sun comes out.
+looks: The garden is tucked under a white blanket.
+
+season: Spring
+touch: The burrow door is open, and a warm breeze carries in the smell of rain and new grass.
+sound: Birds chirp outside the window, and the rain patters gently on the roof.
+looks: Little green shoots peek up around the doorstep.
+
+season: Spring
+touch: The ground outside the burrow is soft and squishy, and the air is cool and fresh.
+sound: The stream behind the burrow is running again, gurgling and splashing over the rocks.
+looks: The first crocuses have popped up by the garden fence.
+
+season: Spring
+touch: A warm patch of sunlight lands on the rug, and {name} stretches out in it like a cat.
+sound: The bees are back, buzzing lazily from flower to flower outside the window.
+looks: The cherry tree by the door is covered in pink blossoms.
+
+season: Summer
+touch: The burrow stays cool and shady while the air outside is warm and lazy.
+sound: Crickets chirp all evening, and the ice cream truck jingles somewhere down the lane.
+looks: The meadow outside is tall and golden.
+
+season: Summer
+touch: The stone floor is cool under your feet, and a glass of lemonade sweats in your paw.
+sound: A fan whirs softly in the corner, and the ducks splash in the pond nearby.
+looks: Sunlight streams through the round window.
+
+season: Summer
+touch: The evening grass is warm and soft outside the door, and a light breeze ruffles your fur.
+sound: Fireflies blink silently, and frogs croak from the pond.
+looks: The sky stays light until late.
+
+season: Fall
+touch: The air is crisp and cool, and a thick knitted sweater keeps you warm.
+sound: Leaves rustle and crunch on the path outside the burrow.
+looks: The oak by the door has turned orange and gold.
+
+season: Fall
+touch: A warm mug of apple cider steams in your paws, and the burrow smells like cinnamon.
+sound: The wind whistles through the trees, and a pumpkin pie bubbles in the oven.
+looks: A row of pumpkins sits along the windowsill.
+
+season: Fall
+touch: The first fire of the season is warm and crackly, and the blanket is pulled back out of the closet.
+sound: Rain drums softly on the window, and geese honk far overhead.
+looks: Leaves pile up in drifts by the burrow door.

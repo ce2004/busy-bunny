@@ -239,9 +239,14 @@ namespace BusyBunny
         private int _nextEvent;
         private readonly List<Voice> _voices = new();
         private readonly Reverb _room = new(Sounds.SampleRate);
-        private int _key = -1;
+        private int _key = -1, _mood;
 
-        private sealed record Event(double At, string Bank, int Midi, double Gain, double Pan, double Ring, double Release, double Swell);
+        /// <summary>Which arrangement plays (the seasonal soundtrack sets it): 0 is the usual piece. A change starts the new one at the same place.</summary>
+        public volatile int Mood;
+        /// <summary>For the seasonal soundtrack: rearranges the usual piece for a mood (events, mood, home note). Null or 0 plays it as written.</summary>
+        public static Func<List<Event>, int, int, List<Event>>? Arranger;
+
+        public sealed record Event(double At, string Bank, int Midi, double Gain, double Pan, double Ring, double Release, double Swell);
 
         private sealed class Voice
         {
@@ -273,7 +278,7 @@ namespace BusyBunny
                 _gain = 0;
                 return count;
             }
-            if (_events == null || _key != Sounds.Key) { _events = Compose(Sounds.Key); _key = Sounds.Key; _nextEvent = 0; _voices.Clear(); FindNext(); }
+            if (_events == null || _key != Sounds.Key || _mood != Mood) { _mood = Mood; _events = Compose(Sounds.Key, _mood); _key = Sounds.Key; _nextEvent = 0; _voices.Clear(); FindNext(); }
             // About two seconds to fade in or out.
             double step = 1.0 / (Rate * 2.0) * Math.Max(Level, 0.02);
             for (int n = 0; n < count; n += 2)
@@ -343,7 +348,7 @@ namespace BusyBunny
         /// two notes over each chord; a flute breathes a long note every fourth chord. The last chord leads back
         /// to the first, so the loop has no seam.
         /// </summary>
-        private static List<Event> Compose(int key)
+        private static List<Event> Compose(int key, int mood = 0)
         {
             int home = 54 + ((key - 54 % 12) % 12 + 12) % 12;
             // A chord: its bass (semitones from home) and three tones above.
@@ -387,7 +392,10 @@ namespace BusyBunny
                 e.Add(new(t + 5.6, "piano", home + tune[c][1], 0.065, -0.15, 2.8, 2.6, 0.02));
                 if (c % 4 == 2) e.Add(new(t + 3.1, "flute", home + 12 + tones[2], 0.05, 0.45, 3.0, 2.4, 1.2));
             }
-            return e.OrderBy(x => x.At).ToList();
+            var piece = e.OrderBy(x => x.At).ToList();
+            if (mood == 0 || Arranger == null) return piece;
+            try { return Arranger(piece, mood, home).OrderBy(x => x.At).ToList(); }
+            catch { return piece; }
         }
 
         /// <summary>Writes the whole piece at full level to a WAV file, for checking it by ear or by numbers.</summary>
@@ -405,9 +413,9 @@ namespace BusyBunny
         }
 
         /// <summary>For the self-test: renders some seconds at full level and gives the loudest sample and the average level.</summary>
-        public static (double Peak, double Rms) Measure(double seconds, double from = 0)
+        public static (double Peak, double Rms) Measure(double seconds, double from = 0, int mood = 0)
         {
-            var m = new MusicLoop { Wanted = true, Level = 1f };
+            var m = new MusicLoop { Wanted = true, Level = 1f, Mood = mood };
             m._gain = 1;
             m._pos = (long)(from * Rate);
             var buf = new float[Rate * 2];
