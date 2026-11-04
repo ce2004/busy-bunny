@@ -1,0 +1,299 @@
+id: newyear
+name: New Year's Day
+touch: The air is crisp and still, and the burrow blanket is extra warm because nobody wants to get up just yet.
+sound: The village is hushed and sleepy, with only a kettle whistling somewhere and the rooster yawning instead of crowing.
+looks: A few paper streamers from last night are still hanging off the fence posts.
+
+id: valentine
+name: Valentine's Day
+touch: Little paper cards with soft felt hearts are tucked under every door, and the bakery hands out warm cinnamon rolls.
+sound: The squirrel is reading every card out loud on the square, and the ducks giggle at the mushy ones.
+looks: Pink and red ribbons are tied around the lamp posts.
+
+id: stpatrick
+name: Saint Patrick's Day
+touch: The grass on the green is cool and springy, and the pony lets everyone feel the green ribbons braided into her mane.
+sound: A fiddle plays a quick jig by the pond, and the hedgehog's little feet tap along on the wooden boardwalk.
+looks: Everything that can be green is green today, even Gerald's shell sticker.
+
+id: aprilfools
+name: April Fools' Day
+touch: Your cup of cocoa turns out to have a rubber duck floating in it, squeaky and smooth, courtesy of the squirrel.
+sound: Giggles pop up all over the village as the owl reports that the pond has been renamed Soup.
+looks: Every sign in the square has been turned upside down.
+
+id: mlk
+name: Martin Luther King Jr. Day
+touch: Neighbors pass smooth new planks hand to hand to fix the old footbridge, and the wood is warm from the winter sun.
+sound: Hammers tap in a steady rhythm while someone hums, and everyone says thank you a lot today.
+looks: By afternoon the bridge is fixed and sturdy, with a thank-you note pinned to the railing.
+
+id: presidents
+name: Presidents' Day
+touch: The village hall is warm and smells like fresh bread, and everyone gets a paper crown to wear for fun.
+sound: The rooster gives a very serious speech about acorns while the crowd tries not to laugh.
+looks: Little flags line the path up to the hall.
+
+id: mothers
+name: Mother's Day
+touch: Soft flower petals are scattered on the doorsteps, and the bakery wraps every warm muffin in a cloth napkin.
+sound: Breakfast dishes clink all over the village and the ducks quack a sweet little song for everyone who looks after someone.
+looks: Every window has a small jar of wildflowers in it.
+
+id: memorial
+name: Memorial Day
+touch: A gentle breeze moves through the meadow, and the neighbors walk together slowly, holding hands and paws.
+sound: The village is quiet for a while, then a soft trumpet plays and the birds join in with a hush.
+looks: Small flowers have been left along the stone wall by the old oak.
+
+id: juneteenth
+name: Juneteenth
+touch: The grill on the green is warm, there is a plate of cornbread in your paws, and everyone shares a long picnic blanket.
+sound: Music plays all afternoon, with drums and singing and the owl staying up late to dance.
+looks: Bright banners hang over the tables on the green.
+
+id: july4
+name: The Fourth of July
+touch: The summer evening is warm and sticky, the watermelon is cold and drippy, and the grass tickles your feet.
+sound: A brass band plays in the square, and later the fireworks thump and crackle over the pond.
+looks: Red, white and blue streamers wave from every porch.
+
+id: fathers
+name: Father's Day
+touch: The hammock by the pond is warm and swaying, and the grill gives off a cozy smoky heat.
+sound: The rooster tells his longest joke ever and every single neighbor groans and laughs at the same time.
+looks: Someone has hung a big hand-painted banner over the bakery door.
+
+id: labor
+name: Labor Day
+touch: Nobody has to lift a thing today, so the hammocks are full and the lemonade is cold and sweet.
+sound: The village is lazy and peaceful, just bees humming and someone snoring softly in the shade.
+looks: A sign on the general store says closed, gone napping.
+
+id: halloween
+name: Halloween
+touch: The night is cool and crunchy with leaves, and your candy bag gets heavier at every door.
+sound: Little costumed neighbors giggle and say trick or treat, and the owl hoots a friendly boo.
+looks: Carved pumpkins glow on every step, all of them smiling.
+
+id: veterans
+name: Veterans Day
+touch: The morning is cool and calm, and the neighbors gather close together with warm scarves on.
+sound: The village pauses for a quiet moment, then a gentle song plays and everyone says thank you.
+looks: A row of little flags stands by the old oak tree.
+
+id: thanksgiving
+name: Thanksgiving
+touch: The long table in the village hall is warm with dishes, and your plate is heavy with mashed potatoes and pie.
+sound: Forks clink and neighbors take turns saying what they are thankful for, and the squirrel's list is very long.
+looks: Leaves and little gourds decorate the middle of the table.
+
+id: christmaseve
+name: Christmas Eve
+touch: The burrow is wrapped in warmth from the fire, and a mug of cocoa warms both your paws.
+sound: Carolers sing softly at the door, and sleigh bells jingle somewhere out in the snowy dark.
+looks: Little lights twinkle along every rooftop.
+
+id: christmas
+name: Christmas Day
+touch: Crinkly wrapping paper is everywhere, and the new scarf {name} gives you is soft and fuzzy.
+sound: Everyone is laughing and opening presents, and the ducks sing a very off-key carol.
+looks: The big tree in the square is covered in ornaments the neighbors made.
+
+id: newyearseve
+name: New Year's Eve
+touch: The night air is cold on your nose, but you are bundled in a warm blanket on the hill with everyone.
+sound: The whole village counts down together, then noisemakers toot and everyone cheers happy new year.
+looks: Sparklers fizz in every paw on the hilltop.
+
+id: herbirthday
+name: Your birthday party
+touch: A paper hat with a stretchy string sits on your head, and the cake is still warm from the oven.
+sound: The whole village sings happy birthday, the squirrel a little too loudly, and then everyone claps.
+looks: Streamers hang across the burrow door and balloons bob on strings.
+
+id: bunnybirthday
+name: Bunny's birthday party
+touch: {name} wears a crinkly paper hat that keeps sliding over one ear, and the carrot cake is soft and sweet.
+sound: The neighbors sing happy birthday to {name}, who thumps a back foot in time with the song.
+looks: There is a banner over the burrow that says happy birthday in wobbly letters.
+
+id: winter
+name: Winter arrives
+touch: The first cold snap nips at your whiskers, and the burrow fire is warm and crackly.
+sound: Wind whistles over the hill outside while the kettle hums inside.
+looks: Frost has drawn little ferns on the window.
+
+id: spring
+name: Spring arrives
+touch: The ground is soft and damp again, and the sunshine feels warm on your back for the first time in months.
+sound: Birds are chattering everywhere and the pond ice gives one last crack before it melts.
+looks: Tiny green shoots poke up around the burrow door.
+
+id: summer
+name: Summer arrives
+touch: The air is warm and lazy, the grass is soft under your feet, and the pond water is cool to dip a paw in.
+sound: Crickets sing all evening and the ice cream bell jingles down the lane.
+looks: The whole meadow is tall and full of flowers.
+
+id: fall
+name: Fall arrives
+touch: The breeze is cool and crisp, and the leaves crunch underfoot on the path to the burrow.
+sound: Leaves rustle in the oak, and geese honk as they fly over the village.
+looks: The trees have gone orange and gold.
+
+id: snowday
+name: A snow day
+touch: The snow is soft and powdery, and it squeaks when you press your boot into it.
+sound: The village is muffled and quiet, except for sleds swooshing down the hill and happy shrieks.
+looks: Everything is covered in a thick white blanket.
+
+id: pumpkin
+name: The pumpkin patch opens
+touch: The pumpkins are cool and bumpy, some so heavy you need {name} to help you lift them.
+sound: Hay crunches underfoot, and from the haunted tunnel you can hear giggles and a very polite owl saying boo.
+looks: Rows of orange pumpkins stretch across the field.
+
+id: harvest
+name: The harvest festival
+touch: The baskets are heavy with apples and squash, and the cider is warm and spicy in your cup.
+sound: A fiddle plays in the barn and the judges hum happily as they walk through the gardens.
+looks: Hay bales and baskets line the village green.
+
+id: kite
+name: The kite festival
+touch: The wind tugs hard on your kite string, and the string hums against your paw.
+sound: Kites flap and snap overhead, and the whole hill laughs when the squirrel's kite carries him a few hops.
+looks: The sky is dotted with kites shaped like fish and carrots.
+
+id: cleaning
+name: Spring cleaning day
+touch: The windows are open and a fresh breeze blows through the burrow, and the broom handle is smooth in your paws.
+sound: Brooms swish and rugs get a good thwack outside while {name} hums.
+looks: The burrow is bright and tidy by the end of the day.
+
+id: gamesday
+name: The village games day
+touch: The burlap sack is scratchy around your legs, and the grass is soft when you tumble into it.
+sound: The crowd cheers for everyone, and the rooster announces each race at the top of his lungs.
+looks: Ribbons hang from a string by the finish line.
+
+id: fishing
+name: The fishing tournament
+touch: The wooden dock is warm in the sun, and the fishing line tugs gently when something nibbles.
+sound: Water laps against the dock, and every catch gets a splash as it swims happily away.
+looks: Little boats bob on the pond.
+
+id: gardenclub
+name: The garden club contest
+touch: The soil is warm and crumbly, and the leaves of your plants are soft and cool.
+sound: The judges murmur and hmm as they walk the garden rows, and the bees buzz along beside them.
+looks: Each garden has a small wooden sign with a ribbon pinned to it.
+
+id: market
+name: The Friday night market
+touch: The evening air is cool, and warm paper lanterns give off a gentle heat as you walk under them.
+sound: Stall keepers call out their treats and a little band plays near the fountain.
+looks: Strings of paper lanterns glow over every stall.
+
+id: bonfire
+name: The Friday bonfire
+touch: The bonfire's heat warms your front while the night air cools your back, and a toasty marshmallow sticks to your paw.
+sound: Logs pop and crackle, and the neighbors swap silly stories in the dark.
+looks: Sparks float up toward the stars.
+
+id: campfire
+name: Weekend campfire night
+touch: The log bench is rough and warm from the fire, and a fuzzy blanket is draped over your shoulders.
+sound: The fire crackles softly, and the owl tells a story that is mostly about snacks.
+looks: The circle of faces glows orange in the firelight.
+
+id: snowball
+name: A snowball fight
+touch: The snowballs are cold and packed tight in your mittens, and one plops softly on your shoulder.
+sound: Everyone is laughing and shrieking, and {name} squeaks every time a snowball lands nearby.
+looks: Snow forts dot the village green.
+
+id: lantern
+name: The lantern walk
+touch: A warm paper lantern rests in your paws, light as a leaf, and the path is soft with moss.
+sound: Footsteps pad quietly along the path, and someone up ahead hums a slow tune.
+looks: A long line of lanterns winds through the trees.
+
+id: train
+name: The grand train ride
+touch: The train seat is soft velvet and rocks gently under you, and the window is cool against your paw.
+sound: The wheels go clickety-clack, and the whistle gives a long happy toot at every bend.
+looks: Little towns and fields slide past the window.
+
+id: butterfly
+name: The butterfly garden
+touch: The garden is warm and humid, and a butterfly's soft wings flutter against your paw.
+sound: It is very quiet in here, just a tiny rustle of wings and water trickling in a little fountain.
+looks: Flowers of every color fill the glass house.
+
+id: moving
+name: Moving day
+touch: The boxes are heavy and the tape is sticky, and {name} carefully hands you each thing to carry.
+sound: Neighbors call out and cart wheels creak as they help haul everything to the new burrow.
+looks: The new burrow is bigger, with a round door and a wide window.
+
+id: anniversary
+name: The village anniversary
+touch: The village square is warm and crowded, and someone hands you a slice of cake on a little plate.
+sound: The neighbors cheer and tell the story of the day you first came to the village.
+looks: Bunting hangs from every roof.
+
+id: fullmoon
+name: The full moon
+touch: The grass on the stargazing hill is cool and dewy, and a blanket keeps you snug.
+sound: Crickets chirp softly and the owl whispers the names of the stars.
+looks: The moon is big and round and bright over the hill.
+
+id: fog
+name: A foggy morning
+touch: The air is cool and damp on your whiskers, and the fog feels like a soft wet blanket.
+sound: Everything sounds muffled and close, and the ducks quack to keep track of each other.
+looks: The village has gone soft and gray.
+
+id: rain
+name: A rainy day
+touch: Your rain boots squish in the mud, and the puddles splash cold and fun up to your knees.
+sound: Rain patters on your umbrella and every puddle you jump in goes sploosh.
+looks: Shiny puddles cover the lane.
+
+id: storm
+name: A thunderstorm
+touch: The burrow is snug and dry, and you are curled up under a heavy blanket with {name} beside you.
+sound: Rain drums on the roof and thunder rumbles far away like a big cat purring.
+looks: Every so often the window flickers bright.
+
+id: picnic
+name: A picnic day
+touch: The checkered blanket is soft on the warm grass, and the lemonade jug is cold and sweaty.
+sound: Bees buzz lazily and neighbors pass sandwiches with lots of crinkly wax paper.
+looks: Picnic blankets cover the whole meadow.
+
+id: icecream
+name: Ice cream truck season
+touch: The cone is cold and drippy, and you have to lick fast before it runs down your paw.
+sound: The ice cream truck jingles down the lane and everyone comes running.
+looks: The truck is painted with little strawberries.
+
+id: clouds
+name: A cloud watching day
+touch: You lie back in the soft warm grass with your paws behind your head, and a breeze ruffles your fur.
+sound: Neighbors call out what shapes they think they see, and the squirrel insists every cloud is an acorn.
+looks: Fluffy white clouds drift slowly across the sky.
+
+id: fireworks
+name: A fireworks night
+touch: You sit on a warm blanket on the hill, and each boom gives a little thump you can feel in your chest.
+sound: Fireworks whistle, pop and crackle, and the crowd goes ooh and aah together.
+looks: The sky fills with sparkly colors.
+
+id: semesterend
+name: The end of the semester
+touch: The whole village feels lighter, like setting down a heavy backpack, and paper lanterns wait warm on every doorstep.
+sound: A train whistle calls from the station, and the neighbors are already humming for the lantern walk tonight.
+looks: Bunting in every color is strung from the station to the butterfly garden.

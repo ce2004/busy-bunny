@@ -1,0 +1,39 @@
+phase: new moon
+touch: The night air is cool and soft, and the grass on the hill is damp under your hands.
+sound: Crickets sing all around, and the owl calls once from the oak.
+looks: No moon at all, just a sky full of tiny stars.
+
+phase: waxing crescent
+touch: A light breeze ruffles your hair, still a little warm from the day.
+sound: Frogs croak at the pond and the leaves whisper overhead.
+looks: A thin silver curve of moon, low in the west after sunset.
+
+phase: first quarter moon
+touch: The grass is cool and the evening air has a gentle chill to it.
+sound: The owl hoots on her rounds, and a cricket chirps right by your ear.
+looks: Half a moon, bright and sharp along one edge.
+
+phase: waxing gibbous moon
+touch: The stone wall on the hill is still warm from the sun and nice to lean on.
+sound: The wind chimes by the burrow door ring softly, and the ducks murmur in their sleep.
+looks: An almost full moon, round on one side and a bit squished on the other.
+
+phase: full moon
+touch: The night is cool and still, and the blanket around your shoulders feels extra soft.
+sound: Everything is hushed, and the owl hoots one long, slow note.
+looks: A big round moon, bright enough to cast your shadow on the grass.
+
+phase: waning gibbous moon
+touch: Late-night dew settles on your sleeves, cold and tingly.
+sound: A sleepy cricket, the soft hoo of the owl, and the far-off creak of the old oak.
+looks: A big moon rising late, with one side starting to fade.
+
+phase: last quarter moon
+touch: The air is crisp in the small hours, and the wool blanket feels extra cozy.
+sound: The village is fast asleep, and only a soft breeze moves through the grass.
+looks: Half a moon lit on the other side, high in the early morning sky.
+
+phase: waning crescent
+touch: Cool, misty air just before morning, and the grass beaded with dew.
+sound: The first bird of the day tries a tiny tune, and the owl flaps home to bed.
+looks: A thin curve of moon fading into the pale dawn.

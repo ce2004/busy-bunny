@@ -1,0 +1,99 @@
+sky: clear
+touch: The window glass is warm where the sun hits it, and the air through the crack is dry and fresh.
+sound: Birds chatter in the hedge and a bee bumps lazily against the frame.
+looks: Bright blue sky and sunlight pooling on the windowsill.
+
+sky: clear
+touch: A light breeze slips in, cool on your nose and warm on your hands where the sun lands.
+sound: The rooster crows far down the lane, and the leaves rustle softly.
+looks: Wide open blue with not a cloud in sight.
+
+sky: partly cloudy
+touch: The glass turns warm, then cool, then warm again as clouds drift across the sun.
+sound: The breeze hums through the grass and a few birds call back and forth.
+looks: Patches of blue between big puffy clouds.
+
+sky: partly cloudy
+touch: Sunshine comes and goes on your face, warm one moment and mild the next.
+sound: The wind chimes by the door ring now and then, and the ducks quack at the pond.
+looks: White clouds sailing past with blue in between.
+
+sky: cloudy
+touch: The glass is cool and even, and the air feels soft and still.
+sound: Everything is a little hushed, just a few crickets and the pony's slow hoofsteps down the lane.
+looks: A thick gray blanket of cloud from one side of the sky to the other.
+
+sky: cloudy
+touch: A mild breeze with no sun behind it, cool on your cheeks.
+sound: The squirrel chatters in the oak, and the wind sighs over the hill.
+looks: Soft gray sky and no shadows anywhere.
+
+sky: foggy
+touch: Damp, cool air clings to everything, and the window glass is wet with mist.
+sound: Sounds are muffled, and the ducks quack like they are wrapped in cotton.
+looks: Thick white fog, and the gate has vanished.
+
+sky: foggy
+touch: The sill is beaded with tiny drops, and the air is cold and heavy.
+sound: A drip from the roof, then another, and the rooster's crow sounds very far away.
+looks: Everything gray and blurry, like a dream.
+
+sky: drizzly
+touch: Tiny cool drops prickle your nose when you lean close to the open window.
+sound: A soft, steady tickle of drizzle on the leaves, almost too quiet to hear.
+looks: A fine mist of rain and the grass shining wet.
+
+sky: drizzly
+touch: The air is damp and cool, and the wooden window frame feels a little clammy.
+sound: Drizzle whispers on the hill and a slow drip taps the doorstep.
+looks: Pale gray light and drops gathering on the glass.
+
+sky: rainy
+touch: Cool, damp air drifts in, and the window glass is slick with running water.
+sound: Rain patters steadily on the hill and splashes into the puddle by the door.
+looks: Gray sky and water streaking down the glass.
+
+sky: rainy
+touch: Your hand on the sill comes away wet, and the air smells like soil.
+sound: The gutter gurgles and the ducks quack happily at the pond.
+looks: Shiny puddles and dripping leaves.
+
+sky: pouring
+touch: The glass shivers under the weight of the rain, and cold spray mists the sill.
+sound: Rain roars on the hill like a crowd clapping, and the gutter is gushing.
+looks: Sheets of water, and you can hardly see the gate.
+
+sky: pouring
+touch: The air is cold and wet, and the window frame hums gently with the downpour.
+sound: A loud, steady drumming overhead and water rushing down the path.
+looks: A gray wall of rain and a little river where the lane used to be.
+
+sky: snowing
+touch: The glass is icy cold, and a single snowflake melts on your nose when you open it a crack.
+sound: Almost total quiet, with a soft hiss of snow settling on the hill.
+looks: Big white flakes drifting down and everything turning white.
+
+sky: snowing
+touch: Crisp, cold air nips at your cheeks, and frost feathers the edge of the window.
+sound: A muffled crunch as someone walks past, and the owl hooting softly.
+looks: Snow piling on the sill and the village gone soft and white.
+
+sky: stormy
+touch: The window glass is cool and rattles gently in the wind, but the burrow walls are warm and solid.
+sound: Rain drums hard on the hill, and thunder rumbles far away.
+looks: Dark clouds and a quick flicker of faraway lightning.
+
+sky: stormy
+touch: A gust pushes against the frame, and the cool glass hums under your hand, but the room stays snug.
+sound: Wind whooshes over the hill and thunder grumbles somewhere beyond the river.
+looks: A heavy, dark sky and branches swaying.
+
+sky: mystery
+touch: The window is shut and the glass feels just room temperature, which tells you nothing at all.
+sound: A sound that could be the wind, or could be the squirrel snoring.
+looks: The curtain is drawn, so the sky is a secret today.
+
+sky: mystery
+touch: Bunny presses her nose to the glass, leaves a smudge, and learns nothing.
+sound: Only the kettle humming and the burrow clock ticking.
+looks: The window is all steamed up from the cocoa.
