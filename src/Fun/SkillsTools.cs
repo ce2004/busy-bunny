@@ -284,7 +284,7 @@ namespace BusyBunny
         {
             foreach (var topic in topics)
                 foreach (var line in Content.Lines(topic))
-                    if (Cold.Any(c => line.Contains(c, StringComparison.OrdinalIgnoreCase))) return topic + ": " + line;
+                    if (Cold.Any(c => System.Text.RegularExpressions.Regex.IsMatch(line, @"\b" + System.Text.RegularExpressions.Regex.Escape(c) + @"\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase))) return topic + ": " + line;
             return null;
         }
 

@@ -102,10 +102,10 @@ namespace BusyBunny
             var back = fromSprint ? _w.KeepFocus() : null;
             try
             {
-                var (_, q) = Next(S, FunKit.Rng);
-                var choices = q.Choices.OrderBy(_ => FunKit.Rng.Next()).ToList();
+                var (_, q) = Next(S, GamesFunKit.Rng);
+                var choices = q.Choices.OrderBy(_ => GamesFunKit.Rng.Next()).ToList();
                 string intro = (fromSprint ? "Trivia break, for finishing that sprint. Escape skips. " : "") + q.Text;
-                int i = FunKit.Pick(_w, "Trivia break", "_Your answer", choices, 0, intro);
+                int i = GamesFunKit.Pick(_w, "Trivia break", "_Your answer", choices, 0, intro);
                 if (i < 0)
                 {
                     var k = S.World.GetKept<Quiz>(TriviaId);
@@ -140,7 +140,7 @@ namespace BusyBunny
         {
             var sp = s.World.Get<Spins>(SpinId);
             sp.Ready = Math.Min(MaxSpins, sp.Ready + 1);
-            FunKit.Put(s, SpinId, sp);
+            GamesFunKit.Put(s, SpinId, sp);
         }
 
         /// <summary>Spends a spin and pays its reward, all one Control Z step. Returns the line, or null with no spin ready.</summary>
@@ -164,10 +164,10 @@ namespace BusyBunny
         {
             var sp = S.World.Get<Spins>(SpinId);
             if (sp.Ready <= 0) { _w.Say("No spins ready. Finish a sprint to earn one; you can save up to " + MaxSpins + ".", true); return; }
-            int i = FunKit.Pick(_w, "Reward spin", "_Spin", new[] { "Spin the wheel", "Save it for later" }, 0, "You have " + FunKit.Plural(sp.Ready, "spin") + " ready.");
+            int i = GamesFunKit.Pick(_w, "Reward spin", "_Spin", new[] { "Spin the wheel", "Save it for later" }, 0, "You have " + GamesFunKit.Plural(sp.Ready, "spin") + " ready.");
             if (i != 0) return;
             Celebration.Sound(S, "Xylophone, sparkle");
-            string? line = SpinOnce(S, FunKit.Rng);
+            string? line = SpinOnce(S, GamesFunKit.Rng);
             _w.SaveAndRefresh();
             if (line != null) _w.Say("The wheel clicks around and stops. " + line, true);
         }

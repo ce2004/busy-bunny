@@ -144,7 +144,7 @@ namespace BusyBunny
             string said = line.Replace("{name}", _w.Store.Data.Game.BunnyName);
             int now = RatingOf(_w.Store, topic, line);
             var choices = new[] { "Thumbs up: more like this", "Thumbs down: not this one again", "No rating" };
-            int i = FunKit.Pick(_w, "Rate a line", "_Your rating", choices, now > 0 ? 0 : now < 0 ? 1 : 2, "The last fun line was: " + said);
+            int i = GamesFunKit.Pick(_w, "Rate a line", "_Your rating", choices, now > 0 ? 0 : now < 0 ? 1 : 2, "The last fun line was: " + said);
             if (i < 0) return;
             SetRating(_w.Store, topic, line, i == 0 ? 1 : i == 1 ? -1 : 0);
             _w.Say(i == 0 ? "Thumbs up. You will hear lines like that a bit more." : i == 1 ? "Thumbs down. That line is out of the rotation." : "Rating cleared.", true);
@@ -169,7 +169,7 @@ namespace BusyBunny
         public static string OneCompliment(Store s)
         {
             var jar = s.World.Get<Jar>(JarId);
-            return jar.Lines.Count == 0 ? Content.Pick(s, "records.compliments") : jar.Lines[FunKit.Rng.Next(jar.Lines.Count)];
+            return jar.Lines.Count == 0 ? Content.Pick(s, "records.compliments") : jar.Lines[GamesFunKit.Rng.Next(jar.Lines.Count)];
         }
 
         private void ShowJar()
@@ -177,11 +177,11 @@ namespace BusyBunny
             var s = _w.Store;
             int n = s.World.Get<Jar>(JarId).Lines.Count;
             var choices = new[] { "Read me one", "Put a kind line in the jar", "Hear every line in the jar" };
-            int i = FunKit.Pick(_w, "Compliment jar", "_What now", choices, 0, "The compliment jar has " + FunKit.Plural(n, "kind line") + " in it.");
+            int i = GamesFunKit.Pick(_w, "Compliment jar", "_What now", choices, 0, "The compliment jar has " + GamesFunKit.Plural(n, "kind line") + " in it.");
             if (i == 0) _w.Say(OneCompliment(s), true);
             else if (i == 1)
             {
-                var line = FunKit.Ask(_w, "Compliment jar", "_Kind line", intro: "Something kind someone said, or that you want to remember.");
+                var line = GamesFunKit.Ask(_w, "Compliment jar", "_Kind line", intro: "Something kind someone said, or that you want to remember.");
                 if (line == null) return;
                 KeepCompliment(s, line);
                 _w.Say("In the jar. It will come back on a day you need it.", true);
@@ -189,7 +189,7 @@ namespace BusyBunny
             else if (i == 2)
             {
                 var all = s.World.Get<Jar>(JarId).Lines;
-                FunKit.Read(_w, "Compliment jar", all.Count == 0 ? new List<string> { "The jar is empty for now. Kind lines go in as you celebrate wins." } : all.AsEnumerable().Reverse().ToList());
+                GamesFunKit.Read(_w, "Compliment jar", all.Count == 0 ? new List<string> { "The jar is empty for now. Kind lines go in as you celebrate wins." } : all.AsEnumerable().Reverse().ToList());
             }
         }
 

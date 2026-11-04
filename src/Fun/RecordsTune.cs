@@ -114,7 +114,7 @@ namespace BusyBunny
                 for (int k = 0; k < tune.Notes.Count; k++) list.Items.Add(new ListBoxItem { Content = (k + 1) + ": " + NoteName(tune.Notes[k]) });
                 if (list.Items.Count == 0) list.Items.Add(new ListBoxItem { Content = "No notes yet" });
                 list.SelectedIndex = Math.Clamp(select, 0, list.Items.Count - 1);
-                AutomationProperties.SetName(list, "Your tune, " + FunKit.Plural(tune.Notes.Count, "note"));
+                AutomationProperties.SetName(list, "Your tune, " + GamesFunKit.Plural(tune.Notes.Count, "note"));
             }
             void Keep() { tune.Instrument = inst.SelectedItem as string ?? "Piano"; s.World.Set(Id, tune); s.World.Save(); }
             Fill(0);
@@ -141,7 +141,7 @@ namespace BusyBunny
                 Keep();
                 Fill(at);
                 TextViewer.Select(list, Math.Min(at, list.Items.Count - 1));
-                Speech.Say(dlg, "Took out " + gone + ". " + FunKit.Plural(tune.Notes.Count, "note") + " left.", true);
+                Speech.Say(dlg, "Took out " + gone + ". " + GamesFunKit.Plural(tune.Notes.Count, "note") + " left.", true);
             };
             panel.Children.Add(add);
             panel.Children.Add(Layout.Row("_Instrument", inst, 300));

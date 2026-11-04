@@ -80,18 +80,18 @@ namespace BusyBunny
         public static Board BoardFor(Store s, DateTime now)
         {
             var b = s.World.Get<Board>(QuestId);
-            string week = FunKit.Key(Engine.WeekStart(now));
+            string week = GamesFunKit.Key(Engine.WeekStart(now));
             if (b.Week == week) return b;
             var items = QuestItems();
             var picks = new List<int>();
-            foreach (int i in Enumerable.Range(0, items.Count).OrderBy(_ => FunKit.Rng.Next()))
+            foreach (int i in Enumerable.Range(0, items.Count).OrderBy(_ => GamesFunKit.Rng.Next()))
             {
                 if (picks.Count >= QuestsAWeek) break;
                 if (picks.Any(p => items[p]["who"] == items[i]["who"])) continue;
                 picks.Add(i);
             }
             b = new Board { Week = week, Quests = picks.Select(i => new Quest { Index = i }).ToList() };
-            FunKit.Put(s, QuestId, b);
+            GamesFunKit.Put(s, QuestId, b);
             return b;
         }
 
@@ -107,7 +107,7 @@ namespace BusyBunny
         private static string BoardLine(Store s, DateTime now)
         {
             var b = BoardFor(s, now);
-            return FunKit.Plural(b.Quests.Count, "quest") + " posted this week, " + b.Quests.Count(q => q.Paid) + " done";
+            return GamesFunKit.Plural(b.Quests.Count, "quest") + " posted this week, " + b.Quests.Count(q => q.Paid) + " done";
         }
 
         public static List<(Outcome? O, string Line)> QuestDone(Store s, TaskItem t, DateTime now)
@@ -126,7 +126,7 @@ namespace BusyBunny
                 var o = Ledger.Pay(s, Num(i, "reward", 10), i["who"] + "'s village quest", QuestId, t.Id);
                 said.Add((o, Celebration.Line(s, "Quest done for " + i["who"] + ": " + i["text"] + " " + Num(i, "reward", 10) + " points. " + (i.GetValueOrDefault("thanks") ?? ""))));
             }
-            FunKit.Put(s, QuestId, b);
+            GamesFunKit.Put(s, QuestId, b);
             return said;
         }
 
@@ -157,7 +157,7 @@ namespace BusyBunny
                 Ledger.Pay(s, Num(i, "reward", 10), i["who"] + "'s village quest", QuestId);
                 said.Add("Quest done for " + i["who"] + ": " + i["text"] + " " + Num(i, "reward", 10) + " points.");
             }
-            FunKit.Put(s, QuestId, b);
+            GamesFunKit.Put(s, QuestId, b);
             return said;
         }
 
@@ -166,7 +166,7 @@ namespace BusyBunny
             var b = BoardFor(S, DateTime.Now);
             var lines = new List<string> { "The village board. " + BoardLine(S, DateTime.Now) + ". New quests go up every Monday; nothing is lost if one waits." };
             lines.AddRange(b.Quests.Select(q => QuestLine(S, q)));
-            FunKit.Read(owner, "Village quests", lines);
+            GamesFunKit.Read(owner, "Village quests", lines);
         }
 
         // ---- Snail racing ----
@@ -185,8 +185,8 @@ namespace BusyBunny
 
         private void Snails(Window owner)
         {
-            var names = Content.Lines("games.snail.names").OrderBy(_ => FunKit.Rng.Next()).Take(2).Prepend("Gerald").ToList();
-            int hers = FunKit.Pick(owner, "Snail racing", "_Cheer for", names, 0, "Three snails at the starting leaf. Pick the one you cheer for.");
+            var names = Content.Lines("games.snail.names").OrderBy(_ => GamesFunKit.Rng.Next()).Take(2).Prepend("Gerald").ToList();
+            int hers = GamesFunKit.Pick(owner, "Snail racing", "_Cheer for", names, 0, "Three snails at the starting leaf. Pick the one you cheer for.");
             if (hers < 0) return;
             var at = new int[names.Count];
             bool over = false;
@@ -194,19 +194,19 @@ namespace BusyBunny
             string? Moment(bool cheer)
             {
                 if (over) return "The race is over. Close and come back for another one.";
-                int? won = Step(at, hers, cheer, FunKit.Rng);
+                int? won = Step(at, hers, cheer, GamesFunKit.Rng);
                 string where = string.Join(", ", names.Select((n, k) => n + " " + Math.Min(Track, at[k])));
                 if (won == null) return (cheer ? Content.Pick(S, "games.snail") + " " : "") + where + ", out of " + Track + ".";
                 over = true;
                 if (won != hers) return names[won.Value] + " wins by a slime trail! " + names[hers] + " says it was a warm-up. " + where + ".";
                 string line = names[hers] + " wins! " + where + ".";
                 var p = S.World.Get<Prizes>(SnailId);
-                string weekendKey = FunKit.Key(Engine.WeekStart(DateTime.Now));
+                string weekendKey = GamesFunKit.Key(Engine.WeekStart(DateTime.Now));
                 if (weekend && p.SnailWeekend != weekendKey)
                 {
                     S.Remember("a snail race prize");
                     p.SnailWeekend = weekendKey;
-                    FunKit.Put(S, SnailId, p);
+                    GamesFunKit.Put(S, SnailId, p);
                     Ledger.Pay(S, SnailPrize, "Snail race win", SnailId);
                     _w.SaveAndRefresh();
                     line += " Weekend race prize: " + SnailPrize + " points. " + PlayTime.SpendLine(S.Data) + ".";
@@ -215,8 +215,8 @@ namespace BusyBunny
                 Celebration.Sound(S, "Bunny, binky");
                 return Celebration.Line(S, line);
             }
-            FunKit.Play(owner, "Snail racing", "You cheer for " + names[hers] + ". Press Cheer to shout, or Watch to let them creep. Cheering helps, slowly.",
-                new[] { new FunKit.Move("_Cheer", () => Moment(true)), new FunKit.Move("_Watch", () => Moment(false)) });
+            GamesFunKit.Play(owner, "Snail racing", "You cheer for " + names[hers] + ". Press Cheer to shout, or Watch to let them creep. Cheering helps, slowly.",
+                new[] { new GamesFunKit.Move("_Cheer", () => Moment(true)), new GamesFunKit.Move("_Watch", () => Moment(false)) });
         }
 
         // ---- Mini golf ----
@@ -238,8 +238,8 @@ namespace BusyBunny
             int open = OpenHoles(S.Data, holes.Count);
             var p = S.World.Get<Prizes>(GolfId);
             var choices = holes.Take(open).Select((h, k) => "Hole " + (k + 1) + ", " + h["name"] + ", par " + Num(h, "par", 3) + (p.GolfBest.TryGetValue(h["name"], out int b) ? ", your best " + b : "")).ToList();
-            int pick = FunKit.Pick(owner, "Mini golf", "_Hole", choices, 0,
-                FunKit.Plural(open, "hole") + " open of " + holes.Count + ". Each weekly goal you meet opens another.");
+            int pick = GamesFunKit.Pick(owner, "Mini golf", "_Hole", choices, 0,
+                GamesFunKit.Plural(open, "hole") + " open of " + holes.Count + ". Each weekly goal you meet opens another.");
             if (pick < 0) return;
             var h = holes[pick];
             int left = Num(h, "length", 8), strokes = 0, par = Num(h, "par", 3);
@@ -248,11 +248,11 @@ namespace BusyBunny
             {
                 if (done) return "You are in the cup. Close to pick another hole.";
                 strokes++;
-                left = Putt(left, power, FunKit.Rng);
-                if (left > 0) return Content.Pick(S, "games.golf.shots") + " " + FunKit.Plural(left, "step") + " to the cup.";
+                left = Putt(left, power, GamesFunKit.Rng);
+                if (left > 0) return Content.Pick(S, "games.golf.shots") + " " + GamesFunKit.Plural(left, "step") + " to the cup.";
                 done = true;
                 var pr = S.World.Get<Prizes>(GolfId);
-                string score = strokes == 1 ? "Hole in one!" : strokes < par ? FunKit.Plural(strokes, "stroke") + ", under par!" : strokes == par ? FunKit.Plural(strokes, "stroke") + ", right on par." : FunKit.Plural(strokes, "stroke") + ". Par is " + par + ", and the windmill is smug.";
+                string score = strokes == 1 ? "Hole in one!" : strokes < par ? GamesFunKit.Plural(strokes, "stroke") + ", under par!" : strokes == par ? GamesFunKit.Plural(strokes, "stroke") + ", right on par." : GamesFunKit.Plural(strokes, "stroke") + ". Par is " + par + ", and the windmill is smug.";
                 bool best = !pr.GolfBest.TryGetValue(h["name"], out int old) || strokes < old;
                 string line = "Plunk, it drops in the cup. " + score + (best ? " Your best on this hole." : "");
                 if (strokes == 1 && pr.AceDay != S.Key(DateTime.Now))
@@ -260,17 +260,17 @@ namespace BusyBunny
                     S.Remember("a hole in one");
                     pr.AceDay = S.Key(DateTime.Now);
                     if (best) pr.GolfBest[h["name"]] = strokes;
-                    FunKit.Put(S, GolfId, pr);
+                    GamesFunKit.Put(S, GolfId, pr);
                     Ledger.Pay(S, AcePrize, "Hole in one", GolfId);
                     _w.SaveAndRefresh();
                     line += " " + AcePrize + " points. " + PlayTime.SpendLine(S.Data) + ".";
                 }
-                else if (best) { pr.GolfBest[h["name"]] = strokes; FunKit.Put(S, GolfId, pr); }
+                else if (best) { pr.GolfBest[h["name"]] = strokes; GamesFunKit.Put(S, GolfId, pr); }
                 if (strokes <= par) Celebration.Sound(S, "Singing bells, sparkle");
                 return strokes <= par ? Celebration.Line(S, line) : line;
             }
             string intro = h["name"] + ". " + string.Join(" ", new[] { "touch", "sound", "looks" }.Where(h.ContainsKey).Select(k => h[k])) + " The cup is " + left + " steps away. Pick how hard to putt.";
-            FunKit.Play(owner, "Mini golf", intro, new[] { new FunKit.Move("_Soft putt", () => Shot(0)), new FunKit.Move("_Medium putt", () => Shot(1)), new FunKit.Move("_Firm putt", () => Shot(2)) });
+            GamesFunKit.Play(owner, "Mini golf", intro, new[] { new GamesFunKit.Move("_Soft putt", () => Shot(0)), new GamesFunKit.Move("_Medium putt", () => Shot(1)), new GamesFunKit.Move("_Firm putt", () => Shot(2)) });
         }
 
         // ---- Bowling night ----
@@ -301,9 +301,9 @@ namespace BusyBunny
         {
             var now = DateTime.Now;
             string month = now.ToString("yyyy-MM");
-            int banked = Math.Min(12, S.Data.Tasks.Count(t => FunKit.Finished(t) && t.DoneAt is DateTime d && d.Year == now.Year && d.Month == now.Month));
-            var rival = Content.Lines("games.snail.names").Concat(new[] { "Gerald" }).OrderBy(_ => FunKit.Rng.Next()).First();
-            int rivalScore = FunKit.Rng.Next(90, 181);
+            int banked = Math.Min(12, S.Data.Tasks.Count(t => GamesFunKit.Finished(t) && t.DoneAt is DateTime d && d.Year == now.Year && d.Month == now.Month));
+            var rival = Content.Lines("games.snail.names").Concat(new[] { "Gerald" }).OrderBy(_ => GamesFunKit.Rng.Next()).First();
+            int rivalScore = GamesFunKit.Rng.Next(90, 181);
             var rolls = new List<int>();
             int frame = 0;
             string? Bowl()
@@ -312,10 +312,10 @@ namespace BusyBunny
                 frame++;
                 bool strike = banked > 0;
                 if (strike) banked--;
-                var balls = Frame(strike, FunKit.Rng);
+                var balls = Frame(strike, GamesFunKit.Rng);
                 // The tenth frame's strikes and spares get their bonus balls, from the bank first.
                 if (frame == 10 && (balls[0] == 10 || balls.Sum() == 10))
-                    for (int k = 0; k < (balls[0] == 10 ? 2 : 1); k++) { bool bs = banked > 0; if (bs) banked--; balls.Add(bs ? 10 : FunKit.Rng.Next(0, 11)); }
+                    for (int k = 0; k < (balls[0] == 10 ? 2 : 1); k++) { bool bs = banked > 0; if (bs) banked--; balls.Add(bs ? 10 : GamesFunKit.Rng.Next(0, 11)); }
                 rolls.AddRange(balls);
                 string what = balls[0] == 10 ? "Strike! One of your finished tasks rolls right down the middle." : balls.Take(2).Sum() == 10 ? "Spare. The last pin wobbles and goes down." : balls[0] + " then " + balls[1] + ". " + Content.Pick(S, "games.bowling");
                 string line = "Frame " + frame + ": " + what + " Score " + BowlScore(rolls) + ".";
@@ -329,17 +329,17 @@ namespace BusyBunny
                     S.Remember("bowling night");
                     p.BowlMonth = month;
                     p.BowlBest = Math.Max(p.BowlBest, mine);
-                    FunKit.Put(S, BowlId, p);
+                    GamesFunKit.Put(S, BowlId, p);
                     Ledger.Pay(S, pay, "Bowling night", BowlId);
                     _w.SaveAndRefresh();
                     line += " This month's bowling night pays " + pay + " points. " + PlayTime.SpendLine(S.Data) + ".";
                 }
-                else if (mine > p.BowlBest) { p.BowlBest = mine; FunKit.Put(S, BowlId, p); line += " Your best game yet."; }
+                else if (mine > p.BowlBest) { p.BowlBest = mine; GamesFunKit.Put(S, BowlId, p); line += " Your best game yet."; }
                 Celebration.Sound(S, "Bunny, thump");
                 return Celebration.Line(S, line);
             }
-            FunKit.Play(owner, "Bowling night", "Bowling night with " + rival + ". You have " + FunKit.Plural(banked, "strike") + " banked from tasks finished this month. The first game each month pays points.",
-                new[] { new FunKit.Move("_Bowl the next frame", Bowl) });
+            GamesFunKit.Play(owner, "Bowling night", "Bowling night with " + rival + ". You have " + GamesFunKit.Plural(banked, "strike") + " banked from tasks finished this month. The first game each month pays points.",
+                new[] { new GamesFunKit.Move("_Bowl the next frame", Bowl) });
         }
 
         // ---- Scavenger hunt ----
@@ -361,10 +361,10 @@ namespace BusyBunny
         {
             var h = s.World.Get<Hunt>(HuntId);
             if (h.Day == s.Key(now)) return h;
-            var spots = Spots(s).OrderBy(_ => FunKit.Rng.Next()).Take(3).ToList();
-            var items = Enumerable.Range(0, Content.Items("games.hunt.items").Count).OrderBy(_ => FunKit.Rng.Next()).Take(spots.Count).ToList();
+            var spots = Spots(s).OrderBy(_ => GamesFunKit.Rng.Next()).Take(3).ToList();
+            var items = Enumerable.Range(0, Content.Items("games.hunt.items").Count).OrderBy(_ => GamesFunKit.Rng.Next()).Take(spots.Count).ToList();
             h = new Hunt { Day = s.Key(now), Things = spots.Select((sp, k) => new Hidden { Item = items[k], Spot = sp.Id }).ToList() };
-            FunKit.Put(s, HuntId, h);
+            GamesFunKit.Put(s, HuntId, h);
             return h;
         }
 
@@ -377,7 +377,7 @@ namespace BusyBunny
             var items = Content.Items("games.hunt.items");
             if (next.Spot != spotId) return ("Not here. " + Content.Pick(s, "games.hunt.miss"), false);
             next.Found = true;
-            FunKit.Put(s, HuntId, h);
+            GamesFunKit.Put(s, HuntId, h);
             var it = items[Math.Min(next.Item, items.Count - 1)];
             string found = "Found it: " + it.GetValueOrDefault("name") + ". " + string.Join(" ", new[] { "touch", "sound", "looks" }.Where(it.ContainsKey).Select(k => it[k]));
             return (found, h.Things.All(x => x.Found));
@@ -394,7 +394,7 @@ namespace BusyBunny
                 if (next == null) { _w.Say("You found all " + h.Things.Count + " things today. Bunny is hiding new ones tomorrow.", true); return; }
                 var spot = spots.FirstOrDefault(x => x.Id == next.Spot);
                 string clue = spot == null ? "It is somewhere in the burrow." : spot.Clues[h.Things.IndexOf(next) % spot.Clues.Count];
-                int i = FunKit.Pick(owner, "Scavenger hunt", "_Search", spots.Select(x => "Search " + x.Name).ToList(), 0,
+                int i = GamesFunKit.Pick(owner, "Scavenger hunt", "_Search", spots.Select(x => "Search " + x.Name).ToList(), 0,
                     "Thing " + (h.Things.IndexOf(next) + 1) + " of " + h.Things.Count + ". Clue: " + clue + " Pick where to search. Escape stops; the hunt waits for you.");
                 if (i < 0) return;
                 var (line, complete) = Search(S, spots[i].Id, now);
@@ -402,7 +402,7 @@ namespace BusyBunny
                 {
                     S.Remember("the scavenger hunt");
                     p.HuntDay = S.Key(now);
-                    FunKit.Put(S, HuntId, p);
+                    GamesFunKit.Put(S, HuntId, p);
                     Ledger.Pay(S, HuntPrize, "Scavenger hunt", HuntId);
                     _w.SaveAndRefresh();
                     Celebration.Sound(S, "SurpriseReward");

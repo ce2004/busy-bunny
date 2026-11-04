@@ -65,7 +65,7 @@ namespace BusyBunny
                     Calm.SayUnprompted(_w, Celebration.Line(S, "New personal best: your longest sprint, " + minutes + " minutes, beating " + before + "."));
                 }
             };
-            GameEvents.DayEnded += day => { if (Tools.IsOn(ReceiptId)) FunKit.Put(S, ReceiptId, new Receipts { Day = S.Key(day), Lines = Receipt(S, day) }); };
+            GameEvents.DayEnded += day => { if (Tools.IsOn(ReceiptId)) GamesFunKit.Put(S, ReceiptId, new Receipts { Day = S.Key(day), Lines = Receipt(S, day) }); };
             GameEvents.WeekEnded += monday =>
             {
                 if (Tools.IsOn(WeekTaskId) && AwardWeek(S, monday) is (_, string line)) { S.Save(); Calm.SayUnprompted(_w, line); }
@@ -85,7 +85,7 @@ namespace BusyBunny
                     Celebration.Sound(S, "Coffee, clink");
                     int n = S.World.Get<Jar>(MarbleId).Tasks.Count;
                     if (full != null) Offer(Game.Goals, Celebration.Line(S, "The marble jar is full! Fifty marbles. Your prize: " + full.Prize + ". A new jar starts."));
-                    else Offer(Game.Chatter, Content.Pick(S, "records.marbles.drop") + " " + FunKit.Plural(n, "marble") + " of " + JarSize + ".");
+                    else Offer(Game.Chatter, Content.Pick(S, "records.marbles.drop") + " " + GamesFunKit.Plural(n, "marble") + " of " + JarSize + ".");
                 }
             }
             catch (Exception e) { ErrorLog.Write("Marble jar: " + e.Message); }
@@ -130,7 +130,7 @@ namespace BusyBunny
                 jar.Filled.Add(full);
                 jar.Tasks = new();
             }
-            FunKit.Put(s, MarbleId, jar);
+            GamesFunKit.Put(s, MarbleId, jar);
             return (true, full);
         }
 
@@ -152,10 +152,10 @@ namespace BusyBunny
         private void ShowJar()
         {
             var jar = S.World.Get<Jar>(MarbleId);
-            var lines = new List<string> { FunKit.Plural(jar.Tasks.Count, "marble") + " in the jar, " + (JarSize - jar.Tasks.Count) + " to go. Jars filled: " + jar.Filled.Count + "." };
+            var lines = new List<string> { GamesFunKit.Plural(jar.Tasks.Count, "marble") + " in the jar, " + (JarSize - jar.Tasks.Count) + " to go. Jars filled: " + jar.Filled.Count + "." };
             lines.AddRange(jar.Filled.AsEnumerable().Reverse().Select(f => "Filled " + f.When.ToString("MMMM d") + ": " + f.Prize));
             if (jar.Filled.Count == 0) lines.Add("The first full jar gives a prize. Every finished task is one marble.");
-            FunKit.Read(_w, "The marble jar", lines);
+            GamesFunKit.Read(_w, "The marble jar", lines);
         }
 
         // ---- Share a win ----
@@ -163,12 +163,12 @@ namespace BusyBunny
         /// <summary>A short brag line about today: counts, and names only of tasks Bunny may see (never a private list).</summary>
         public static string ShareLine(Store s, DateTime now)
         {
-            var done = FunKit.DoneOn(s, now);
+            var done = GamesFunKit.DoneOn(s, now);
             var shown = done.Where(t => SmartBunny.MayShare(s, t)).Select(t => t.Name).Take(3).ToList();
             int things = done.Count + s.Data.Log.Count(e => e.Kind == "DidAThing" && e.When.Date == now.Date);
             int pts = Engine.PointsOn(s.Data, now), streak = Engine.Streaks(s.Data, now).Current;
-            string line = things == 0 ? "Today I showed up, and that counts." : "Today I got " + FunKit.Plural(things, "thing") + " done" + (shown.Count > 0 ? ", including " + string.Join(", ", shown) : "") + ".";
-            if (pts > 0) line += " " + FunKit.Plural(pts, "point") + " earned.";
+            string line = things == 0 ? "Today I showed up, and that counts." : "Today I got " + GamesFunKit.Plural(things, "thing") + " done" + (shown.Count > 0 ? ", including " + string.Join(", ", shown) : "") + ".";
+            if (pts > 0) line += " " + GamesFunKit.Plural(pts, "point") + " earned.";
             if (streak >= 2) line += " " + streak + " days in a row.";
             return line + " " + Content.Pick(s, "records.share");
         }
@@ -183,7 +183,7 @@ namespace BusyBunny
         // ---- Racing your past self ----
 
         public static (int Now, int Then) PastSelf(Store s, DateTime now) =>
-            (FunKit.PointsBy(s.Data, now, now.TimeOfDay), FunKit.PointsBy(s.Data, now.AddDays(-7), now.TimeOfDay));
+            (GamesFunKit.PointsBy(s.Data, now, now.TimeOfDay), GamesFunKit.PointsBy(s.Data, now.AddDays(-7), now.TimeOfDay));
 
         /// <summary>The line when this finish passes last week's self, once a day.</summary>
         public static string? PassedPastSelf(Store s, TaskItem t, DateTime now)
@@ -192,7 +192,7 @@ namespace BusyBunny
             if (r.PassedDay == s.Key(now)) return null;
             var (mine, then) = PastSelf(s, now);
             if (then <= 0 || mine <= then) return null;
-            FunKit.Put(s, RaceId, new Race { PassedDay = s.Key(now), PassedBy = t.Id });
+            GamesFunKit.Put(s, RaceId, new Race { PassedDay = s.Key(now), PassedBy = t.Id });
             return "You just passed last " + now.ToString("dddd") + "'s you: " + mine + " points to " + then + " at this time. " + Content.Pick(s, "records.race");
         }
 
@@ -210,7 +210,7 @@ namespace BusyBunny
 
         public static List<string> DoneList(Store s, DateTime day)
         {
-            var lines = FunKit.DoneOn(s, day).OrderBy(t => t.DoneAt).Select(t => Words.Time(t.DoneAt!.Value) + ": " + t.Name + (t.Status == Status.DoneNotSubmitted ? ", done, not submitted yet" : "")).ToList();
+            var lines = GamesFunKit.DoneOn(s, day).OrderBy(t => t.DoneAt).Select(t => Words.Time(t.DoneAt!.Value) + ": " + t.Name + (t.Status == Status.DoneNotSubmitted ? ", done, not submitted yet" : "")).ToList();
             lines.AddRange(s.Data.Log.Where(e => e.Kind == "DidAThing" && e.When.Date == day.Date).Select(e => Words.Time(e.When) + ": " + e.Text + ", I did a thing"));
             return lines;
         }
@@ -218,8 +218,8 @@ namespace BusyBunny
         private void ShowDoneList()
         {
             var lines = DoneList(S, DateTime.Now);
-            lines.Insert(0, lines.Count == 0 ? "Nothing finished yet today. That is fine; the day is not over." : FunKit.Plural(lines.Count, "thing") + " done today.");
-            FunKit.Read(_w, "Done list", lines);
+            lines.Insert(0, lines.Count == 0 ? "Nothing finished yet today. That is fine; the day is not over." : GamesFunKit.Plural(lines.Count, "thing") + " done today.");
+            GamesFunKit.Read(_w, "Done list", lines);
         }
 
         public static DateTime? BestDay(Data d) =>
@@ -233,14 +233,14 @@ namespace BusyBunny
             var done = log.Where(e => e.Kind == "Done").ToList();
             var lines = new List<string>
             {
-                "Your best day: " + day.ToString("dddd, MMMM d, yyyy") + ", " + FunKit.Plural(log.Where(e => Engine.KarmaKinds.Contains(e.Kind)).Sum(e => e.Points), "point") + ", " + FunKit.Plural(done.Select(e => e.TaskId).Distinct().Count(), "task") + " finished.",
+                "Your best day: " + day.ToString("dddd, MMMM d, yyyy") + ", " + GamesFunKit.Plural(log.Where(e => Engine.KarmaKinds.Contains(e.Kind)).Sum(e => e.Points), "point") + ", " + GamesFunKit.Plural(done.Select(e => e.TaskId).Distinct().Count(), "task") + " finished.",
             };
             int minutes = log.Where(e => e.Kind == "Sprint").Sum(e => e.Minutes);
             if (minutes > 0) lines.Add("Focused for " + GamesCard.Minutes(minutes) + ".");
             lines.AddRange(done.OrderBy(e => e.When).Select(e => Words.Time(e.When) + ": " + (e.Text.Length > 0 ? e.Text : "a task")));
             lines.AddRange(log.Where(e => e.Kind == "DidAThing").Select(e => Words.Time(e.When) + ": " + e.Text + ", I did a thing"));
             lines.Add(Content.Pick(S, "records.bestday"));
-            FunKit.Read(_w, "Best day replay", lines);
+            GamesFunKit.Read(_w, "Best day replay", lines);
         }
 
         // ---- Personal bests board ----
@@ -263,7 +263,7 @@ namespace BusyBunny
                 if (before < 2 || mine <= before) continue;
                 b.SaidDay[key] = today;
                 b.SaidBy[key] = t.Id;
-                FunKit.Put(s, BestsId + ".said", b);
+                GamesFunKit.Put(s, BestsId + ".said", b);
                 return "New personal best: " + words + ", " + mine + ", beating " + before + ".";
             }
             return null;
@@ -280,16 +280,16 @@ namespace BusyBunny
             lines.Add("Most tasks in one day: " + (most.N > 0 ? most.N + ", on " + most.Key.ToString("MMMM d, yyyy") : "none yet") + ".");
             var noon = days.Select(g => (g.Key, N: g.Where(e => e.When.Hour < 12).Select(e => e.TaskId).Distinct().Count())).OrderByDescending(x => x.N).FirstOrDefault();
             lines.Add("Most tasks before noon: " + (noon.N > 0 ? noon.N + ", on " + noon.Key.ToString("MMMM d, yyyy") : "none yet") + ".");
-            lines.Add("Biggest day: " + (BestDay(d) is DateTime bd ? FunKit.Plural(Engine.PointsOn(d, bd), "point") + ", on " + bd.ToString("MMMM d, yyyy") : "none yet") + ".");
-            lines.Add("Best week: " + FunKit.Plural(d.Game.BestWeek, "point") + ".");
-            lines.Add("Longest streak: " + FunKit.Plural(Math.Max(d.Game.LongestStreak, Engine.Streaks(d, now).Longest), "day") + ".");
+            lines.Add("Biggest day: " + (BestDay(d) is DateTime bd ? GamesFunKit.Plural(Engine.PointsOn(d, bd), "point") + ", on " + bd.ToString("MMMM d, yyyy") : "none yet") + ".");
+            lines.Add("Best week: " + GamesFunKit.Plural(d.Game.BestWeek, "point") + ".");
+            lines.Add("Longest streak: " + GamesFunKit.Plural(Math.Max(d.Game.LongestStreak, Engine.Streaks(d, now).Longest), "day") + ".");
             var focus = d.Log.Where(e => e.Kind == "Sprint").GroupBy(e => e.When.Date).Select(g => g.Sum(e => e.Minutes)).DefaultIfEmpty(0).Max();
             lines.Add("Most focused time in a day: " + (focus > 0 ? GamesCard.Minutes(focus) : "none yet") + ".");
             lines.Add("Records broken so far: " + d.Game.RecordsBroken + ".");
             return lines;
         }
 
-        private void ShowBests() => FunKit.Read(_w, "Personal bests board", BestsBoard(S, DateTime.Now));
+        private void ShowBests() => GamesFunKit.Read(_w, "Personal bests board", BestsBoard(S, DateTime.Now));
 
         // ---- Effort receipt ----
 
@@ -300,13 +300,13 @@ namespace BusyBunny
             var did = d.Log.Where(e => e.Kind == "DidAThing" && e.When.Date == day.Date).ToList();
             int pts = Engine.PointsOn(d, day), effort = done.Count + did.Count;
             var lines = new List<string> { "Effort receipt, " + day.ToString("dddd, MMMM d") + ". Busy Bunny General Store, thank you for shopping." };
-            foreach (var e in done) lines.Add("1 finished task, " + (e.Text.Length > 0 ? e.Text : "a task") + ": " + FunKit.Plural(e.Points, "point"));
+            foreach (var e in done) lines.Add("1 finished task, " + (e.Text.Length > 0 ? e.Text : "a task") + ": " + GamesFunKit.Plural(e.Points, "point"));
             foreach (var e in did) lines.Add("1 thing nobody listed, " + e.Text + ": priceless");
             int sprint = d.Log.Where(e => e.Kind == "Sprint" && e.When.Date == day.Date).Sum(e => e.Minutes);
             if (sprint > 0) lines.Add("Focus, " + GamesCard.Minutes(sprint) + ": paid in full");
-            lines.Add("Subtotal: " + FunKit.Plural(effort, "item") + ", " + FunKit.Plural(pts, "point") + ".");
+            lines.Add("Subtotal: " + GamesFunKit.Plural(effort, "item") + ", " + GamesFunKit.Plural(pts, "point") + ".");
             lines.Add("Tax: " + Math.Max(1, effort) + (effort <= 1 ? " snack" : " snacks") + ". Tip for Bunny: one carrot.");
-            lines.Add("Total: " + (effort == 0 ? "one day of being a person, which is plenty" : FunKit.Plural(effort * 3 + pts, "brain cell") + " spent wisely") + ".");
+            lines.Add("Total: " + (effort == 0 ? "one day of being a person, which is plenty" : GamesFunKit.Plural(effort * 3 + pts, "brain cell") + " spent wisely") + ".");
             lines.Add(Content.Pick(s, "records.receipt"));
             return lines;
         }
@@ -314,17 +314,17 @@ namespace BusyBunny
         private void ShowReceipt()
         {
             var last = S.World.Get<Receipts>(ReceiptId);
-            int i = FunKit.Pick(_w, "Effort receipt", "_Which receipt", new[] { "Today so far", last.Lines.Count > 0 ? "The last finished day, " + last.Day : "The last finished day, not printed yet" });
+            int i = GamesFunKit.Pick(_w, "Effort receipt", "_Which receipt", new[] { "Today so far", last.Lines.Count > 0 ? "The last finished day, " + last.Day : "The last finished day, not printed yet" });
             if (i < 0) return;
             if (i == 1 && last.Lines.Count == 0) { _w.Say("The next receipt prints when today ends.", true); return; }
-            FunKit.Read(_w, "Effort receipt", i == 0 ? Receipt(S, DateTime.Now) : last.Lines);
+            GamesFunKit.Read(_w, "Effort receipt", i == 0 ? Receipt(S, DateTime.Now) : last.Lines);
         }
 
         // ---- Task of the week ----
 
         /// <summary>The week's most important finished task: grade weight, then size, then top priority.</summary>
         public static TaskItem? WeekTask(Store s, DateTime monday) =>
-            FunKit.Live(s).Where(t => FunKit.Finished(t) && t.DoneAt is DateTime d && d.Date >= monday.Date && d.Date < monday.Date.AddDays(7))
+            GamesFunKit.Live(s).Where(t => GamesFunKit.Finished(t) && t.DoneAt is DateTime d && d.Date >= monday.Date && d.Date < monday.Date.AddDays(7))
                 .OrderByDescending(t => t.GradeWeight * 3 + Words.Points(t.Size) * 2 + (t.Priority == 1 && s.ListOf(t).Scale.Length > 0 ? 3 : 0))
                 .ThenBy(t => t.DoneAt).FirstOrDefault();
 
@@ -332,11 +332,11 @@ namespace BusyBunny
         public static (Outcome?, string)? AwardWeek(Store s, DateTime monday)
         {
             var a = s.World.Get<Awards>(WeekTaskId);
-            string week = FunKit.Key(monday);
+            string week = GamesFunKit.Key(monday);
             if (a.All.Any(x => x.Week == week) || WeekTask(s, monday) is not TaskItem t) return null;
             string line = Content.Pick(s, "records.ceremony").Replace("{task}", t.Name);
             a.All.Add(new Award { Week = week, Task = t.Name, Line = line });
-            FunKit.Put(s, WeekTaskId, a);
+            GamesFunKit.Put(s, WeekTaskId, a);
             var o = Ledger.Pay(s, AwardPoints, "Task of the week: " + t.Name, WeekTaskId, t.Id);
             return (o, "Task of the week: " + t.Name + ". " + line + " " + AwardPoints + " points.");
         }
@@ -344,10 +344,10 @@ namespace BusyBunny
         private void ShowAwards()
         {
             var a = S.World.Get<Awards>(WeekTaskId).All;
-            var lines = a.AsEnumerable().Reverse().Select(x => "Week of " + (FunKit.Day(x.Week)?.ToString("MMMM d") ?? x.Week) + ": " + x.Task + ". " + x.Line).ToList();
+            var lines = a.AsEnumerable().Reverse().Select(x => "Week of " + (GamesFunKit.Day(x.Week)?.ToString("MMMM d") ?? x.Week) + ": " + x.Task + ". " + x.Line).ToList();
             var now = WeekTask(S, Engine.WeekStart(DateTime.Now));
             lines.Insert(0, now == null ? "Nothing finished this week yet. The award is given on Friday afternoon." : "Leading this week: " + now.Name + ". The award is given on Friday afternoon.");
-            FunKit.Read(_w, "Task of the week", lines);
+            GamesFunKit.Read(_w, "Task of the week", lines);
         }
 
         // ---- Friday wind-down ----
@@ -358,7 +358,7 @@ namespace BusyBunny
             int tasks = d.Log.Where(e => e.Kind == "Done" && e.When.Date >= monday && e.When.Date < monday.AddDays(7)).Select(e => e.TaskId).Distinct().Count();
             int pts = Engine.PointsInWeek(d, monday);
             var best = Enumerable.Range(0, 7).Select(k => monday.AddDays(k)).OrderByDescending(x => Engine.PointsOn(d, x)).First();
-            string line = "Your week: " + FunKit.Plural(tasks, "task") + " finished, " + FunKit.Plural(pts, "point") + ".";
+            string line = "Your week: " + GamesFunKit.Plural(tasks, "task") + " finished, " + GamesFunKit.Plural(pts, "point") + ".";
             if (Engine.PointsOn(d, best) > 0) line += " Your biggest day was " + best.ToString("dddd") + ".";
             return line;
         }
@@ -367,12 +367,12 @@ namespace BusyBunny
         {
             var monday = Engine.WeekStart(week ?? DateTime.Now);
             string recap = WeekRecap(S, monday);
-            var names = BunnyWrite.Visible(S).Where(t => FunKit.Finished(t) && t.DoneAt >= monday).Select(t => t.Name).Take(8).ToList();
+            var names = BunnyWrite.Visible(S).Where(t => GamesFunKit.Finished(t) && t.DoneAt >= monday).Select(t => t.Name).Take(8).ToList();
             string prompt = "Write one warm, short sentence to wind down her week. " + recap + (names.Count > 0 ? " Some things she finished: " + string.Join("; ", names) + "." : "");
             string bunny = await BunnyWrite.Short(S, WindId, prompt, "records.winddown");
             string text = recap + " " + bunny;
             RecordsStyle.KeepCompliment(S, bunny);
-            FunKit.Put(S, WindId, new Recap { Week = FunKit.Key(monday), Text = text });
+            GamesFunKit.Put(S, WindId, new Recap { Week = GamesFunKit.Key(monday), Text = text });
             if (asked) _w.Say(text, true); else Calm.SayUnprompted(_w, "Friday wind-down. " + text);
         }
 
@@ -392,7 +392,7 @@ namespace BusyBunny
             k.Total++;
             bool pay = k.PaidToday < PaidADay;
             if (pay) k.PaidToday++;
-            FunKit.Put(s, KindId, k);
+            GamesFunKit.Put(s, KindId, k);
             if (pay) Ledger.Pay(s, KindPoints, "Kindness points", KindId);
             s.Save();
             return "Kindness logged. " + (pay ? KindPoints + " kindness points. " : "") + "A new wildflower opens: " + k.Flowers[^1];
@@ -407,15 +407,15 @@ namespace BusyBunny
             bool pay = k.PaidToday < PaidADay;
             if (pay) k.PaidToday++;
             if (what.Length > 0) k.Flowers.Add(now.ToString("MMMM d") + ": " + what);
-            FunKit.Put(s, NoId, k);
+            GamesFunKit.Put(s, NoId, k);
             if (pay) Ledger.Pay(s, NoPoints, "Boundary points", NoId);
             s.Save();
-            return "Boundary logged. " + (pay ? NoPoints + " boundary points. " : "") + "That is " + FunKit.Plural(k.Total, "time") + " you protected your time. " + Content.Pick(s, "records.boundary");
+            return "Boundary logged. " + (pay ? NoPoints + " boundary points. " : "") + "That is " + GamesFunKit.Plural(k.Total, "time") + " you protected your time. " + Content.Pick(s, "records.boundary");
         }
 
         private void Kind()
         {
-            var what = FunKit.Ask(_w, "I helped someone", "_Who did you help, or how?", intro: "Kindness counts. It goes on your done list and grows a wildflower.");
+            var what = GamesFunKit.Ask(_w, "I helped someone", "_Who did you help, or how?", intro: "Kindness counts. It goes on your done list and grows a wildflower.");
             if (what == null) return;
             string line = LogKindness(S, what, DateTime.Now);
             _w.SaveAndRefresh();
@@ -426,12 +426,12 @@ namespace BusyBunny
         private void ShowFlowers()
         {
             var k = S.World.Get<Kindness>(KindId);
-            FunKit.Read(_w, "Wildflowers", k.Flowers.Count == 0 ? new List<string> { "No wildflowers yet. Each kindness you log with I helped someone grows one." } : k.Flowers.Prepend(FunKit.Plural(k.Flowers.Count, "wildflower") + ", one for each kindness.").ToList());
+            GamesFunKit.Read(_w, "Wildflowers", k.Flowers.Count == 0 ? new List<string> { "No wildflowers yet. Each kindness you log with I helped someone grows one." } : k.Flowers.Prepend(GamesFunKit.Plural(k.Flowers.Count, "wildflower") + ", one for each kindness.").ToList());
         }
 
         private void SaidNo()
         {
-            var what = FunKit.Ask(_w, "I said no", "_What did you say no to? You can leave it blank", intro: "Saying no to extra things protects your time. That is a win.", allowEmpty: true);
+            var what = GamesFunKit.Ask(_w, "I said no", "_What did you say no to? You can leave it blank", intro: "Saying no to extra things protects your time. That is a win.", allowEmpty: true);
             if (what == null) return;
             string line = LogNo(S, what, DateTime.Now);
             _w.SaveAndRefresh();

@@ -14,7 +14,7 @@ namespace BusyBunny
     /// a capped extra for a feature's own multiplier, streak math, and three small windows (a pick menu, a text box and
     /// a turn-by-turn game) so every tool stays short. Every window is standard controls, named, Escape closes.
     /// </summary>
-    public static class FunKit
+    public static class GamesFunKit
     {
         // ---- State and points ----
 

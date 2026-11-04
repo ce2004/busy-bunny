@@ -78,23 +78,23 @@ namespace BusyBunny
         public static HashSet<string> StartDays(Store s)
         {
             var days = s.World.GetKept<Days>(StartId).Keys.ToHashSet();
-            foreach (var e in s.Data.Log.Where(e => e.Kind is "Done" or "Sprint" or "DidAThing" or "WorkedOn")) days.Add(FunKit.Key(e.When));
+            foreach (var e in s.Data.Log.Where(e => e.Kind is "Done" or "Sprint" or "DidAThing" or "WorkedOn")) days.Add(GamesFunKit.Key(e.When));
             return days;
         }
 
         public static string StartLine(Store s, DateTime now)
         {
-            var (cur, best) = FunKit.Streak(StartDays(s), s.Data, now);
-            bool today = StartDays(s).Contains(FunKit.Key(now));
+            var (cur, best) = GamesFunKit.Streak(StartDays(s), s.Data, now);
+            bool today = StartDays(s).Contains(GamesFunKit.Key(now));
             return cur == 0 ? "No start streak running. Starting anything today, even a two minute sprint, begins one." :
-                "Start streak: " + FunKit.Plural(cur, "day") + " in a row" + (today ? ", today included" : "; start something today to keep it going") + ". Your longest is " + FunKit.Plural(best, "day") + ".";
+                "Start streak: " + GamesFunKit.Plural(cur, "day") + " in a row" + (today ? ", today included" : "; start something today to keep it going") + ". Your longest is " + GamesFunKit.Plural(best, "day") + ".";
         }
 
         // ---- No-overdue streak ----
 
         /// <summary>Whether a past day ended with nothing overdue, worked out from the tasks as they are now.</summary>
-        public static bool CleanDay(Store s, DateTime day) => !FunKit.Live(s).Any(t => t.Due is DateTime due && due.Date <= day.Date && t.CreatedAt.Date <= day.Date && t.Status != Status.Waiting
-            && !(FunKit.Finished(t) && t.DoneAt is DateTime done && done.Date <= day.Date));
+        public static bool CleanDay(Store s, DateTime day) => !GamesFunKit.Live(s).Any(t => t.Due is DateTime due && due.Date <= day.Date && t.CreatedAt.Date <= day.Date && t.Status != Status.Waiting
+            && !(GamesFunKit.Finished(t) && t.DoneAt is DateTime done && done.Date <= day.Date));
 
         public static int CleanStreak(Store s, DateTime now)
         {
@@ -102,7 +102,7 @@ namespace BusyBunny
             var first = s.Data.Tasks.Select(t => t.CreatedAt.Date).DefaultIfEmpty(now.Date).Min();
             for (var day = now.Date.AddDays(-1); day >= first && day > now.Date.AddDays(-366); day = day.AddDays(-1))
             {
-                if (FunKit.RestDay(s.Data, day)) continue;
+                if (GamesFunKit.RestDay(s.Data, day)) continue;
                 if (!CleanDay(s, day)) break;
                 n++;
             }
@@ -112,8 +112,8 @@ namespace BusyBunny
         public static string CleanLine(Store s, DateTime now)
         {
             int n = CleanStreak(s, now), over = s.Overdue(now).Count;
-            if (over > 0) return "Today has " + FunKit.Plural(over, "overdue task") + ", so the no-overdue streak starts fresh once they are done or moved. " + (n > 0 ? "" : "No guilt; it is just a counter.");
-            return "No-overdue streak: " + FunKit.Plural(n, "day") + " in a row with nothing overdue, today included.";
+            if (over > 0) return "Today has " + GamesFunKit.Plural(over, "overdue task") + ", so the no-overdue streak starts fresh once they are done or moved. " + (n > 0 ? "" : "No guilt; it is just a counter.");
+            return "No-overdue streak: " + GamesFunKit.Plural(n, "day") + " in a row with nothing overdue, today included.";
         }
 
         // ---- Comeback streak ----
@@ -121,10 +121,10 @@ namespace BusyBunny
         public static string ComebackLine(Store s, DateTime now)
         {
             var (cur, _) = Engine.Streaks(s.Data, now);
-            var goals = s.Data.Game.GoalDays.Select(FunKit.Day).OfType<DateTime>().Where(d => d.Date < now.Date.AddDays(-cur)).ToList();
-            if (goals.Count == 0) return cur > 0 ? "Your streak is " + FunKit.Plural(cur, "day") + " and has never been broken, so there is nothing to come back from yet." : "No streak yet. Meet your daily goal to start one.";
+            var goals = s.Data.Game.GoalDays.Select(GamesFunKit.Day).OfType<DateTime>().Where(d => d.Date < now.Date.AddDays(-cur)).ToList();
+            if (goals.Count == 0) return cur > 0 ? "Your streak is " + GamesFunKit.Plural(cur, "day") + " and has never been broken, so there is nothing to come back from yet." : "No streak yet. Meet your daily goal to start one.";
             if (cur == 0) return "Your streak took a break. Meet your daily goal today and your comeback streak starts at 1.";
-            return "Comeback streak: " + FunKit.Plural(cur, "day") + " since your last break. " + Content.Pick(s, "records.comeback");
+            return "Comeback streak: " + GamesFunKit.Plural(cur, "day") + " since your last break. " + Content.Pick(s, "records.comeback");
         }
 
         // ---- Streak shields ----
@@ -168,29 +168,29 @@ namespace BusyBunny
             var day = now.Date.AddDays(-1);
             for (int k = 0; k < 7; k++, day = day.AddDays(-1))
             {
-                if (goals.Contains(FunKit.Key(day))) break;
-                if (FunKit.RestDay(s.Data, day)) continue;
+                if (goals.Contains(GamesFunKit.Key(day))) break;
+                if (GamesFunKit.RestDay(s.Data, day)) continue;
                 missed.Add(day);
             }
-            if (missed.Count == 0 || missed.Count > sh.Have || !goals.Contains(FunKit.Key(day))) return null;
+            if (missed.Count == 0 || missed.Count > sh.Have || !goals.Contains(GamesFunKit.Key(day))) return null;
             int streak = Engine.Streaks(s.Data, day).Current;
             if (streak < 2) return null;
             s.Remember("a streak shield");
-            foreach (var m in missed) s.Data.Game.GoalDays.Add(FunKit.Key(m));
+            foreach (var m in missed) s.Data.Game.GoalDays.Add(GamesFunKit.Key(m));
             sh.Have -= missed.Count;
-            sh.Used.AddRange(missed.Select(FunKit.Key));
+            sh.Used.AddRange(missed.Select(GamesFunKit.Key));
             s.World.SetKept(ShieldId, sh);
             s.World.Save();
-            return Content.Pick(s, "records.shield") + " " + (missed.Count == 1 ? "A streak shield covered yesterday" : FunKit.Plural(missed.Count, "streak shield") + " covered the missed days") +
-                ", so your " + FunKit.Plural(streak + missed.Count, "day") + " streak is safe. " + FunKit.Plural(sh.Have, "shield") + " left.";
+            return Content.Pick(s, "records.shield") + " " + (missed.Count == 1 ? "A streak shield covered yesterday" : GamesFunKit.Plural(missed.Count, "streak shield") + " covered the missed days") +
+                ", so your " + GamesFunKit.Plural(streak + missed.Count, "day") + " streak is safe. " + GamesFunKit.Plural(sh.Have, "shield") + " left.";
         }
 
         public static string ShieldLine(Store s)
         {
             var sh = s.World.GetKept<Shields>(ShieldId);
             int cur = Engine.Streaks(s.Data, DateTime.Now).Current, next = ShieldEvery - cur % ShieldEvery;
-            return "You have " + FunKit.Plural(sh.Have, "streak shield") + " of " + MaxShields + ". " + (sh.Have >= MaxShields ? "That is the most you can hold." : "The next comes in " + FunKit.Plural(next, "more streak day") + ".") +
-                " A shield steps in by itself when you miss a day." + (sh.Used.Count > 0 ? " Shields have covered " + FunKit.Plural(sh.Used.Count, "day") + " so far." : "");
+            return "You have " + GamesFunKit.Plural(sh.Have, "streak shield") + " of " + MaxShields + ". " + (sh.Have >= MaxShields ? "That is the most you can hold." : "The next comes in " + GamesFunKit.Plural(next, "more streak day") + ".") +
+                " A shield steps in by itself when you miss a day." + (sh.Used.Count > 0 ? " Shields have covered " + GamesFunKit.Plural(sh.Used.Count, "day") + " so far." : "");
         }
 
         // ---- Monthly level names ----
@@ -233,7 +233,7 @@ namespace BusyBunny
             var now = DateTime.Now;
             var lines = new List<string> { "This month's title: " + MonthTitle(S, now) + ". At the end of the month it becomes a badge." };
             lines.AddRange(S.World.GetKept<Months>(MonthId).Badges.AsEnumerable().Reverse().Select(b => "Badge, " + b));
-            FunKit.Read(_w, "Monthly level names", lines);
+            GamesFunKit.Read(_w, "Monthly level names", lines);
         }
 
         // ---- Level perks ----
@@ -252,8 +252,8 @@ namespace BusyBunny
             var have = perks.Where(p => p.Level <= level).ToList();
             var next = perks.FirstOrDefault(p => p.Level > level);
             var choices = have.Select(p => "Level " + p.Level + ": " + p.Name + ". " + p.Text + (p.Sound.Length > 0 ? " Enter plays it." : "")).ToList();
-            if (next != null) choices.Add("Next, at level " + next.Level + ": " + next.Name + ". " + FunKit.Plural(Engine.Threshold(next.Level) - Engine.Total(S.Data), "point") + " to go.");
-            int i = FunKit.Pick(_w, "Level perks", "_Perks", choices, 0, "You are level " + level + ". " + FunKit.Plural(have.Count, "perk") + " unlocked.");
+            if (next != null) choices.Add("Next, at level " + next.Level + ": " + next.Name + ". " + GamesFunKit.Plural(Engine.Threshold(next.Level) - Engine.Total(S.Data), "point") + " to go.");
+            int i = GamesFunKit.Pick(_w, "Level perks", "_Perks", choices, 0, "You are level " + level + ". " + GamesFunKit.Plural(have.Count, "perk") + " unlocked.");
             if (i >= 0 && i < have.Count && have[i].Sound.Length > 0) SoundBank.Play(have[i].Sound);
         }
 
@@ -289,9 +289,9 @@ namespace BusyBunny
             string sem = GameFeature.Semester(now).Name;
             if (p.Semester != sem) p = new Pass { Semester = sem, Announced = Tier(s.Data, now) > 0 ? Tier(s.Data, now) - 1 : 0 };
             int tier = Tier(s.Data, now);
-            if (tier <= p.Announced) { FunKit.Put(s, PassId, p); return null; }
+            if (tier <= p.Announced) { GamesFunKit.Put(s, PassId, p); return null; }
             p.Announced = tier;
-            FunKit.Put(s, PassId, p);
+            GamesFunKit.Put(s, PassId, p);
             return "Season pass, tier " + tier + " of " + Tiers + "! You got " + PassItem(tier);
         }
 
@@ -301,7 +301,7 @@ namespace BusyBunny
             int tier = Tier(s.Data, now);
             if (p.Semester != GameFeature.Semester(now).Name || tier >= p.Announced) return;
             p.Announced = tier;
-            FunKit.Put(s, PassId, p);
+            GamesFunKit.Put(s, PassId, p);
         }
 
         private void ShowPass()
@@ -313,7 +313,7 @@ namespace BusyBunny
             var lines = new List<string> { name + " season pass: tier " + tier + " of " + Tiers + ". Each tier is " + size + " points of effort." + (tier < Tiers ? " " + (size * (tier + 1) - pts) + " more points to the next." : " Every tier is done!") };
             for (int k = 1; k <= tier; k++) lines.Add("Tier " + k + ": " + PassItem(k));
             if (tier < Tiers) lines.Add("Next, tier " + (tier + 1) + ": a surprise.");
-            FunKit.Read(_w, "Season pass", lines);
+            GamesFunKit.Read(_w, "Season pass", lines);
         }
 
         // ---- Semester trail ----
@@ -345,17 +345,17 @@ namespace BusyBunny
             var done = log.Where(e => e.Kind == "Done").ToList();
             lines.Add("Tasks finished: " + done.Select(e => e.TaskId).Distinct().Count() + ". Karma earned: " + log.Where(e => Engine.KarmaKinds.Contains(e.Kind)).Sum(e => e.Points).ToString("N0") + ".");
             var month = log.Where(e => Engine.KarmaKinds.Contains(e.Kind)).GroupBy(e => e.When.Month).OrderByDescending(g => g.Sum(e => e.Points)).FirstOrDefault();
-            if (month != null) lines.Add("Biggest month: " + new DateTime(year, month.Key, 1).ToString("MMMM") + ", " + FunKit.Plural(month.Sum(e => e.Points), "point") + ".");
+            if (month != null) lines.Add("Biggest month: " + new DateTime(year, month.Key, 1).ToString("MMMM") + ", " + GamesFunKit.Plural(month.Sum(e => e.Points), "point") + ".");
             var weekday = done.GroupBy(e => e.When.DayOfWeek).OrderByDescending(g => g.Count()).FirstOrDefault();
             if (weekday != null) lines.Add("Your busiest weekday: " + weekday.Key + "s.");
             var end = now.Year == year ? now : new DateTime(year, 12, 31);
-            lines.Add("Longest streak this year: " + FunKit.Plural(Engine.Streaks(d, end, new DateTime(year, 1, 1)).Longest, "day") + ".");
+            lines.Add("Longest streak this year: " + GamesFunKit.Plural(Engine.Streaks(d, end, new DateTime(year, 1, 1)).Longest, "day") + ".");
             int minutes = log.Where(e => e.Kind == "Sprint").Sum(e => e.Minutes);
             if (minutes > 0) lines.Add("Focused time: " + GamesCard.Minutes(minutes) + ".");
             int did = log.Count(e => e.Kind == "DidAThing");
             if (did > 0) lines.Add("Things you did that were never on a list: " + did + ".");
             var tag = done.Where(e => e.Tag.Length > 0).GroupBy(e => e.Tag, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).FirstOrDefault();
-            if (tag != null) lines.Add("Most finished tag: " + tag.Key + ", " + FunKit.Plural(tag.Count(), "task") + ".");
+            if (tag != null) lines.Add("Most finished tag: " + tag.Key + ", " + GamesFunKit.Plural(tag.Count(), "task") + ".");
             lines.Add("Badges earned: " + d.Game.Badges.Count(b => b.Value.Year == year) + ". Monthly titles: " + s.World.GetKept<Months>(MonthId).Badges.Count(b => b.Contains(year.ToString())) + ".");
             lines.Add("Kindnesses logged: " + s.World.Get<RecordsWins.Kindness>(RecordsWins.KindId).Total + ". Marble jars filled: " + s.World.Get<RecordsWins.Jar>(RecordsWins.MarbleId).Filled.Count(f => f.When.Year == year) + ".");
             int level = Engine.LevelFor(Engine.Total(d));
@@ -366,16 +366,16 @@ namespace BusyBunny
         private void ShowYear()
         {
             var now = DateTime.Now;
-            if (now.Month == 12) { FunKit.Read(_w, "Year in review", YearReview(S, now.Year, now)); return; }
+            if (now.Month == 12) { GamesFunKit.Read(_w, "Year in review", YearReview(S, now.Year, now)); return; }
             if (now.Month == 1)
             {
-                int i = FunKit.Pick(_w, "Year in review", "_Which year", new[] { "Last year, " + (now.Year - 1), "This year so far" });
-                if (i >= 0) FunKit.Read(_w, "Year in review", YearReview(S, i == 0 ? now.Year - 1 : now.Year, now));
+                int i = GamesFunKit.Pick(_w, "Year in review", "_Which year", new[] { "Last year, " + (now.Year - 1), "This year so far" });
+                if (i >= 0) GamesFunKit.Read(_w, "Year in review", YearReview(S, i == 0 ? now.Year - 1 : now.Year, now));
                 return;
             }
             var lines = YearReview(S, now.Year, now);
             lines.Insert(0, "The full year in review opens on December 1. Here is a sneak peek so far.");
-            FunKit.Read(_w, "Year in review", lines);
+            GamesFunKit.Read(_w, "Year in review", lines);
         }
 
         public void SelfTest(Store store)
@@ -390,22 +390,22 @@ namespace BusyBunny
             // Streak math: rest days do not break it, today is not over, a gap does.
             var set = new HashSet<string> { "2026-11-16", "2026-11-17", "2026-11-19" };
             d.Days["2026-11-18"] = new DayInfo { Mode = DayMode.RoughDay };
-            Need(FunKit.Streak(set, d, today) == (3, 3), "a rough day broke the streak: " + FunKit.Streak(set, d, today));
+            Need(GamesFunKit.Streak(set, d, today) == (3, 3), "a rough day broke the streak: " + GamesFunKit.Streak(set, d, today));
             d.Days.Remove("2026-11-18");
-            Need(FunKit.Streak(set, d, today).Current == 1, "a missed day did not end the run");
+            Need(GamesFunKit.Streak(set, d, today).Current == 1, "a missed day did not end the run");
             // Shields: one every 14 days, at most 3, and one covers a missed day after a streak.
             store.World.SetKept(ShieldId, new Shields());
             for (int k = 1; k <= 5; k++) EarnShield(store, 14 * k, today.AddDays(k));
             EarnShield(store, 14, today.AddDays(1));
             Need(store.World.GetKept<Shields>(ShieldId).Have == MaxShields, "more than 3 shields, or a shield earned twice");
             d.Game.GoalDays.Clear();
-            for (int k = 2; k <= 6; k++) d.Game.GoalDays.Add(FunKit.Key(today.AddDays(-k)));
+            for (int k = 2; k <= 6; k++) d.Game.GoalDays.Add(GamesFunKit.Key(today.AddDays(-k)));
             string? note = UseShields(store, today);
-            Need(note != null && d.Game.GoalDays.Contains(FunKit.Key(today.AddDays(-1))) && store.World.GetKept<Shields>(ShieldId).Have == MaxShields - 1, "a shield did not cover the missed day");
+            Need(note != null && d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))) && store.World.GetKept<Shields>(ShieldId).Have == MaxShields - 1, "a shield did not cover the missed day");
             Need(Engine.Streaks(d, today).Current == 6, "the streak was not kept by the shield");
             store.Undo();
             d = store.Data;
-            Need(!d.Game.GoalDays.Contains(FunKit.Key(today.AddDays(-1))), "Control Z did not take the shield's day back");
+            Need(!d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))), "Control Z did not take the shield's day back");
             d.Game.GoalDays.Clear();
             // Season pass: tiers come from points, never past 30, and un-finishing lowers what was announced.
             Need(Tier(new Data(), today) == 0, "a new semester starts at tier 0");

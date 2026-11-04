@@ -67,7 +67,7 @@ namespace BusyBunny
         {
             var said = new List<(Outcome?, int, string)>();
             void Try(Action a) { try { a(); } catch (Exception e) { ErrorLog.Write("Games: " + e.GetType().Name + ": " + e.Message); } }
-            int basePts = FunKit.BasePoints(s, t);
+            int basePts = GamesFunKit.BasePoints(s, t);
 
             // Golden task and combo: one multiplier together, with the ledger's, never past 4 times.
             double golden = 1, combo = 1;
@@ -76,7 +76,7 @@ namespace BusyBunny
             {
                 if (!Tools.IsOn(GoldenId)) return;
                 var g = RollGolden(s, now);
-                if (g.Task == t.Id && !g.Found) { g.Found = true; FunKit.Put(s, GoldenId, g); golden = 3; }
+                if (g.Task == t.Id && !g.Found) { g.Found = true; GamesFunKit.Put(s, GoldenId, g); golden = 3; }
             });
             Try(() =>
             {
@@ -84,18 +84,18 @@ namespace BusyBunny
                 step = AddHit(s, t, now);
                 combo = 1 + 0.1 * step;
             });
-            int goldExtra = FunKit.Extra(s, basePts, golden, now);
-            int comboExtra = FunKit.Extra(s, basePts, golden * combo, now) - goldExtra;
+            int goldExtra = GamesFunKit.Extra(s, basePts, golden, now);
+            int comboExtra = GamesFunKit.Extra(s, basePts, golden * combo, now) - goldExtra;
             if (golden > 1)
             {
                 var o = Ledger.Pay(s, goldExtra, "Golden task: " + t.Name, GoldenId, t.Id);
-                said.Add((o, Game.Goals, Celebration.Line(s, "Golden task! " + t.Name + " was the golden one: triple points, " + FunKit.Plural(goldExtra, "extra point") + ". " + Content.Pick(s, "games.golden"))));
+                said.Add((o, Game.Goals, Celebration.Line(s, "Golden task! " + t.Name + " was the golden one: triple points, " + GamesFunKit.Plural(goldExtra, "extra point") + ". " + Content.Pick(s, "games.golden"))));
                 Celebration.Sound(s, "SurpriseReward");
             }
             if (step > 0)
             {
                 var o = Ledger.Pay(s, comboExtra, "Combo times " + (step + 1), ComboId, t.Id);
-                said.Add((o, Game.Chatter, "Combo times " + (step + 1) + ": " + step * 10 + " percent extra" + (comboExtra > 0 ? ", " + FunKit.Plural(comboExtra, "point") : "") + ". " + Content.Pick(s, "games.combo")));
+                said.Add((o, Game.Chatter, "Combo times " + (step + 1) + ": " + step * 10 + " percent extra" + (comboExtra > 0 ? ", " + GamesFunKit.Plural(comboExtra, "point") : "") + ". " + Content.Pick(s, "games.combo")));
             }
 
             Try(() =>
@@ -111,12 +111,12 @@ namespace BusyBunny
             Try(() =>
             {
                 if (!Tools.IsOn(ChallengeId)) return;
-                var c = FunKit.Bag<Challenge>(s, ChallengeId);
+                var c = GamesFunKit.Bag<Challenge>(s, ChallengeId);
                 if (c.Day != s.Key(now) || !c.Accepted || c.WonBy != null) return;
-                int done = FunKit.DoneOn(s, now).Count;
+                int done = GamesFunKit.DoneOn(s, now).Count;
                 if (done < c.Target) { said.Add((null, Game.Chatter, "Bunny's challenge: " + done + " of " + c.Target + ".")); return; }
                 c.WonBy = t.Id;
-                FunKit.Put(s, ChallengeId, c);
+                GamesFunKit.Put(s, ChallengeId, c);
                 var o = Ledger.Pay(s, ChallengePrize, "Beat Bunny's challenge", ChallengeId, t.Id);
                 said.Add((o, Game.Goals, Celebration.Line(s, "You beat Bunny's challenge: " + c.Target + " tasks today, " + ChallengePrize + " points. " + Content.Pick(s, "games.challenge.won"))));
                 Celebration.Sound(s, "SurpriseReward");
@@ -153,7 +153,7 @@ namespace BusyBunny
             var last = c.Hits.OrderBy(h => h.When).LastOrDefault();
             int step = last != null && now - last.When <= ComboGap ? Math.Min(ComboStepsMax, last.Step + 1) : 0;
             c.Hits.Add(new Hit { Task = t.Id, When = now, Step = step });
-            FunKit.Put(s, ComboId, c);
+            GamesFunKit.Put(s, ComboId, c);
             return step;
         }
 
@@ -163,7 +163,7 @@ namespace BusyBunny
             var now = DateTime.Now;
             if (last == null || now - last.When > ComboGap) { _w.Say("No combo going. Finish two tasks within 20 minutes of each other to start one. Each step adds 10 percent, up to 50.", true); return; }
             int left = (int)Math.Ceiling((ComboGap - (now - last.When)).TotalMinutes);
-            _w.Say("Combo times " + (last.Step + 1) + ". Finish another within " + FunKit.Plural(left, "minute") + " for " + Math.Min(50, (last.Step + 1) * 10) + " percent extra.", true);
+            _w.Say("Combo times " + (last.Step + 1) + ". Finish another within " + GamesFunKit.Plural(left, "minute") + " for " + Math.Min(50, (last.Step + 1) * 10) + " percent extra.", true);
         }
 
         // ---- Golden task ----
@@ -173,11 +173,11 @@ namespace BusyBunny
         {
             var g = s.World.Get<Golden>(GoldenId);
             if (g.Day == s.Key(now)) return g;
-            var pool = FunKit.Live(s).Where(t => !FunKit.Finished(t) && t.Status != Status.Waiting && !t.IsMeeting && !Store.IsOverdue(t, now) && t.Due?.Date != now.Date).ToList();
+            var pool = GamesFunKit.Live(s).Where(t => !GamesFunKit.Finished(t) && t.Status != Status.Waiting && !t.IsMeeting && !Store.IsOverdue(t, now) && t.Due?.Date != now.Date).ToList();
             var preferred = pool.Where(t => t.Status is Status.Today or Status.ThisWeek).ToList();
             if (preferred.Count > 0) pool = preferred;
-            g = new Golden { Day = s.Key(now), Task = pool.Count == 0 ? null : pool[FunKit.Rng.Next(pool.Count)].Id };
-            FunKit.Put(s, GoldenId, g);
+            g = new Golden { Day = s.Key(now), Task = pool.Count == 0 ? null : pool[GamesFunKit.Rng.Next(pool.Count)].Id };
+            GamesFunKit.Put(s, GoldenId, g);
             return g;
         }
 
@@ -216,8 +216,8 @@ namespace BusyBunny
             ["repeat"] = (t, n, s) => t.Repeat.Length > 0,
             ["quickwin"] = (t, n, s) => t.QuickWin || t.Size == Size.Small,
             ["duetoday"] = (t, n, s) => t.Due?.Date == n.Date,
-            ["first"] = (t, n, s) => FunKit.DoneOn(s, n).Count == 1,
-            ["third"] = (t, n, s) => FunKit.DoneOn(s, n).Count >= 3,
+            ["first"] = (t, n, s) => GamesFunKit.DoneOn(s, n).Count == 1,
+            ["third"] = (t, n, s) => GamesFunKit.DoneOn(s, n).Count >= 3,
             ["any"] = (t, n, s) => true,
         };
 
@@ -232,10 +232,10 @@ namespace BusyBunny
         public static Card CardFor(Store s, DateTime now)
         {
             var c = s.World.Get<Card>(BingoId);
-            string week = FunKit.Key(Engine.WeekStart(now));
+            string week = GamesFunKit.Key(Engine.WeekStart(now));
             if (c.Week == week && c.Squares.Count == 25) return c;
             var squares = new List<Square>();
-            var open = FunKit.Live(s).Where(t => !FunKit.Finished(t) && !t.IsMeeting && t.Status != Status.Waiting)
+            var open = GamesFunKit.Live(s).Where(t => !GamesFunKit.Finished(t) && !t.IsMeeting && t.Status != Status.Waiting)
                 .OrderBy(t => t.Due ?? t.DoDate ?? DateTime.MaxValue).ThenBy(t => t.Priority == 0 ? 99 : t.Priority).ToList();
             foreach (var t in open)
             {
@@ -243,17 +243,17 @@ namespace BusyBunny
                 if (squares.Count + fill > 12) break;
                 for (int k = 0; k < fill; k++) squares.Add(new Square { Text = t.Name + (fill == 2 ? (k == 0 ? ", first square" : ", second square") : ""), Task = t.Id });
             }
-            var challenges = Content.Items("games.bingo").Where(i => i.ContainsKey("rule") && i.ContainsKey("text") && Rules.ContainsKey(i["rule"])).OrderBy(_ => FunKit.Rng.Next()).ToList();
+            var challenges = Content.Items("games.bingo").Where(i => i.ContainsKey("rule") && i.ContainsKey("text") && Rules.ContainsKey(i["rule"])).OrderBy(_ => GamesFunKit.Rng.Next()).ToList();
             for (int k = 0; squares.Count < 24 && challenges.Count > 0; k++)
             {
                 var ch = challenges[k % challenges.Count];
                 squares.Add(new Square { Text = ch["text"], Rule = ch["rule"] });
             }
             while (squares.Count < 24) squares.Add(new Square { Text = "Finish any task", Rule = "any" });
-            squares = squares.OrderBy(_ => FunKit.Rng.Next()).ToList();
+            squares = squares.OrderBy(_ => GamesFunKit.Rng.Next()).ToList();
             squares.Insert(12, new Square { Text = "Free square", Free = true });
             c = new Card { Week = week, Squares = squares };
-            FunKit.Put(s, BingoId, c);
+            GamesFunKit.Put(s, BingoId, c);
             return c;
         }
 
@@ -282,8 +282,8 @@ namespace BusyBunny
                 said.Add((o, Celebration.Line(s, "Bingo! " + names + " finished " + BingoLines[i].Name + ". " + BingoPrize + " points.")));
                 Celebration.Sound(s, "PersonalRecord");
             }
-            if (said.Count == before) said.Add((null, "Bingo square " + names + " filled. " + FunKit.Plural(c.Squares.Count(Filled), "square") + " of 25."));
-            FunKit.Put(s, BingoId, c);
+            if (said.Count == before) said.Add((null, "Bingo square " + names + " filled. " + GamesFunKit.Plural(c.Squares.Count(Filled), "square") + " of 25."));
+            GamesFunKit.Put(s, BingoId, c);
             return said;
         }
 
@@ -300,7 +300,7 @@ namespace BusyBunny
                 if (BingoLines[i].Squares.All(k => Filled(c.Squares[k]))) continue;
                 c.Lines.Remove(i);
                 // A line another task finished is no longer complete: its prize goes too (this task's own went with it).
-                var start = FunKit.Day(c.Week) ?? Engine.WeekStart(now);
+                var start = GamesFunKit.Day(c.Week) ?? Engine.WeekStart(now);
                 foreach (var e in s.Data.Log.Where(e => e.Feature == BingoId && e.Text == BingoReason(i) && e.When >= start).ToList()) { days.Add(e.When.Date); s.Data.Log.Remove(e); }
             }
             if (days.Count > 0) Engine.RecheckGoals(s, days, now);
@@ -312,14 +312,14 @@ namespace BusyBunny
             var c = CardFor(S, DateTime.Now);
             var lines = new List<string>
             {
-                "This week's bingo: " + FunKit.Plural(c.Squares.Count(Filled), "square") + " of 25 filled, " + FunKit.Plural(c.Lines.Count, "line") + " done. Five in a row pays " + BingoPrize + " points. Columns are B I N G O, rows 1 to 5.",
+                "This week's bingo: " + GamesFunKit.Plural(c.Squares.Count(Filled), "square") + " of 25 filled, " + GamesFunKit.Plural(c.Lines.Count, "line") + " done. Five in a row pays " + BingoPrize + " points. Columns are B I N G O, rows 1 to 5.",
             };
             for (int i = 0; i < 25; i++)
             {
                 var q = c.Squares[i];
                 lines.Add(SquareName(i) + ": " + q.Text + (q.Free ? ", always filled" : q.DoneBy != null ? ", done" : ", not yet"));
             }
-            FunKit.Read(_w, "Weekly bingo", lines);
+            GamesFunKit.Read(_w, "Weekly bingo", lines);
         }
 
         // ---- Speed runs ----
@@ -332,7 +332,7 @@ namespace BusyBunny
             var r = s.World.Get<Runs>(RunId);
             if (onlyIfNew && r.Clock.ContainsKey(t.Id)) return;
             r.Clock[t.Id] = now;
-            FunKit.Put(s, RunId, r);
+            GamesFunKit.Put(s, RunId, r);
         }
 
         /// <summary>Stops the clock for a finished repeating task: a first time, or a new best (5 points and a fanfare). Null when no clock ran.</summary>
@@ -341,35 +341,35 @@ namespace BusyBunny
             var r = s.World.Get<Runs>(RunId);
             if (!r.Clock.Remove(t.Id, out var start)) return null;
             double minutes = (now - start).TotalMinutes;
-            FunKit.Put(s, RunId, r);
+            GamesFunKit.Put(s, RunId, r);
             if (minutes < 0.5 || minutes > 12 * 60) return null;
             string key = RunKey(t), time = Minutes(minutes);
             if (!r.Best.TryGetValue(key, out double best))
             {
                 r.Best[key] = minutes;
                 r.Beaten[t.Id] = new Beat { Key = key, Old = null };
-                FunKit.Put(s, RunId, r);
+                GamesFunKit.Put(s, RunId, r);
                 return (null, Game.Chatter, "Speed run: " + t.Name + " took " + time + ". That is the time to beat.");
             }
             if (minutes >= best) return (null, Game.Chatter, "Speed run: " + time + ". Your best is still " + Minutes(best) + ".");
             r.Best[key] = minutes;
             r.Beaten[t.Id] = new Beat { Key = key, Old = best };
-            FunKit.Put(s, RunId, r);
+            GamesFunKit.Put(s, RunId, r);
             var o = Ledger.Pay(s, RunPrize, "Speed run record: " + t.Name, RunId, t.Id);
             Celebration.Sound(s, "PersonalRecord");
             return (o, Game.Record, Celebration.Line(s, "New speed run record! " + t.Name + " in " + time + ", beating " + Minutes(best) + ". " + Content.Pick(s, "games.speedrun")));
         }
 
-        public static string Minutes(double m) => m < 1 ? "under a minute" : m < 60 ? FunKit.Plural((int)Math.Round(m), "minute") : (int)(m / 60) + " hours " + (int)Math.Round(m % 60) + " minutes";
+        public static string Minutes(double m) => m < 1 ? "under a minute" : m < 60 ? GamesFunKit.Plural((int)Math.Round(m), "minute") : (int)(m / 60) + " hours " + (int)Math.Round(m % 60) + " minutes";
 
         private void ShowRuns()
         {
             var r = S.World.Get<Runs>(RunId);
-            var open = FunKit.Live(S).Where(t => t.Repeat.Length > 0 && !FunKit.Finished(t)).OrderBy(t => t.Name).ToList();
+            var open = GamesFunKit.Live(S).Where(t => t.Repeat.Length > 0 && !GamesFunKit.Finished(t)).OrderBy(t => t.Name).ToList();
             var choices = open.Select(t => "Start the clock on " + t.Name + (r.Clock.ContainsKey(t.Id) ? ", clock running" : "") + (r.Best.TryGetValue(RunKey(t), out double b) ? ", best " + Minutes(b) : ", no best yet")).ToList();
             choices.Add("Hear every best time");
             string intro = open.Count == 0 ? "Speed runs are for repeating tasks, and you have none open right now." : "Pick a repeating task to start its clock. Finish it to stop the clock. Starting a sprint on one starts it too.";
-            int i = FunKit.Pick(_w, "Speed runs", "_Speed runs", choices, 0, intro);
+            int i = GamesFunKit.Pick(_w, "Speed runs", "_Speed runs", choices, 0, intro);
             if (i < 0) return;
             if (i < open.Count)
             {
@@ -378,7 +378,7 @@ namespace BusyBunny
                 return;
             }
             var lines = r.Best.OrderBy(k => k.Key).Select(k => k.Key[(k.Key.IndexOf('|') + 1)..] + ": " + Minutes(k.Value)).ToList();
-            FunKit.Read(_w, "Speed run best times", lines.Count == 0 ? new List<string> { "No best times yet." } : lines);
+            GamesFunKit.Read(_w, "Speed run best times", lines.Count == 0 ? new List<string> { "No best times yet." } : lines);
         }
 
         // ---- Challenge Bunny ----
@@ -386,7 +386,7 @@ namespace BusyBunny
         /// <summary>What Bunny thinks she can do today: her usual finished tasks a day over the last two weeks, plus one, from 2 to 12.</summary>
         public static int Usual(Store s, DateTime now)
         {
-            var days = Enumerable.Range(1, 14).Select(k => now.Date.AddDays(-k)).Select(d => FunKit.DoneOn(s, d).Count).Where(n => n > 0).ToList();
+            var days = Enumerable.Range(1, 14).Select(k => now.Date.AddDays(-k)).Select(d => GamesFunKit.DoneOn(s, d).Count).Where(n => n > 0).ToList();
             double avg = days.Count == 0 ? 2 : days.Average();
             return Math.Clamp((int)Math.Round(avg) + 1, 2, 12);
         }
@@ -394,8 +394,8 @@ namespace BusyBunny
         private void ShowChallenge()
         {
             var now = DateTime.Now;
-            var c = FunKit.Bag<Challenge>(S, ChallengeId);
-            int done = FunKit.DoneOn(S, now).Count;
+            var c = GamesFunKit.Bag<Challenge>(S, ChallengeId);
+            int done = GamesFunKit.DoneOn(S, now).Count;
             if (c.Day == S.Key(now) && c.Accepted)
             {
                 _w.Say(c.WonBy != null ? "You already beat Bunny's challenge today: " + c.Target + " tasks. Bunny is filing a complaint." : "Bunny's challenge: " + done + " of " + c.Target + " tasks today.", true);
@@ -403,11 +403,11 @@ namespace BusyBunny
             }
             if (c.Day != S.Key(now)) c = new Challenge { Day = S.Key(now), Target = Math.Max(Usual(S, now), done + 1) };
             string offer = Content.Pick(S, "games.challenge").Replace("{n}", c.Target.ToString());
-            int i = FunKit.Pick(_w, "Challenge Bunny", "_Your answer", new[] { "Challenge accepted", "Not today" }, 0, offer + " You have finished " + done + " so far. The prize is " + ChallengePrize + " points.");
+            int i = GamesFunKit.Pick(_w, "Challenge Bunny", "_Your answer", new[] { "Challenge accepted", "Not today" }, 0, offer + " You have finished " + done + " so far. The prize is " + ChallengePrize + " points.");
             if (i != 0) { _w.Say("No challenge today. Bunny pretends not to be relieved.", true); return; }
             c.Accepted = true;
             c.Asked = true;
-            FunKit.Put(S, ChallengeId, c);
+            GamesFunKit.Put(S, ChallengeId, c);
             _w.Say("Challenge on: " + c.Target + " tasks today. Bunny is watching, with snacks.", true);
         }
 
@@ -441,9 +441,9 @@ namespace BusyBunny
             Need(last == ComboStepsMax, "the combo was not capped at 50 percent: " + last);
             Need(AddHit(store, Make("late"), now.AddHours(3)) == 0, "a long gap kept the combo going");
             // The ledger cap: a golden task under a running 2 times multiplier pays at most 4 times in all.
-            Need(FunKit.Extra(store, 10, 3, now) == 20, "golden triple of 10 should add 20");
+            Need(GamesFunKit.Extra(store, 10, 3, now) == 20, "golden triple of 10 should add 20");
             Ledger.AddMultiplier(store, "test.games", 2, DateTime.Now.AddHours(1), "test");
-            Need(FunKit.Extra(store, 10, 3, DateTime.Now) == 20 && FunKit.Extra(store, 10, 3 * 1.5, DateTime.Now) == 20, "golden plus combo went past the 4 times cap");
+            Need(GamesFunKit.Extra(store, 10, 3, DateTime.Now) == 20 && GamesFunKit.Extra(store, 10, 3 * 1.5, DateTime.Now) == 20, "golden plus combo went past the 4 times cap");
             Ledger.RemoveMultiplier(store, "test.games");
 
             // Golden: pays triple once, and un-finishing takes it back.
@@ -452,7 +452,7 @@ namespace BusyBunny
             store.World.Set(GoldenId, new Golden { Day = store.Key(DateTime.Now), Task = g.Id });
             int before = Engine.Total(store.Data);
             Finish(g, DateTime.Now);
-            int paid = Engine.Total(store.Data) - before, gBase = FunKit.BasePoints(store, g);
+            int paid = Engine.Total(store.Data) - before, gBase = GamesFunKit.BasePoints(store, g);
             Done(store, g, DateTime.Now);
             Need(Engine.Total(store.Data) - before == paid + 2 * gBase && store.World.Get<Golden>(GoldenId).Found, "the golden task did not pay triple");
             Unfinish(g);
