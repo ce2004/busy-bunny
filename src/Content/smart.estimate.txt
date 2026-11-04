@@ -1,0 +1,43 @@
+Bunny noticed: your {what} take about {real} of sprint time, and the size guess is {guess}. Next time, try calling one {better}.
+
+Fun fact from your sprints: {what} really take you about {real}, not {guess}. Maybe size the next one {better}.
+
+After {count} of them, Bunny has a theory: {what} take about {real}. The size says {guess}. {better} might fit better.
+
+Your {what} have been running about {real} each. Calling the next one {better} would make planning easier.
+
+Bunny timed your last {count} {what}: about {real} each, against a guess of {guess}. Try {better} next time.
+
+Small planning tip: {what} take you about {real}, so {better} is probably the right size for them.
+
+Your sprints say {what} take about {real}. The size says {guess}. The sprints are probably right; try {better}.
+
+Bunny has been keeping score: {what} land around {real}. A {better} size would match that.
+
+Heads up for planning: {what} average about {real} of real work for you, not {guess}. Try {better}.
+
+Interesting: {what} take you about {real}. That is closer to {better} than to the size you picked.
+
+From {count} finished ones, {what} take about {real}. Marking the next one {better} keeps your day plans honest.
+
+Bunny's stopwatch says {what} take about {real}, not {guess}. Maybe {better} from now on.
+
+Your {what} keep taking about {real}. That is not a problem, just a size: {better}.
+
+A little thing Bunny learned: {what} need about {real} from you. Plan them as {better}.
+
+Planning note: {what} take about {real} in sprints. {better} fits them better than the guess of {guess}.
+
+Bunny checked the numbers on your {what}: about {real} each. Next time, {better} might be the honest size.
+
+Your {count} most recent {what} took around {real}. Sizing them {better} would help the day planner.
+
+Here is something useful: {what} really take about {real}. The guess of {guess} is off, so try {better}.
+
+Bunny has data now. {what} take about {real}, so {better} is the size to try.
+
+Just so you know, {what} take you about {real}. Size the next one {better} and see if the day feels calmer.
+
+You and {what}: about {real} every time. Bunny suggests calling them {better}.
+
+After watching {count} sprints worth, Bunny thinks {what} are really {better} sized, about {real}.

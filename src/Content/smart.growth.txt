@@ -1,0 +1,43 @@
+Bunny's monthly check-in: it changed in {count} this month. Toolbox, Notes to self, Bunny's monthly check-in lets you keep or undo each one.
+
+New month, and Bunny grew a little: {count} changed. You can keep or undo each in Bunny's monthly check-in, in the toolbox.
+
+Bunny has {count} to tell you about how it changed this month. It is all in Bunny's monthly check-in, Notes to self.
+
+A month went by and Bunny learned {count}. Bunny's monthly check-in, in the toolbox, lets you keep or undo them.
+
+Bunny's been growing: {count} changed since last month. Have a look in Bunny's monthly check-in whenever you like.
+
+Monthly check-in from Bunny: {count} changed. Keep what you like and undo the rest, in the toolbox under Notes to self.
+
+Bunny noticed {count} changed about itself this month. Bunny's monthly check-in has the list, no rush.
+
+It is a new month. Bunny changed in {count}; you get the final say in Bunny's monthly check-in.
+
+Bunny has been taking notes, {count} new or different this month. Check them in Bunny's monthly check-in when you have a minute.
+
+Little update: Bunny changed in {count} this month. The toolbox, Notes to self, Bunny's monthly check-in shows them.
+
+Bunny grew this month, {count} worth. You can keep, undo or reset them in Bunny's monthly check-in.
+
+Bunny checked itself in the mirror: {count} different since last month. Bunny's monthly check-in has the details.
+
+A new month, a slightly new Bunny: {count} changed. Look in Bunny's monthly check-in to keep or undo.
+
+Bunny's month in review: {count} changed in what it knows about you. Bunny's monthly check-in, in the toolbox.
+
+Bunny would like your opinion on {count} it changed this month. Bunny's monthly check-in, whenever suits you.
+
+This month Bunny picked up {count}. You decide what stays, in Bunny's monthly check-in.
+
+Bunny is a little different this month, {count} to be exact. Bunny's monthly check-in lets you keep or undo them.
+
+Quick note from Bunny: {count} changed this month. See them in the toolbox, Notes to self, Bunny's monthly check-in.
+
+Bunny has {count} to show you from this month. Nothing changes back unless you say so, in Bunny's monthly check-in.
+
+New month check-in: Bunny changed in {count}. Keep, undo or reset them in Bunny's monthly check-in.
+
+Bunny learned {count} about you this month. If any are wrong, Bunny's monthly check-in fixes that.
+
+It has been a month. Bunny changed in {count}, and you can look them over in Bunny's monthly check-in.

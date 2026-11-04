@@ -342,6 +342,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                     "Overview:\n" + OverviewFor(S, Cfg, _w.TabNames, now) + "\nHabits from her history:\n" + Habits(S, now) + "\nHer open tasks:\n" + (tasks.Length > 0 ? tasks : "none yet") +
                     (S.Data.BunnyProfile.Length > 0 ? "\n\nWhat you knew before:\n" + S.Data.BunnyProfile : "") +
                     (first && welcome ? "\n\nThis is the first time you are meeting her properly: write the welcome." : "\n\nNo welcome this time.");
+                SmartSpend.Check();
                 var response = await MakeClient(SavedKey(), TimeSpan.FromMinutes(3), retries: 0).Messages.Create(new MessageCreateParams
                 {
                     Model = ModelId,
@@ -350,6 +351,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                     System = LearnPrompt,
                     Messages = [new UserMessageParam { Content = ask }],
                 }, stop.Token);
+                SmartSpend.Record(response.Usage);
                 var (profile, hello) = ParseLearned(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                 if (profile.Length == 0) throw new Exception("Bunny came back with nothing.");
                 S.Data.BunnyProfile = profile;
@@ -423,7 +425,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             if ((now - Cfg.BunnyLastCheck).TotalHours < Cfg.BunnyCheckHours) return false;
             if (!_w.IsVisible || !_w.IsActive || _w.OwnedWindows.Count > 0) return false;
             if (_ask.IsKeyboardFocusWithin && _ask.Text.Length > 0 || (now - _lastTyped).TotalSeconds < 60) return false;
-            return CheckInBlocked(S, Cfg, now, Features.Get<FocusTools>()?.Sprinting == true) == null;
+            return CheckInBlocked(S, Cfg, now, Features.Get<FocusTools>()?.Sprinting == true || SmartBody.Running) == null;
         }
 
         /// <summary>
@@ -558,6 +560,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                 case Declined: return "Bunny can't help with that one. Try asking another way.";
                 case Stopped: return "Okay, Bunny stopped.";
                 case TooSlow: return "Bunny took too long and stopped. Try again, or ask for something smaller.";
+                case SmartSpend.CapHit: return e.Message;
             }
             if (StatusCode(e) is int code) return ProblemFor(code, e.Message + " " + Body(e));
             return e switch
@@ -646,6 +649,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             for (int round = 0; round < 15; round++)
             {
                 stop.ThrowIfCancellationRequested();
+                SmartSpend.Check();
                 var response = await client.Messages.Create(new MessageCreateParams
                 {
                     Model = ModelId,
@@ -656,6 +660,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                     OutputConfig = new OutputConfig { Effort = Effort.Medium },
                     CacheControl = new CacheControlEphemeral(),
                 }, stop);
+                SmartSpend.Record(response.Usage);
                 Still();
                 if (response.StopReason == "refusal") throw new Declined();
 
@@ -729,6 +734,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         {
             if (_me == null || !Ready) return null;
             if (about != null && !MayShare(_me.S, about)) return null;
+            if (SmartSpend.CapReached()) return null;
             try
             {
                 var response = await _me.Client().Messages.Create(new MessageCreateParams
@@ -739,16 +745,39 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                     System = "You write short, funny lines for Busy Bunny, a to-do app for Morgan, a blind psychology student. Her screen reader reads them aloud. Plain sentences only: no Markdown, emoji, quotation marks around the whole thing, pound signs or asterisks. Never mean about her worth, disability or health.",
                     Messages = [new UserMessageParam { Content = request }],
                 });
+                SmartSpend.Record(response.Usage);
                 string text = Clean(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                 return text.Length is > 0 and < 1200 ? text : null;
             }
             catch { return null; }
         }
 
+        /// <summary>
+        /// One plain request to Claude for a feature that reads something she pasted on purpose (a syllabus, a class
+        /// schedule): the raw answer, under the daily spending cap. Throws when Bunny has no key, is over the cap, or
+        /// Claude fails; Problem(e) says why. Never for a private list's tasks.
+        /// </summary>
+        public static async Task<string> AskAsync(string system, string request, int maxTokens = 16000)
+        {
+            if (_me == null || !Ready) throw new InvalidOperationException("Bunny needs a Claude API key first: Options, Smarter Bunny.");
+            SmartSpend.Check();
+            var response = await MakeClient(_me.SavedKey(), TimeSpan.FromMinutes(3), retries: 1).Messages.Create(new MessageCreateParams
+            {
+                Model = ModelId,
+                MaxTokens = maxTokens,
+                OutputConfig = new OutputConfig { Effort = Effort.Low },
+                System = system,
+                Messages = [new UserMessageParam { Content = request }],
+            });
+            SmartSpend.Record(response.Usage);
+            if (response.StopReason == "refusal") throw new Declined();
+            return string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text));
+        }
+
         /// <summary>A date phrase the form could not read, worked out by Claude. Null when it is not a date.</summary>
         public static async Task<(DateTime When, bool HasTime)?> ReadDateAsync(string text, DateTime now, Status week, string? list = null)
         {
-            if (_me == null || !Ready || !_me.MayReadDatesOn(list)) return null;
+            if (_me == null || !Ready || !_me.MayReadDatesOn(list) || SmartSpend.CapReached()) return null;
             var response = await _me.Client().Messages.Create(new MessageCreateParams
             {
                 Model = ModelId,
@@ -758,6 +787,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                 Messages = [new UserMessageParam { Content = "Now: " + now.ToString("dddd yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + ". The task is set to " + Words.Of(week) +
                     (week == Status.NextWeek ? ", so a day name on its own means that day next week." : week == Status.ThisWeek ? ", so a day name on its own means that day this week." : ".") + " Words: " + text }],
             });
+            SmartSpend.Record(response.Usage);
             string reply = string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)).Trim();
             return ParseWhen(reply) is (DateTime d, bool t) ? (d, t) : null;
         }
@@ -1021,7 +1051,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     }),
                 T("ask_user", "Shows her a small window with your question, a button for each choice, and a box to type her own answer. Returns what she picked or typed, or that she closed it. Use it for check-ins and for choices.",
                     new { question = Str("The question, short and plain."), choices = Strs("Two to five short answers to pick from."), allow_typing = Bool("Let her type her own answer. True if left out.") }, "question"),
-                T("remember", "Keeps a short note about her for later talks, like a goal or what helps her.", new { note = Str("The note, one sentence.") }, "note"),
+                T("remember", "Keeps a short note about her for later talks, like a goal or what helps her. Also when she tells you how to be, like be more sarcastic, you love thunderstorms now, or stop doing that joke: keep it as a note, and follow your notes from then on.", new { note = Str("The note, one sentence.") }, "note"),
+                T("about_me", "Looks in the About me she wrote about herself (her interests, the humor she likes, how she likes things described, what she never wants) for the lines about one topic. Ask only for what this answer needs, by a word or two like humor, describing, animals or birthday.", new { topic = Str("A word or two for what you need to know.") }, "topic"),
                 T("forget", "Removes your notes about her: one by its number from get_overview, or all.", new { number = Int("The note's number."), all = Bool("True removes every note.") }),
                 T("open_tab", "Opens a tab on the main screen, like Today, Focus, Overdue is on Today, Board, Upcoming, or a list's tab, and puts her in its tasks.", new { name = Str("The tab's name.") }, "name"),
                 T("bunny_changes_today", "Every change you made for her today, newest first, one line each. She can undo your latest one from File, Bunny changes today.", new { }),
@@ -1450,6 +1481,9 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     return "Noted. " + S.Data.BunnyNotes.Count + " notes.";
                 }
 
+                case "about_me":
+                    return SmartMemory.ForClaude(S, Get(a, "topic") ?? "");
+
                 case "forget":
                 {
                     bool all = GetBool(a, "all") == true;
@@ -1818,6 +1852,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             private bool _notesChanged;
             private readonly StackPanel _panel = new();
             private readonly ScrollViewer _scroll;
+            private readonly SmartSpend.Panel _spend;
             private static readonly int[] Hours = CheckHours;
             private static string HourWords(int h) => h == 0 || h == 24 ? "midnight" : h == 12 ? "noon" : Words.Time(DateTime.Today.AddHours(h));
 
@@ -1863,6 +1898,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 forget.Click += (_, _) => { _key.Clear(); Speech.Say(_panel, "Key cleared. Press OK to save that.", true); _key.Focus(); };
                 foreach (var b in new[] { test, get, forget }) buttons.Children.Add(b);
                 _panel.Children.Add(buttons);
+                _spend = new SmartSpend.Panel(store);
+                _panel.Children.Add(_spend.Content);
 
                 _voice.ItemsSource = Voices;
                 _voice.SelectedIndex = Math.Clamp(cfg.BunnyVoice, 0, Voices.Length - 1);
@@ -1999,6 +2036,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         OutputConfig = new OutputConfig { Effort = Effort.Low },
                         Messages = [new UserMessageParam { Content = "You are Bunny, a cheerful helper in a to-do app. Say hello in one short sentence, no emoji." }],
                     });
+                    SmartSpend.Record(r.Usage);
                     string hi = Clean(string.Concat(r.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                     // A key that works is saved at once, so it cannot get lost.
                     if (key != Unprotect(_cfg.BunnyKey)) { _cfg.BunnyKey = Protect(key); _cfg.BunnyLastCheck = DateTime.Now; }
@@ -2030,7 +2068,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 string key = _key.Password.Trim();
                 if (key.Length > 0 && !key.StartsWith("sk-ant-")) { _key.Focus(); return "That does not look like a Claude API key. They start with sk-ant."; }
                 if (_until.SelectedIndex + 1 <= _from.SelectedIndex) { _until.Focus(); return "Check-ins need to stop later than they start."; }
-                return null;
+                return _spend.Validate();
             }
 
             public void Apply()
@@ -2058,6 +2096,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 // What Bunny was told before may hold the tasks of a list that is private now: the talk starts over.
                 if (!hiddenNow.SetEquals(hiddenBefore)) _me?.PrivacyChanged(madePrivate: !hiddenNow.IsSubsetOf(hiddenBefore));
                 if (_notesChanged) _store.Data.BunnyNotes = _notes.ToList();
+                _spend.Apply();
                 _cfg.Save();
             }
         }
@@ -2067,7 +2106,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
         public void SelfTest(Store store)
         {
             void Check(bool ok, string what) { if (!ok) throw new Exception("Smarter Bunny: " + what); }
-            Check(ToolList().Count == 18, "tool list");
+            Check(ToolList().Count == 19, "tool list");
             Check(Clean("**Hi** there # friend\n- one\n- two") == "Hi there  friend\none\ntwo", "clean gave " + Clean("**Hi** there # friend\n- one\n- two"));
             Check(ParseWhen("2026-11-03 14:30") == (new DateTime(2026, 11, 3, 14, 30, 0), true), "time");
             Check(ParseWhen("2026-11-03") == (new DateTime(2026, 11, 3), false), "date");
