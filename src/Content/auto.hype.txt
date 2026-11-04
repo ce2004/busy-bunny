@@ -1,0 +1,41 @@
+{task} is {when}. You have prepared more than you think.
+
+Countdown: {task}, {when}. One focused review today is plenty.
+
+{task} {when}. Bunny believes in you, loudly.
+
+Heads up, champion: {task} is {when}. Small review, big confidence.
+
+{task} is coming {when}. You know more than you did last week.
+
+Hype time: {task} {when}. Go get it.
+
+{task} {when}. Breathe, review a little, sleep well.
+
+{task} is {when}, and you are getting ready. That is the right move.
+
+{task} {when}. Remember: you only need to show what you know.
+
+The countdown is on: {task}, {when}. Steady wins.
+
+{task} is {when}. A few flash cards today and future you says thanks.
+
+Big day coming: {task}, {when}. You have got this.
+
+{task} {when}. Bunny is already practicing the victory dance.
+
+{task} is {when}. Today: one small study session. That is all.
+
+Getting close: {task} {when}. You are more ready every day.
+
+{task} {when}. Rest is studying too, so get some.
+
+{task}, {when}. Keep calm and review the tricky bits.
+
+Not long now: {task} is {when}. Go easy on yourself.
+
+{task} {when}. You did hard things before. This is one more.
+
+{task} is {when}. Ten minutes of review beats an hour of worry.
+
+{task} {when}. Bunny's prediction: you will do better than you fear.

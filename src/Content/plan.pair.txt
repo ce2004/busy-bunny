@@ -1,0 +1,41 @@
+Reward time: {reward}. You earned it.
+
+That was the boring one. Now: {reward}.
+
+Done, so {reward} is yours.
+
+Deal is a deal: {reward}.
+
+Your reward is waiting: {reward}.
+
+The trade is complete. Go enjoy {reward}.
+
+Boring task done. Time for {reward}.
+
+You held up your end. Now {reward}.
+
+Remember the reward? {reward}. Go get it.
+
+Bunny says: {reward}, right now, guilt free.
+
+Payment due: {reward}.
+
+That earns you {reward}. Enjoy every bit.
+
+Task finished, reward unlocked: {reward}.
+
+The fun part is here: {reward}.
+
+As promised, {reward}.
+
+You did the dull thing. {reward} is the shiny thing.
+
+Off you go to {reward}. You deserve it.
+
+Boring, done. Fun, next: {reward}.
+
+Your prize for that: {reward}.
+
+Time to cash in: {reward}.
+
+Well done. Treat yourself to {reward}.
