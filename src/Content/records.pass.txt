@@ -1,0 +1,119 @@
+name: A clover bookmark
+touch: A pressed clover under smooth laminate.
+sound: A soft flick as it slips between pages.
+
+name: A carrot keychain
+touch: A little rubber carrot, squishy and ridged.
+sound: It jingles against your keys.
+
+name: A pair of wool mittens
+touch: Thick, warm and a little scratchy.
+sound: A muffled clap when you high-five.
+
+name: A tin of peppermints
+touch: A cool flat tin with a lid that pops.
+sound: The mints rattle when you shake it.
+
+name: A pencil with a bunny eraser
+touch: Smooth wood and a soft rubber bunny on top.
+sound: A scratch on paper.
+
+name: A pocket notebook
+touch: A soft leather cover and creamy thick pages.
+sound: Pages fluttering.
+
+name: A cozy beanie
+touch: Ribbed knit with a pompom on top.
+sound: A fuzzy rustle over your ears.
+
+name: A ceramic acorn
+touch: Glazed smooth with a textured cap.
+sound: A clink on the shelf.
+
+name: A sticker of a trophy
+touch: Raised shiny edges you can trace.
+sound: A peel and a press.
+
+name: A tiny lantern
+touch: Cool metal with a ring handle.
+sound: A soft click as it lights.
+
+name: A jar of honey
+touch: Heavy glass and a sticky wooden dipper.
+sound: A slow drip.
+
+name: A fleece blanket
+touch: Fluffy on both sides, light but warm.
+sound: A soft whoosh as you spread it out.
+
+name: A wooden flute
+touch: Smooth with six round holes.
+sound: A breathy, gentle note.
+
+name: A star-shaped pillow
+touch: Five plush points, perfect for hugging.
+sound: A puff when you squeeze it.
+
+name: A badge that says Halfway There
+touch: A round pin with raised letters.
+sound: A small click when you fasten it.
+
+name: A set of watercolor pencils
+touch: Hexagonal sides in a smooth tin.
+sound: They rattle in the tin.
+
+name: A cup of hot chocolate
+touch: A warm mug and a pile of marshmallows that squish.
+sound: A slurp. A polite one.
+
+name: A woven bracelet
+touch: Knotted threads in a pattern you can follow with a fingertip.
+sound: Silent, but friendly.
+
+name: A pocket telescope
+touch: Brass sections that slide out with a smooth glide.
+sound: A satisfying click at full length.
+
+name: A bunny plush
+touch: Floppy velvet ears and a round cotton tail.
+sound: A tiny squeak when you squeeze its paw.
+
+name: A rain stick
+touch: A long hollow tube of dried cactus, bumpy all over.
+sound: Tip it and it sounds like a gentle rainstorm.
+
+name: A pair of slippers with ears
+touch: Fleece slippers with bunny ears that flop.
+sound: Shuffle, shuffle.
+
+name: A succulent in a pot
+touch: Thick, smooth, cool leaves.
+sound: The crunch of gravel in the pot.
+
+name: A glass paperweight
+touch: A heavy dome of glass, perfectly smooth.
+sound: A solid thunk on the desk.
+
+name: A hammock for the burrow
+touch: Soft rope netting that sways under you.
+sound: A gentle creak as it rocks.
+
+name: A music box that plays a lullaby
+touch: A smooth wooden box with a crank.
+sound: A tinkling lullaby.
+
+name: A season pass medal
+touch: A heavy round medal on a satin ribbon.
+sound: A bright ring when it taps another medal.
+
+name: A golden carrot pin
+touch: Small, cool and shaped like a carrot.
+sound: A tiny tick when you pin it on.
+
+name: A crown made of clover
+touch: Woven clover stems, soft and springy.
+sound: A rustle when you put it on.
+
+name: The Season Champion trophy
+touch: Heavy, cool and tall, with a bunny on top and a smooth base.
+sound: A deep, proud thunk on the shelf. You finished the whole season pass.

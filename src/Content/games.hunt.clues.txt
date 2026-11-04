@@ -1,0 +1,97 @@
+spot: door
+name: The round front door
+clue: Look where you come in and go out, by the round brass knob.
+
+spot: door
+name: The round front door
+clue: It is near something that creaks every time a visitor arrives.
+
+spot: bed
+name: Bunny's bed of hay
+clue: Look somewhere soft and scratchy that smells like a summer field.
+
+spot: bed
+name: Bunny's bed of hay
+clue: It is where Bunny dreams, under the pillow made of moss.
+
+spot: window
+name: The little round window
+clue: Look where the sunlight comes in and warms the sill.
+
+spot: window
+name: The little round window
+clue: It is somewhere you can hear the birds the clearest.
+
+spot: rug
+name: The woven rug
+clue: Look under something flat and bumpy that your paws walk on every day.
+
+spot: rug
+name: The woven rug
+clue: It is hiding under the thing that keeps the floor from being cold.
+
+spot: tunnel
+clue: Look where cool earth and roots brush the ceiling.
+
+spot: tunnel
+clue: It is somewhere you can smell rain drifting in.
+
+spot: nook
+clue: Look somewhere you would curl up with a book.
+
+spot: nook
+clue: It is under a cushion, near a humming lamp.
+
+spot: pantry
+clue: Look somewhere that crunches when you reach in.
+
+spot: pantry
+clue: It is between the clover bundles, where it smells green and sweet.
+
+spot: tea
+clue: Look near a kettle that likes to sing.
+
+spot: tea
+clue: It is next to the two mugs, one for you and one for a visitor.
+
+spot: fireplace
+clue: Look somewhere warm that crackles and pops.
+
+spot: fireplace
+clue: It is tucked in the woolly blanket that smells of cedar.
+
+spot: bath
+clue: Look where the water drips and echoes.
+
+spot: bath
+clue: It is near the bubbles, where humming sounds amazing.
+
+spot: garden
+clue: Look somewhere damp and green where bees buzz lazily.
+
+spot: garden
+clue: It is under the skylight, in the clover.
+
+spot: music
+clue: Look near the piano key that sticks.
+
+spot: music
+clue: It is leaning against the cello in the corner.
+
+spot: observatory
+clue: Look somewhere cold to the touch that points at the sky.
+
+spot: observatory
+clue: It is by the round window in the hill.
+
+spot: library
+clue: Look where a ladder squeaks.
+
+spot: library
+clue: It is between two books on a very tall shelf.
+
+spot: throne
+clue: Look somewhere velvet, fit for a Burrow Boss.
+
+spot: throne
+clue: It is under the cushion with the tiny crown.

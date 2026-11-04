@@ -63,14 +63,28 @@ namespace BusyBunny
             int avoid = Math.Min(NoRepeat, all.Count - 1);
             var skip = used.TakeLast(avoid).ToHashSet();
             var choices = Enumerable.Range(0, all.Count).Where(i => !skip.Contains(i)).ToList();
+            if (Rating != null)
+            {
+                // Rate a line (records.rate): lines she turned down are left out while others remain, liked ones come up twice as often.
+                var kept = choices.Where(i => Rating(store, topic, all[i]) >= 0).ToList();
+                if (kept.Count > 0) choices = kept;
+                choices.AddRange(choices.Where(i => Rating(store, topic, all[i]) > 0).ToList());
+            }
             int pick = choices[(rng ?? Shared).Next(choices.Count)];
             used.Add(pick);
             if (used.Count > NoRepeat) used.RemoveRange(0, used.Count - NoRepeat);
             recent[topic] = used;
             store.World.SetKept(RecentKey, recent);
             store.World.Save();
+            Last = (topic, all[pick]);
             return all[pick].Replace("{name}", store.Data.Game.BunnyName);
         }
+
+        /// <summary>The last entry Pick gave out, as typed (topic and line), for Rate a line. Null before the first pick.</summary>
+        public static (string Topic, string Line)? Last { get; set; }
+
+        /// <summary>Set by Rate a line: minus 1 for a line she turned down, 1 for one she liked, 0 otherwise. Pick prefers liked lines.</summary>
+        public static Func<Store, string, string, int>? Rating { get; set; }
 
         /// <summary>The same, for the main window's store (with no window yet, a random entry, or empty).</summary>
         public static string Pick(string topic)

@@ -1,0 +1,88 @@
+name: A cozy throw blanket
+touch: Chunky knit, thick and soft enough to sink your paws into.
+sound: A soft whump when you shake it out.
+
+name: A brass wind-up bunny
+touch: Cool metal with a little key in its back.
+sound: It clicks and whirs, then hops across the table.
+
+name: A jar of fireflies, the pretend kind
+touch: A smooth glass jar, faintly warm.
+sound: A gentle hum, like summer nights.
+
+name: A velvet cushion
+touch: Plush velvet with a button in the middle.
+sound: A sigh of air when you sit on it.
+
+name: A tiny wooden boat
+touch: Smooth sanded wood and a cloth sail that flutters.
+sound: It bobs with a little knock against the side of a bowl.
+
+name: A snow globe
+touch: A heavy glass dome on a wooden base.
+sound: A soft swirl when you shake it, and a tiny tune when you wind it.
+
+name: A bouquet of dried lavender
+touch: Bumpy little buds on long stems.
+sound: A papery rustle.
+looks: It smells calm and sweet.
+
+name: A ceramic mug with a bunny handle
+touch: Glazed smooth, with two clay ears for a handle.
+sound: A clear ting when you tap it.
+
+name: A kaleidoscope
+touch: A cardboard tube wrapped in raised paper patterns.
+sound: The beads inside rattle when you turn the end.
+
+name: A pair of fuzzy slippers
+touch: Fleece inside, rubber dots on the bottom.
+sound: Shuffle, shuffle on the burrow floor.
+
+name: A wind chime
+touch: Hollow metal tubes hanging from a wooden ring.
+sound: Bright notes that tumble over each other in the breeze.
+
+name: A star map you can feel
+touch: Raised dots for stars and raised lines for constellations.
+sound: The crinkle of heavy paper.
+
+name: A little potted fern
+touch: Feathery fronds and cool damp soil.
+sound: A whisper of leaves when you brush it.
+
+name: A hand drum
+touch: Stretched skin over a wooden ring, tight and smooth.
+sound: A deep boom in the middle, a bright tap at the edge.
+
+name: A heated rice bag
+touch: A cloth pouch full of rice, warm and heavy on your shoulders.
+sound: A soft shushing as the rice shifts.
+
+name: A pocket compass
+touch: A cool round case that clicks open.
+sound: A gentle tick as the needle settles.
+
+name: A bag of fancy carrots
+touch: Long, crisp carrots with leafy tops.
+sound: The best crunch you have ever heard.
+
+name: A quilted pillow
+touch: Patches of different fabric, each one a new texture.
+sound: A puff when you fluff it.
+
+name: A small music box
+touch: A wooden box with a little crank on the side.
+sound: A plinking lullaby when you turn the crank.
+
+name: A smooth worry stone
+touch: A flat stone with a thumb-shaped dip worn into it.
+sound: Silent, and calming because of it.
+
+name: A string of fairy lights
+touch: Little bulbs on a soft wire, faintly warm.
+sound: A tiny click when you switch them on.
+
+name: A golden carrot trophy
+touch: Heavy and cool, with leafy edges at the top.
+sound: A satisfying thunk when you set it on the shelf.

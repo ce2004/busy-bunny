@@ -1,0 +1,153 @@
+who: Gerald the snail
+text: Finish two Small tasks this week. Slow and steady, says Gerald.
+rule: small
+target: 2
+reward: 10
+thanks: Gerald leaves a shiny trail of gratitude on the board.
+
+who: Gerald the snail
+text: Finish a task that has waited a week or more. Gerald knows about waiting.
+rule: old
+target: 1
+reward: 12
+thanks: Gerald nods very slowly. That means a lot.
+
+who: Old Owl Hazel
+text: Finish a task before 9 in the morning. Owls respect an early start, oddly.
+rule: beforenine
+target: 1
+reward: 12
+thanks: Hazel hoots twice, which in owl means well done.
+
+who: Old Owl Hazel
+text: Finish two tasks in the evening, after 5.
+rule: evening
+target: 2
+reward: 10
+thanks: Hazel blinks slowly, very pleased.
+
+who: Pip the mouse
+text: Finish three tasks of any kind this week.
+rule: any
+target: 3
+reward: 10
+thanks: Pip squeaks and runs a happy lap around the board.
+
+who: Pip the mouse
+text: Knock out two quick wins.
+rule: quickwin
+target: 2
+reward: 8
+thanks: Pip leaves you a crumb of cheese. It is the thought that counts.
+
+who: Mr. Badger
+text: Finish one Large task this week. Badger likes big digs.
+rule: large
+target: 1
+reward: 15
+thanks: Badger thumps the board with one big paw in approval.
+
+who: Mr. Badger
+text: Finish a top priority task.
+rule: top
+target: 1
+reward: 12
+thanks: Badger grunts. That is his best compliment.
+
+who: Clementine the hen
+text: Finish two tasks before noon.
+rule: morning
+target: 2
+reward: 10
+thanks: Clementine clucks proudly and fluffs her feathers.
+
+who: Clementine the hen
+text: Finish a task before its due day.
+rule: early
+target: 1
+reward: 12
+thanks: Clementine says early birds and early bunnies get the best seeds.
+
+who: Rosie the pony
+text: Finish a repeating task. Rosie loves a good routine.
+rule: repeat
+target: 1
+reward: 10
+thanks: Rosie nickers softly and swishes her tail.
+
+who: Rosie the pony
+text: Finish something on the weekend.
+rule: weekend
+target: 1
+reward: 10
+thanks: Rosie does a little trot on the spot.
+
+who: Fern the frog
+text: Finish two tagged tasks.
+rule: tagged
+target: 2
+reward: 10
+thanks: Fern ribbits a thank you that echoes off the pond.
+
+who: Fern the frog
+text: Do one focus sprint this week.
+rule: sprint
+target: 1
+reward: 10
+thanks: Fern hops in a circle, then pretends that was on purpose.
+
+who: Bramble the hedgehog
+text: Finish a task that has notes.
+rule: notes
+target: 1
+reward: 8
+thanks: Bramble rolls into a happy ball.
+
+who: Bramble the hedgehog
+text: Finish a task with subtasks.
+rule: subtasks
+target: 1
+reward: 10
+thanks: Bramble's spines wiggle with joy.
+
+who: Mayor Mabel the goose
+text: Finish a task on the day it is due. The mayor values punctuality.
+rule: duetoday
+target: 1
+reward: 10
+thanks: Mayor Mabel honks officially.
+
+who: Mayor Mabel the goose
+text: Do two focus sprints this week.
+rule: sprint
+target: 2
+reward: 15
+thanks: The mayor declares you a Citizen of Focus, unofficially.
+
+who: Otis the otter
+text: Finish two Medium tasks.
+rule: medium
+target: 2
+reward: 12
+thanks: Otis floats on his back and claps.
+
+who: Otis the otter
+text: Finish something on a Friday.
+rule: friday
+target: 1
+reward: 8
+thanks: Otis brings you a smooth pebble from the river.
+
+who: Juniper the fox
+text: Finish a task between noon and 5.
+rule: afternoon
+target: 1
+reward: 8
+thanks: Juniper flicks her tail and grins.
+
+who: Juniper the fox
+text: Finish four tasks of any kind this week.
+rule: any
+target: 4
+reward: 15
+thanks: Juniper says she is impressed, and foxes do not say that lightly.

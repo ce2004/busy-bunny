@@ -1,0 +1,112 @@
+level: 2
+kind: sound
+name: The happy hop
+text: A little hop sound, just for you.
+sound: Bunny, hop
+
+level: 3
+kind: title
+name: Clover Nibbler's sash
+text: A green sash for your bunny, soft and silky.
+
+level: 4
+kind: shield
+name: A spare streak shield
+text: One streak shield, on the house.
+
+level: 5
+kind: sound
+name: The xylophone sparkle
+text: A bright little run of notes.
+sound: Xylophone, sparkle
+
+level: 6
+kind: title
+name: A tiny graduation cap
+text: Bunny wears it slightly crooked, on purpose.
+
+level: 7
+kind: sound
+name: The binky
+text: The sound of a very happy rabbit jumping and twisting in the air.
+sound: Bunny, binky
+
+level: 8
+kind: shield
+name: A second spare shield
+text: Another streak shield, for the days life happens.
+
+level: 9
+kind: title
+name: The Midterm Menace cape
+text: A swishy cape that flaps when Bunny runs.
+
+level: 10
+kind: sound
+name: The string fanfare
+text: Strings swelling into a big chord.
+sound: Strings, chord high
+
+level: 11
+kind: title
+name: A legendary scarf
+text: Long, striped and very warm.
+
+level: 12
+kind: shield
+name: The Burrow Boss shield
+text: A sturdy shield with a carrot on it.
+
+level: 13
+kind: sound
+name: The singing bells
+text: A shimmer of bells.
+sound: Singing bells, sparkle
+
+level: 14
+kind: title
+name: A golden library card
+text: For the most dedicated reader in the burrow.
+
+level: 15
+kind: sound
+name: The organ chord
+text: A big warm organ chord, like a celebration in a hall.
+sound: Organ, chord high
+
+level: 16
+kind: shield
+name: The comeback shield
+text: One more shield, polished and ready.
+
+level: 17
+kind: title
+name: The Thesis Tamer badge
+text: A shiny pin you can feel the raised letters on.
+
+level: 18
+kind: sound
+name: The flute meadow
+text: A rising flute line, light as a spring morning.
+sound: Flute, rising
+
+level: 19
+kind: title
+name: A crown of clover
+text: Woven by the neighbors, with a few daisies tucked in.
+
+level: 20
+kind: sound
+name: The grand chord
+text: Piano and strings together, as big as Busy Bunny gets.
+sound: Piano and strings, chord high
+
+level: 21
+kind: shield
+name: The legend's shield
+text: A shield for a legend. Still only three can be held at once.
+
+level: 22
+kind: title
+name: The Unreasonably Productive robe
+text: Plush, regal and very comfortable.

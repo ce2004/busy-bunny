@@ -1,0 +1,65 @@
+text: A handful of clover, still cool from the morning.
+points: 3
+
+text: A shiny acorn button that clicks against your claws.
+points: 4
+
+text: A warm cinnamon roll, sticky on top.
+points: 5
+
+text: A smooth river stone that fits right in your paw.
+points: 3
+
+text: A tiny brass bell that jingles when you shake it.
+points: 4
+
+text: A soft feather for your hat, light as a breath.
+points: 3
+
+text: A jar of honey with a wooden dipper.
+points: 5
+
+text: A postcard from the seaside, rough paper and a stamp you can feel.
+points: 4
+
+text: The jackpot: a whole basket of crunchy carrots.
+points: 10
+
+text: A ribbon in your favorite color, silky between your paws.
+points: 3
+
+text: A pocket full of sunflower seeds that rattle.
+points: 3
+
+text: A fuzzy pair of socks, warm right out of the dryer.
+points: 5
+
+text: A wind chime made of shells that clinks in the breeze.
+points: 6
+
+text: A little clay mug, still warm from the kiln.
+points: 4
+
+text: A pinecone that smells like the whole forest.
+points: 3
+
+text: A sticker that says Great Job, in raised letters you can trace.
+points: 4
+
+text: A tiny trophy with a bunny on top. It is heavier than it looks.
+points: 8
+
+text: A cup of hot cocoa with a marshmallow that squishes when you poke it.
+points: 5
+
+text: A velvet pouch with a lucky coin inside.
+points: 6
+
+text: A fresh strawberry, cold and bumpy.
+points: 3
+
+text: A small drum that goes boom when you tap it.
+points: 7
+
+text: A wool scarf that smells faintly of cedar.
+points: 5

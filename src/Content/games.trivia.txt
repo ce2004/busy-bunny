@@ -1,0 +1,475 @@
+q: Who is often called the founder of psychoanalysis?
+a: Sigmund Freud
+b: Carl Jung
+c: B. F. Skinner
+d: William James
+why: Freud developed psychoanalysis in Vienna in the late 1800s and early 1900s.
+
+q: Pavlov's dogs drooling at the sound that meant food is a classic example of what?
+a: Classical conditioning
+b: Operant conditioning
+c: Observational learning
+d: Habituation
+why: A neutral sound paired with food came to trigger drooling by itself. That is classical conditioning.
+
+q: Learning from rewards and punishments, like a rat pressing a lever for food, is called what?
+a: Operant conditioning
+b: Classical conditioning
+c: Imprinting
+d: Sensitization
+why: B. F. Skinner studied operant conditioning, where consequences shape behavior.
+
+q: In Maslow's hierarchy of needs, what sits at the bottom?
+a: Physiological needs, like food, water and sleep
+b: Self-actualization
+c: Esteem
+d: Love and belonging
+why: Maslow put basic body needs at the base and self-actualization at the top.
+
+q: Who ran the Bobo doll studies, where children copied an adult hitting a doll?
+a: Albert Bandura
+b: Jean Piaget
+c: Stanley Milgram
+d: Harry Harlow
+why: Bandura's Bobo doll studies showed learning by watching others, part of his social learning theory.
+
+q: Stanley Milgram's famous experiments studied what?
+a: Obedience to authority
+b: Memory for faces
+c: Conformity to a group about line lengths
+d: Attachment in infants
+why: Milgram measured how far people would go when an authority figure told them to give shocks. No real shocks were given.
+
+q: Who led the Stanford prison experiment in 1971?
+a: Philip Zimbardo
+b: Solomon Asch
+c: Leon Festinger
+d: Elizabeth Loftus
+why: Zimbardo ran the study at Stanford. It is now widely criticized for its methods.
+
+q: Wilhelm Wundt opened the first psychology laboratory in 1879. In which city?
+a: Leipzig, Germany
+b: Vienna, Austria
+c: Boston, United States
+d: Paris, France
+why: Wundt's lab at the University of Leipzig is usually counted as the start of psychology as a science.
+
+q: Which brain structure is most important for forming new long-term memories?
+a: The hippocampus
+b: The cerebellum
+c: The occipital lobe
+d: The medulla
+why: The patient known as H.M. lost much of his hippocampus on both sides and could no longer form new long-term memories.
+
+q: Damage to Broca's area mostly affects what?
+a: Producing speech
+b: Seeing colors
+c: Smelling
+d: Keeping your balance
+why: People with Broca's aphasia usually understand speech but struggle to produce it.
+
+q: Wernicke's area is mainly linked to what?
+a: Understanding language
+b: Producing tears
+c: Controlling breathing
+d: Recognizing faces
+why: Damage there can leave speech fluent but hard to understand, and comprehension poor.
+
+q: George Miller's famous paper said short-term memory holds about how many items?
+a: Seven, plus or minus two
+b: Three, plus or minus one
+c: Twenty, plus or minus five
+d: As many as you like
+why: Miller's 1956 paper was titled The Magical Number Seven, Plus or Minus Two.
+
+q: Who first mapped the forgetting curve, testing himself on nonsense syllables?
+a: Hermann Ebbinghaus
+b: Ivan Pavlov
+c: Abraham Maslow
+d: Carl Rogers
+why: Ebbinghaus showed that we forget quickly at first and then more slowly.
+
+q: What is the first stage in Piaget's theory of cognitive development?
+a: Sensorimotor
+b: Formal operational
+c: Concrete operational
+d: Preoperational
+why: The order is sensorimotor, preoperational, concrete operational, then formal operational.
+
+q: A baby learning that a toy still exists under a blanket has gained what?
+a: Object permanence
+b: Conservation
+c: Theory of mind
+d: Abstract reasoning
+why: Piaget placed object permanence in the sensorimotor stage.
+
+q: What is the first stage in Erik Erikson's theory of psychosocial development?
+a: Trust versus mistrust
+b: Identity versus role confusion
+c: Intimacy versus isolation
+d: Industry versus inferiority
+why: Erikson's first stage covers infancy, when babies learn whether the world feels safe and reliable.
+
+q: The uncomfortable feeling of holding two beliefs that clash is called what?
+a: Cognitive dissonance
+b: Learned helplessness
+c: Groupthink
+d: The halo effect
+why: Leon Festinger described cognitive dissonance in the 1950s.
+
+q: People are less likely to help when many others are around. What is this called?
+a: The bystander effect
+b: The spotlight effect
+c: The placebo effect
+d: The mere exposure effect
+why: John Darley and Bibb Latane studied it after the 1964 murder of Kitty Genovese.
+
+q: Solomon Asch's line studies were about what?
+a: Conformity to a group
+b: Obedience to authority
+c: Sleep and memory
+d: Color perception
+why: Many people gave an obviously wrong answer about line lengths when the rest of the group did.
+
+q: In Harry Harlow's studies, what did infant monkeys prefer?
+a: A soft cloth mother, even without food
+b: A wire mother that gave milk
+c: No mother at all
+d: A mother that made noise
+why: The monkeys clung to the cloth mother, showing that comfort matters, not only food.
+
+q: Mary Ainsworth used the Strange Situation to study what?
+a: Attachment styles in young children
+b: Memory in older adults
+c: Obedience in soldiers
+d: Sleep in teenagers
+why: She watched how toddlers reacted when a parent left the room and came back.
+
+q: Which of these is not one of the Big Five personality traits?
+a: Intelligence
+b: Openness
+c: Conscientiousness
+d: Agreeableness
+why: The Big Five are openness, conscientiousness, extraversion, agreeableness and neuroticism.
+
+q: Which brain chemical is most linked to reward and motivation?
+a: Dopamine
+b: Melatonin
+c: Insulin
+d: Adrenaline
+why: Dopamine pathways help the brain learn what is worth going after.
+
+q: What does SSRI stand for, as in a kind of antidepressant?
+a: Selective serotonin reuptake inhibitor
+b: Simple sleep rhythm inducer
+c: Selective stress response inhibitor
+d: Standard serotonin release injection
+why: SSRIs keep serotonin from being taken back up so quickly.
+
+q: What does the myelin sheath around a nerve fiber do?
+a: Speeds up nerve signals
+b: Makes new memories
+c: Produces hormones
+d: Stores oxygen
+why: Myelin insulates the axon so signals jump along much faster.
+
+q: Which brain structure is most linked to fear and processing emotions?
+a: The amygdala
+b: The cerebellum
+c: The corpus callosum
+d: The pituitary gland
+why: The amygdala is a small almond-shaped area deep in each temporal lobe.
+
+q: Feeling better after a sugar pill because you expected it to work is called what?
+a: The placebo effect
+b: The Zeigarnik effect
+c: The Stroop effect
+d: The serial position effect
+why: Expectation alone can change how people feel.
+
+q: Blaming someone's personality for their behavior while ignoring their situation is called what?
+a: The fundamental attribution error
+b: The availability heuristic
+c: Confirmation bias
+d: Social loafing
+why: Lee Ross named it in 1977. We tend to underestimate how much the situation matters.
+
+q: Looking mostly for evidence that supports what you already believe is called what?
+a: Confirmation bias
+b: Hindsight bias
+c: The bystander effect
+d: Learned helplessness
+why: Confirmation bias makes us notice and remember what fits our views.
+
+q: In which stage of sleep do the most vivid dreams usually happen?
+a: REM sleep, rapid eye movement
+b: The first minute of falling asleep
+c: Deep slow-wave sleep only
+d: Dreams never happen during sleep stages
+why: REM sleep comes in cycles through the night, with more of it toward morning.
+
+q: The body's daily cycle of sleepiness and alertness is called what?
+a: Circadian rhythm
+b: Ultrasonic rhythm
+c: Lunar rhythm
+d: Sympathetic rhythm
+why: Circadian comes from Latin for about a day. The cycle runs close to 24 hours.
+
+q: Which gland makes melatonin, the hormone that helps signal sleep?
+a: The pineal gland
+b: The thyroid gland
+c: The adrenal glands
+d: The salivary glands
+why: The pineal gland releases more melatonin when it gets dark.
+
+q: For remembering material, what works better than one long cram session?
+a: Spreading study out over several sessions
+b: Rereading the same page many times in a row
+c: Studying only the night before
+d: Highlighting everything
+why: This is the spacing effect, one of the best-supported findings about learning.
+
+q: Quizzing yourself instead of rereading notes helps memory. What is this called?
+a: The testing effect, or retrieval practice
+b: The halo effect
+c: The mere exposure effect
+d: Social facilitation
+why: Pulling information out of memory makes it easier to pull out again later.
+
+q: Remembering the first and last items on a list best is called what?
+a: The serial position effect
+b: The bystander effect
+c: The overjustification effect
+d: The Dunning-Kruger effect
+why: Better memory for the start is the primacy effect, and for the end the recency effect.
+
+q: Phineas Gage survived an iron rod going through his head in 1848. Which part of his brain was hurt?
+a: The frontal lobe
+b: The occipital lobe
+c: The cerebellum
+d: The brainstem
+why: People who knew him said his personality changed, which made his case famous.
+
+q: Which lobe of the brain mainly handles vision?
+a: The occipital lobe
+b: The frontal lobe
+c: The temporal lobe
+d: The parietal lobe
+why: The occipital lobe is at the back of the head, which surprises a lot of people.
+
+q: Which lobe holds the main hearing area of the brain?
+a: The temporal lobe
+b: The occipital lobe
+c: The frontal lobe
+d: The parietal lobe
+why: The primary auditory cortex sits in the temporal lobes, near the ears.
+
+q: The cerebellum is best known for helping with what?
+a: Balance and coordination
+b: Making tears
+c: Digesting food
+d: Seeing color
+why: Its name means little brain, and it helps smooth out movement.
+
+q: Which organization publishes the DSM, the diagnostic manual for mental health?
+a: The American Psychiatric Association
+b: The World Wildlife Fund
+c: The American Medical Library
+d: The National Science Foundation
+why: The current edition is the DSM-5-TR, published in 2022.
+
+q: Liking something more just because you have seen it many times is called what?
+a: The mere exposure effect
+b: The spotlight effect
+c: The ceiling effect
+d: The decoy effect
+why: Robert Zajonc studied it in the 1960s.
+
+q: Who first described learned helplessness?
+a: Martin Seligman
+b: Sigmund Freud
+c: Albert Bandura
+d: Noam Chomsky
+why: Seligman went on to help start positive psychology.
+
+q: Who is known for research on the growth mindset?
+a: Carol Dweck
+b: Mary Ainsworth
+c: Elizabeth Loftus
+d: Karen Horney
+why: A growth mindset is the belief that abilities can grow with effort and good strategies.
+
+q: The deeply focused state where time seems to disappear is called what?
+a: Flow
+b: Drift
+c: Ego depletion
+d: Habituation
+why: Mihaly Csikszentmihalyi named and studied the flow state.
+
+q: The Yerkes-Dodson law says people usually do best with how much arousal or stress?
+a: A moderate amount
+b: None at all
+c: As much as possible
+d: It makes no difference
+why: Too little and we are bored, too much and we freeze up. The middle tends to work best.
+
+q: In the invisible gorilla study, many viewers counting basketball passes missed a person in a gorilla suit. What is this called?
+a: Inattentional blindness
+b: Blindsight
+c: Change deafness
+d: Prosopagnosia
+why: Daniel Simons and Christopher Chabris ran the study in 1999.
+
+q: Naming the ink color of the word RED printed in blue ink is slow. What is this called?
+a: The Stroop effect
+b: The Flynn effect
+c: The Mandela effect
+d: The Pygmalion effect
+why: Reading is so automatic that it gets in the way of naming the color.
+
+q: Giving a reward to make a behavior happen more often is called what?
+a: Positive reinforcement
+b: Negative reinforcement
+c: Punishment
+d: Extinction
+why: Positive means something is added, and reinforcement means the behavior increases.
+
+q: Taking away something unpleasant to make a behavior happen more often is called what?
+a: Negative reinforcement
+b: Positive punishment
+c: Positive reinforcement
+d: Extinction
+why: People often mix this up with punishment, but reinforcement always makes a behavior more likely.
+
+q: Who developed dialectical behavior therapy, DBT?
+a: Marsha Linehan
+b: Aaron Beck
+c: Carl Rogers
+d: Albert Ellis
+why: Linehan developed DBT, which teaches skills like distress tolerance and emotion regulation.
+
+q: Cognitive therapy, a root of cognitive behavioral therapy, is most linked to whom?
+a: Aaron Beck
+b: Sigmund Freud
+c: Ivan Pavlov
+d: Wilhelm Wundt
+why: Beck developed cognitive therapy in the 1960s, starting with work on depression.
+
+q: Unconditional positive regard is a key idea from which therapist?
+a: Carl Rogers
+b: B. F. Skinner
+c: John Watson
+d: Hans Eysenck
+why: Rogers founded person-centered, or client-centered, therapy.
+
+q: What connects the left and right halves of the brain?
+a: The corpus callosum
+b: The spinal cord
+c: The optic nerve
+d: The hypothalamus
+why: It is a thick band of nerve fibers. Split-brain studies looked at people whose corpus callosum was cut.
+
+q: Unfinished tasks tend to stick in memory better than finished ones. What is this called?
+a: The Zeigarnik effect
+b: The Stroop effect
+c: The halo effect
+d: The primacy effect
+why: Bluma Zeigarnik studied it in the 1920s. It is one reason a half-done task can nag at you.
+
+q: Plans like if it is 3 pm, then I open my reading are called what?
+a: Implementation intentions
+b: Defense mechanisms
+c: Heuristics
+d: Schemas
+why: Peter Gollwitzer showed that if-then plans make it more likely people follow through.
+
+q: The Pomodoro Technique classically uses work blocks of how long?
+a: 25 minutes
+b: 5 minutes
+c: 90 minutes
+d: 2 hours
+why: Francesco Cirillo named it after his tomato-shaped kitchen timer. Pomodoro is Italian for tomato.
+
+q: Sensory neurons carry signals in which direction?
+a: From the body toward the brain and spinal cord
+b: From the brain out to the muscles
+c: Only between the two eyes
+d: They do not carry signals
+why: Sensory neurons are afferent. Motor neurons carry signals out to the muscles.
+
+q: Thinking something is more common because examples come to mind easily is called what?
+a: The availability heuristic
+b: The sunk cost fallacy
+c: Groupthink
+d: Social loafing
+why: Amos Tversky and Daniel Kahneman described the availability heuristic.
+
+q: What is a baby rabbit called?
+a: A kit
+b: A cub
+c: A foal
+d: A joey
+why: Kit is short for kitten, which is also used for baby rabbits.
+
+q: A rabbit's front teeth do what over its whole life?
+a: Keep growing
+b: Fall out every year
+c: Stay exactly the same
+d: Turn into tusks
+why: Chewing hay and other tough food wears them down and keeps them the right length.
+
+q: Snails belong to which group of animals?
+a: Mollusks
+b: Insects
+c: Reptiles
+d: Amphibians
+why: Snails are gastropods, a kind of mollusk, like slugs.
+
+q: A horse's height is measured in hands. How long is one hand?
+a: 4 inches
+b: 1 inch
+c: 10 inches
+d: 1 foot
+why: Horses are measured from the ground to the top of the withers, the ridge between the shoulders.
+
+q: How many dots can a single braille cell have?
+a: Six
+b: Four
+c: Eight
+d: Ten
+why: Louis Braille used a cell of two columns of three dots. Some computer braille adds two more, but the standard cell has six.
+
+q: How many hearts does an octopus have?
+a: Three
+b: One
+c: Two
+d: Eight
+why: Two pump blood through the gills and one pumps it to the rest of the body.
+
+q: What is the largest planet in our solar system?
+a: Jupiter
+b: Saturn
+c: Neptune
+d: Earth
+why: Jupiter is more than twice as massive as all the other planets put together.
+
+q: What is the largest organ of the human body?
+a: The skin
+b: The liver
+c: The brain
+d: The lungs
+why: The skin covers the whole body and is usually counted as the largest organ.
+
+q: What is the smallest bone in the human body?
+a: The stapes, in the middle ear
+b: The pinky toe bone
+c: The kneecap
+d: The collarbone
+why: The stapes, or stirrup, helps carry sound to the inner ear.
+
+q: How do honey bees tell each other where to find flowers?
+a: With a waggle dance
+b: By humming a tune
+c: By leaving footprints
+d: They never share
+why: Karl von Frisch decoded the waggle dance and later shared a Nobel Prize.

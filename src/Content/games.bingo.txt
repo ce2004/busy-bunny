@@ -1,0 +1,65 @@
+rule: small
+text: Finish a Small task
+
+rule: medium
+text: Finish a Medium task
+
+rule: large
+text: Finish a Large or multi-day task
+
+rule: beforenine
+text: Finish something before 9 in the morning
+
+rule: morning
+text: Finish something before noon
+
+rule: afternoon
+text: Finish something between noon and 5
+
+rule: evening
+text: Finish something after 5 pm
+
+rule: weekend
+text: Finish something on the weekend
+
+rule: monday
+text: Finish something on a Monday
+
+rule: friday
+text: Finish something on a Friday
+
+rule: top
+text: Finish a top priority task
+
+rule: early
+text: Finish a task before its due day
+
+rule: old
+text: Finish a task that has waited a week or more
+
+rule: notes
+text: Finish a task that has notes
+
+rule: subtasks
+text: Finish a task with subtasks
+
+rule: tagged
+text: Finish a tagged task
+
+rule: repeat
+text: Finish a repeating task
+
+rule: quickwin
+text: Knock out a quick win
+
+rule: duetoday
+text: Finish something on the day it is due
+
+rule: first
+text: Finish your first task of a day
+
+rule: third
+text: Finish three tasks in one day
+
+rule: any
+text: Finish any task at all
