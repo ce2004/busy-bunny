@@ -53,6 +53,8 @@ namespace BusyBunny
         private MainWindow _w = null!;
         private readonly Dictionary<Status, ListBox> _board = new();
         private ListBox _overdue = null!;
+        private TabItem? _tab;
+        private bool _dirty = true;
 
         public static string TypeWords(TaskType t) => t == TaskType.PersonalGoal ? "personal goal" : t.ToString().ToLowerInvariant();
         public static string SortWords(SortBy s) => s switch { SortBy.DueDate => "due date", SortBy.Newest => "newest first", _ => s.ToString().ToLowerInvariant() };
@@ -87,13 +89,15 @@ namespace BusyBunny
                 }
                 panel.Children.Add(lb);
             }
-            w.AddTab("Board", new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
+            _tab = w.AddTab("Board", new ScrollViewer { Content = panel, Focusable = false, VerticalScrollBarVisibility = ScrollBarVisibility.Auto },
                 () => _overdue.Items.OfType<ListBoxItem>().Any(i => i.Tag is Guid) ? _overdue : _board[Status.Today]);
 
             w.AddMenuItem("View", "_Filter and sort...", Open, "Ctrl+Shift+F");
-            w.AddMenuItem("View", "_Clear filter", ClearFilter);
+            w.AddMenuItem("View", "Clea_r filter", ClearFilter); // Alt C is Add a category
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.F, Open, "Ctrl+Shift+F: Filter and sort the list tabs and the Board");
-            w.Refreshed += Refill;
+            // The Board is filled when it is open, and again as it opens after changes elsewhere (spec 9.9).
+            w.Refreshed += () => { if (_tab != null && _tab.IsSelected) Refill(); else _dirty = true; };
+            w.TabOpened += tab => { if (tab == _tab && _dirty) Refill(); };
             w.DetailNotes.Add(StepsLine);
         }
 
@@ -134,10 +138,21 @@ namespace BusyBunny
 
         private static string GroupOf(TaskItem t, GroupBy g) => g == GroupBy.Tag ? (t.Tag.Length == 0 ? "No tag" : t.Tag) : Words.Of(t.Status);
 
-        private void Fill(ListBox lb, IEnumerable<TaskItem> source, string name, string empty)
+        private void Fill(ListBox lb, IEnumerable<TaskItem> source, string name, string empty) => Fill(_w, lb, Apply(source, State, _w.Store.Rank), name, empty);
+
+        /// <summary>
+        /// A list tab's list or category (MainWindow): in its own order with no filter or sort, otherwise
+        /// filtered, sorted and grouped like the Board. Each category list gets only its own tasks, so none shows twice.
+        /// </summary>
+        public static void FillView(MainWindow w, ListBox lb, IEnumerable<TaskItem> source, string name, string empty)
         {
-            var tasks = Apply(source, State, _w.Store.Rank);
-            _w.FillTasks(lb, tasks, name + (State.Active ? ", filtered" : ""), empty);
+            if (!State.Active) { w.FillTasks(lb, source, name, empty); return; }
+            Fill(w, lb, Apply(source, State, w.Store.Rank), name, empty.TrimEnd('.') + " that fits.");
+        }
+
+        private static void Fill(MainWindow w, ListBox lb, List<TaskItem> tasks, string name, string empty)
+        {
+            w.FillTasks(lb, tasks, name + (State.Active ? ", filtered" : ""), empty);
             if (State.Group == GroupBy.None || tasks.Count == 0) return;
             // Group headings are plain lines between the tasks.
             for (int i = tasks.Count - 1; i >= 0; i--)
@@ -160,9 +175,11 @@ namespace BusyBunny
 
         private void Refill()
         {
+            _dirty = false;
             var now = DateTime.Now;
             var open = _w.Store.Data.Tasks.Where(t => t.Status != Status.Done).ToList();
             var overdue = _w.Store.Overdue(now);
+            var overdueSet = overdue.ToHashSet();
             Fill(_overdue, overdue, "Overdue", "Nothing overdue.");
             foreach (var s in BoardStatuses)
             {
@@ -170,13 +187,10 @@ namespace BusyBunny
                 string name = Words.Of(s) + (s is Status.Today or Status.ThisWeek or Status.NextWeek ? ", " + ShowWords[show].ToLowerInvariant() : "");
                 var group = BoardGroup(open, s, show, now);
                 // Overdue ones have their own group above; Today keeps only what is planned or due today.
-                if (s == Status.Today) group = group.Where(t => !overdue.Contains(t) || Store.PlanGroup(t, now) == Status.Today);
+                if (s == Status.Today) group = group.Where(t => !overdueSet.Contains(t) || Store.PlanGroup(t, now) == Status.Today);
                 Fill(_board[s], group, name, "Nothing " + (s == Status.Today ? "for today" : "here") + ".");
             }
-            if (!State.Active) return;
-            foreach (var l in _w.Store.ActiveLists)
-                if (_w.ListBoxOf(l.Name) is ListBox lb)
-                    Fill(lb, open.Where(t => t.List == l.Name), l.Name, "Nothing on " + l.Name + " that fits.");
+            // The list tabs apply the filter themselves as they fill (MainWindow.FillListTab, through FillView).
         }
 
         // ---- The dialog ----

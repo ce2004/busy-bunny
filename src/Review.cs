@@ -39,6 +39,9 @@ namespace BusyBunny
 
         public static DateTime WeekStart(DateTime d) => d.Date.AddDays(-(((int)d.DayOfWeek + 6) % 7));
 
+        /// <summary>Tasks not on an archived list: archived lists show nowhere, reviews included.</summary>
+        private List<TaskItem> Live() => _w.Store.Data.Tasks.Where(t => !_w.Store.ListOf(t).Archived).ToList();
+
         // ---- The weekly offer ----
 
         private void Offer()
@@ -46,7 +49,7 @@ namespace BusyBunny
             var data = _w.Store.Data;
             var week = WeekStart(DateTime.Now);
             if (data.SweepOfferedWeek == week) return;
-            int n = SweepCandidates(data.Tasks, DateTime.Now).Count;
+            int n = SweepCandidates(Live(), DateTime.Now).Count;
             if (n == 0) return;
             data.SweepOfferedWeek = week;
             _w.Store.Save();
@@ -57,7 +60,7 @@ namespace BusyBunny
 
         private void WeeklyReview()
         {
-            var tasks = WeeklyCandidates(_w.Store.Data.Tasks, _w.Store.Rank);
+            var tasks = WeeklyCandidates(Live(), _w.Store.Rank);
             if (tasks.Count == 0) { _w.Say("Nothing waiting for review. Suspiciously tidy.", true); return; }
             Walk("Weekly review", tasks, new (string, Action<TaskItem>)[]
             {
@@ -71,7 +74,7 @@ namespace BusyBunny
 
         private void BacklogSweep()
         {
-            var tasks = SweepCandidates(_w.Store.Data.Tasks, DateTime.Now);
+            var tasks = SweepCandidates(Live(), DateTime.Now);
             if (tasks.Count == 0) { _w.Say("Nothing has been sitting untouched for three weeks. Impressive.", true); return; }
             Walk("Backlog sweep", tasks, new (string, Action<TaskItem>)[]
             {
@@ -100,7 +103,7 @@ namespace BusyBunny
         private void Walk(string title, List<TaskItem> tasks, (string Label, Action<TaskItem> Act)[] actions, string finished)
         {
             var store = _w.Store;
-            int at = 0, changed = 0;
+            int at = 0, changed = 0, undoSteps = 0;
             bool remembered = false;
             var shown = new TextBox { IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, Width = 420, MinHeight = 60, Margin = new Thickness(0, 0, 0, 6) };
             AutomationProperties.SetName(shown, "Task under review");
@@ -133,7 +136,9 @@ namespace BusyBunny
                 if (choice > 0 || actions[0].Label.StartsWith("Keep it"))
                 {
                     // Keep as it is changes nothing; the sweep's Keep it refreshes the touched date.
-                    if (!remembered) { store.Remember(title); remembered = true; }
+                    if (!remembered) { store.Remember(title); remembered = true; undoSteps = 1; }
+                    // Mark done goes through the usual Done path (points, repeats), which keeps its own undo step.
+                    if (actions[choice].Label.Contains("done", StringComparison.OrdinalIgnoreCase)) undoSteps++;
                     actions[choice].Act(t);
                     changed++;
                 }
@@ -144,8 +149,11 @@ namespace BusyBunny
             w.Loaded += (_, _) => Show();
             bool finishedAll = w.ShowDialog() == true;
             if (changed > 0) _w.SaveAndRefresh();
-            _w.Say((finishedAll ? finished : "Stopped at " + (at + 1) + " of " + tasks.Count + ".") + (changed > 0 ? " " + changed + (changed == 1 ? " task changed." : " tasks changed.") + " Control Z undoes it." : " Nothing changed."), true);
+            _w.Say((finishedAll ? finished : "Stopped at " + (at + 1) + " of " + tasks.Count + ".") + (changed > 0 ? " " + changed + (changed == 1 ? " task changed." : " tasks changed.") + UndoWords(undoSteps) : " Nothing changed."), true);
         }
+
+        /// <summary>How to undo the walk, honestly: every Mark done is its own undo step.</summary>
+        public static string UndoWords(int steps) => steps <= 1 ? " Control Z undoes it." : " Press Control Z " + steps + " times to undo all of it.";
 
         public void SelfTest(Store store)
         {
@@ -161,6 +169,7 @@ namespace BusyBunny
             if (string.Concat(WeeklyCandidates(tasks, _ => 0).Select(t => t.Name)) != "ba") throw new Exception("weekly review picks the wrong tasks");
             if (string.Concat(SweepCandidates(tasks, now).Select(t => t.Name)) != "bc") throw new Exception("backlog sweep picks the wrong tasks");
             if (WeekStart(now) != new DateTime(2026, 10, 12)) throw new Exception("week start");
+            if (UndoWords(1) != " Control Z undoes it." || !UndoWords(3).Contains("3 times")) throw new Exception("undo words");
         }
     }
 }

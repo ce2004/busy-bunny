@@ -70,12 +70,13 @@ namespace BusyBunny
         }
 
         /// <summary>Time until the next class today (15.3), or null when there is none, or a meeting comes sooner.</summary>
-        public static string? NextClassPart(Data d, DateTime now, bool shortMode)
+        public static string? NextClassPart(Data d, DateTime now, bool shortMode, Func<TaskItem, bool>? counts = null)
         {
             var next = d.Classes.Where(c => c.Days.Contains(now.DayOfWeek) && c.Start > now.TimeOfDay).OrderBy(c => c.Start).FirstOrDefault();
             if (next == null) return null;
             var at = now.Date + next.Start;
-            if (d.Tasks.Any(t => t.IsMeeting && t.Status != Status.Done && t.Due > now && t.Due < at)) return null;
+            // Only meetings that count: a private meeting must not hide the class line in Bunny's copy.
+            if (d.Tasks.Any(t => t.IsMeeting && t.Status != Status.Done && t.Due > now && t.Due < at && Live(d, t, counts))) return null;
             string s = "next class " + (next.Tag.Length > 0 ? next.Tag : "") + (next.Tag.Length > 0 ? " " : "") + "at " + Words.Time(at);
             return shortMode ? s : s + ", in " + Gap(at - now);
         }
@@ -85,24 +86,28 @@ namespace BusyBunny
         public static bool IsTest(TaskItem t) => t.Type == TaskType.Test || t.Name.Contains("test", StringComparison.OrdinalIgnoreCase) ||
             t.Name.Contains("exam", StringComparison.OrdinalIgnoreCase) || t.Name.Contains("quiz", StringComparison.OrdinalIgnoreCase);
 
-        public static TaskItem? NearestTest(Data d, DateTime now) => d.Tasks
-            .Where(t => t.Status != Status.Done && IsTest(t) && t.Due is DateTime due && due.Date >= now.Date && due.Date <= now.Date.AddDays(14) && !(t.DueHasTime && due < now))
+        /// <summary>A task that counts here: on a list that is not archived, and accepted by counts (Store.Counts) when given.</summary>
+        public static bool Live(Data d, TaskItem t, Func<TaskItem, bool>? counts = null) =>
+            (counts == null || counts(t)) && d.Lists.FirstOrDefault(l => l.Name == t.List)?.Archived != true;
+
+        public static TaskItem? NearestTest(Data d, DateTime now, Func<TaskItem, bool>? counts = null) => d.Tasks
+            .Where(t => t.Status != Status.Done && IsTest(t) && Live(d, t, counts) && t.Due is DateTime due && due.Date >= now.Date && due.Date <= now.Date.AddDays(14) && !(t.DueHasTime && due < now))
             .OrderBy(t => t.Due).FirstOrDefault();
 
-        public static int StudyTasksLeft(Data d, TaskItem test) => test.Tag.Length == 0 || test.Due is not DateTime due ? 0 : d.Tasks
+        public static int StudyTasksLeft(Data d, TaskItem test, Func<TaskItem, bool>? counts = null) => test.Tag.Length == 0 || test.Due is not DateTime due ? 0 : d.Tasks
             .Count(t => t != test && t.Id != test.Id && t.Status != Status.Done && !t.IsMeeting && !IsTest(t) &&
-                        t.Tag.Equals(test.Tag, StringComparison.OrdinalIgnoreCase) && t.Due is DateTime td && td <= due);
+                        t.Tag.Equals(test.Tag, StringComparison.OrdinalIgnoreCase) && t.Due is DateTime td && td <= due && Live(d, t, counts));
 
         /// <summary>PSY midterm in 6 days, 3 study tasks left. Short mode drops the words around the count.</summary>
-        public static string? ExamPart(Data d, DateTime now, bool shortMode)
+        public static string? ExamPart(Data d, DateTime now, bool shortMode, Func<TaskItem, bool>? counts = null)
         {
-            if (NearestTest(d, now) is not TaskItem test || test.Due is not DateTime due) return null;
+            if (NearestTest(d, now, counts) is not TaskItem test || test.Due is not DateTime due) return null;
             int days = (due.Date - now.Date).Days;
             string when = days == 0 ? "today" : days == 1 ? "tomorrow" : "in " + days + " days";
             string name = test.Tag.Length > 0 && !test.Name.StartsWith(test.Tag, StringComparison.OrdinalIgnoreCase) ? test.Tag + " " + test.Name : test.Name;
             string s = name + " " + when;
             if (test.Tag.Length == 0) return s;
-            int left = StudyTasksLeft(d, test);
+            int left = StudyTasksLeft(d, test, counts);
             if (shortMode) return s + ", " + left + " left";
             return s + ", " + (left == 0 ? "no study tasks left" : left + (left == 1 ? " study task left" : " study tasks left"));
         }
@@ -146,7 +151,7 @@ namespace BusyBunny
                     lines.Add(tag + ", still to ask: " + Join(toAsk));
                 }
             }
-            foreach (var t in d.Tasks.Where(t => t.Status != Status.Done && IsTest(t) && t.Tag.Length > 0 && t.Due is DateTime due && due >= now.Date && due.Date <= now.Date.AddDays(14)))
+            foreach (var t in d.Tasks.Where(t => t.Status != Status.Done && IsTest(t) && Live(d, t) && t.Tag.Length > 0 && t.Due is DateTime due && due >= now.Date && due.Date <= now.Date.AddDays(14)))
             {
                 string tag = ClassTags(d).FirstOrDefault(c => c.Equals(t.Tag, StringComparison.OrdinalIgnoreCase)) ?? "";
                 if (tag.Length == 0) continue;
@@ -163,8 +168,8 @@ namespace BusyBunny
 
         public void Attach(MainWindow w)
         {
-            w.Store.SummaryParts.Add((now, shortMode) => NextClassPart(w.Store.Data, now, shortMode));
-            w.Store.SummaryParts.Add((now, shortMode) => ExamPart(w.Store.Data, now, shortMode));
+            w.Store.SummaryParts.Add((now, shortMode) => NextClassPart(w.Store.Data, now, shortMode, w.Store.Counts));
+            w.Store.SummaryParts.Add((now, shortMode) => ExamPart(w.Store.Data, now, shortMode, w.Store.Counts));
             w.Started += () => { Remind(w); SeasonHint(w); };
             w.NewDay += _ => { Remind(w); SeasonHint(w); };
         }
@@ -228,6 +233,14 @@ namespace BusyBunny
             test.Due = new DateTime(2026, 10, 18);
             test.Type = TaskType.General; test.Name = "PSY exam";
             Is(ExamPart(d, now, false), "PSY exam in 6 days, 3 study tasks left", "exam by name");
+            // Bunny's copy: a test it may not count is left out, and so are study tasks it may not count.
+            Is(ExamPart(d, now, false, t => t != test), null, "a private test stays out");
+            Is(ExamPart(d, now, false, t => t.Name != "chapter 0"), "PSY exam in 6 days, 2 study tasks left", "a private study task stays out");
+            d.Lists.Add(new TaskList { Name = "Old", Archived = true });
+            test.List = "Old";
+            Is(ExamPart(d, now, false), null, "an archived test stays out");
+            test.List = "";
+            d.Lists.Clear();
 
             // Accessibility nudges: once a semester per class, once per test inside two weeks.
             d.Classes.Add(new ClassTime { Tag = "ENG", Days = { DayOfWeek.Friday }, Start = new TimeSpan(13, 0, 0), End = new TimeSpan(14, 0, 0) });

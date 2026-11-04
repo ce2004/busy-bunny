@@ -77,14 +77,18 @@ namespace BusyBunny
             return new RepeatRule { Per = Unit.Week, Days = days, Every = everyWeeks };
         }
 
-        /// <summary>The next date after from (time of day kept), following the rule.</summary>
-        public DateTime Next(DateTime from)
+        /// <summary>
+        /// The next date after from (time of day kept), following the rule. keepDay: for monthly and
+        /// yearly rules, the day of the month it is meant for, so January 31 goes to February 28 and then
+        /// back to March 31 instead of staying on the 28th; 0 uses from's own day.
+        /// </summary>
+        public DateTime Next(DateTime from, int keepDay = 0)
         {
             switch (Per)
             {
                 case Unit.Day: return from.AddDays(Every);
-                case Unit.Month: return from.AddMonths(Every);
-                case Unit.Year: return from.AddYears(Every);
+                case Unit.Month: return OnDay(from.AddMonths(Every), keepDay, from);
+                case Unit.Year: return OnDay(from.AddYears(Every), keepDay, from);
             }
             if (Days.Count == 0) return from.AddDays(7 * Every);
             // Weekly on named days: the next such day, later in this week, or the first of them Every weeks on.
@@ -99,13 +103,32 @@ namespace BusyBunny
             return from.AddDays(7 * Every);
         }
 
+        /// <summary>The same month as d, on keepDay (or the month's last day when it is shorter), at from's time of day.</summary>
+        private static DateTime OnDay(DateTime d, int keepDay, DateTime from)
+        {
+            if (keepDay < 1) return d;
+            int day = Math.Min(Math.Min(keepDay, 31), DateTime.DaysInMonth(d.Year, d.Month));
+            return new DateTime(d.Year, d.Month, day, 0, 0, 0, from.Kind) + from.TimeOfDay;
+        }
+
+        /// <summary>
+        /// The day of the month to keep for a monthly or yearly rule: the one remembered, while the date
+        /// still fits it (the 28th of February fits the 31st), otherwise the date's own day (it was moved by hand).
+        /// </summary>
+        public int DayToKeep(DateTime anchor, int remembered)
+        {
+            if (Per is not (Unit.Month or Unit.Year)) return 0;
+            if (remembered > anchor.Day && anchor.Day == DateTime.DaysInMonth(anchor.Year, anchor.Month)) return remembered;
+            return anchor.Day;
+        }
+
         private static int WeekIndex(DateTime d) => (int)Math.Floor(((d.Date - new DateTime(2000, 1, 3)).TotalDays) / 7);
 
         /// <summary>The first date on or after floor that the rule gives, starting from from.</summary>
-        public DateTime NextOnOrAfter(DateTime from, DateTime floor)
+        public DateTime NextOnOrAfter(DateTime from, DateTime floor, int keepDay = 0)
         {
-            var d = Next(from);
-            for (int guard = 0; d.Date < floor.Date && guard < 5000; guard++) d = Next(d);
+            var d = Next(from, keepDay);
+            for (int guard = 0; d.Date < floor.Date && guard < 5000; guard++) d = Next(d, keepDay);
             return d;
         }
 
@@ -145,9 +168,11 @@ namespace BusyBunny
             // Every Monday, scheduled Monday and due Friday: the rule names the scheduled day, so follow that one.
             if (rule.Days.Count > 0 && t.DoDate is DateTime doDate && !rule.Days.Contains(anchor.DayOfWeek) && rule.Days.Contains(doDate.DayOfWeek))
                 anchor = doDate;
-            var next = rule.NextOnOrAfter(anchor, now);
+            int keep = rule.DayToKeep(anchor, t.RepeatDay);
+            var next = rule.NextOnOrAfter(anchor, now, keep);
             var shift = next - anchor;
             var c = t.Copy();
+            c.RepeatDay = keep;
             c.Id = Guid.NewGuid();
             if (t.Due != null) c.Due = t.Due.Value + shift;
             if (t.DoDate != null) c.DoDate = t.DoDate.Value + shift;
@@ -215,6 +240,24 @@ namespace BusyBunny
             Same(nw.Due, mon.AddDays(11).AddHours(23), "next due Friday");
             if (Store.PlannedToday(nw, mon.AddDays(4).AddHours(12))) throw new Exception("Repeat: next week's copy shows on Today");
             if (NextCopy(new TaskItem(), mon, Status.ThisWeek) != null) throw new Exception("Repeat: copy of a non-repeating task");
+            // Month ends do not drift (R1 10): the 31st goes to the 28th in February, then back to the 31st.
+            var rent = new TaskItem { Name = "rent", Repeat = "every month", Due = new DateTime(2027, 1, 31), Status = Status.Done };
+            var feb = NextCopy(rent, new DateTime(2027, 1, 31, 12, 0, 0), Status.ThisWeek)!;
+            Same(feb.Due, new DateTime(2027, 2, 28), "monthly from January 31");
+            feb.Status = Status.Done;
+            var mar = NextCopy(feb, new DateTime(2027, 2, 28, 12, 0, 0), Status.ThisWeek)!;
+            Same(mar.Due, new DateTime(2027, 3, 31), "monthly back to the 31st in March");
+            var apr = NextCopy(mar, new DateTime(2027, 3, 31, 12, 0, 0), Status.ThisWeek)!;
+            Same(apr.Due, new DateTime(2027, 4, 30), "monthly to April 30");
+            // Moved by hand to the 15th: it follows the 15th from then on.
+            mar.Due = new DateTime(2027, 3, 15);
+            Same(NextCopy(mar, new DateTime(2027, 3, 15, 12, 0, 0), Status.ThisWeek)!.Due, new DateTime(2027, 4, 15), "monthly after moving by hand");
+            var leap = new TaskItem { Name = "leap", Repeat = "every year", Due = new DateTime(2028, 2, 29), Status = Status.Done };
+            var y1 = NextCopy(leap, new DateTime(2028, 2, 29, 12, 0, 0), Status.ThisWeek)!;
+            Same(y1.Due, new DateTime(2029, 2, 28), "yearly from February 29");
+            var y4 = y1;
+            for (int i = 0; i < 3; i++) { y4.Status = Status.Done; y4 = NextCopy(y4, y4.Due!.Value.AddHours(12), Status.ThisWeek)!; }
+            Same(y4.Due, new DateTime(2032, 2, 29), "yearly back to February 29 in a leap year");
         }
     }
 }

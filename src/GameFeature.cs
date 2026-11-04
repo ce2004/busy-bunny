@@ -21,9 +21,10 @@ namespace BusyBunny
             _w = w;
             w.AddMenuItem("Fun", "_Scoreboard...", ShowScoreboard, "Ctrl+Shift+G");
             w.AddMenuItem("Fun", "_Badges...", ShowBadges);
-            w.AddMenuItem("Fun", "_Visit your bunny...", VisitBunny);
+            w.AddMenuItem("Fun", "V_isit your bunny...", VisitBunny);
             w.AddMenuItem("Fun", "_Challenges...", ShowChallenge);
             w.AddMenuItem("Fun", "Semester _Wrapped...", ShowWrapped);
+            w.AddMenuItem("Fun", "What _happened today...", ShowHappened);
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.G, ShowScoreboard, "Ctrl+Shift+G: Scoreboard, your records, level and points");
             w.StatusChanged += OnStatus;
             w.Started += () => Engine.RollChallenge(G, DateTime.Now);
@@ -36,33 +37,53 @@ namespace BusyBunny
 
         private void OnStatus(TaskItem t, Status old)
         {
-            var d = S.Data;
+            var now = DateTime.Now;
+            if (Finish(S, t, old, now) is Outcome o) Game.Queue(_w, o);
+            S.Save();
+        }
+
+        /// <summary>
+        /// Pays a task for its status, or takes back what it paid. Finished pays once (done, undone, done again pays once);
+        /// moving out of finished removes every entry finishing caused; Done not submitted earns half, so going there from
+        /// Done corrects the points down. Returns what to say, or null. Does not save.
+        /// </summary>
+        public static Outcome? Finish(Store s, TaskItem t, Status old, DateTime now)
+        {
+            var d = s.Data;
             bool finished = t.Status is Status.Done or Status.DoneNotSubmitted;
-            var prior = d.Log.Where(e => e.Kind == "Done" && e.TaskId == t.Id).ToList();
             if (!finished)
             {
-                // Moved back out of finished: the points go too, so toggling never farms them.
-                if (prior.Count > 0)
-                {
-                    foreach (var p in prior) d.Log.Remove(p);
-                    d.Log.RemoveAll(e => e.Kind == "Bonus" && e.TaskId == t.Id && e.Text.StartsWith("Finished early"));
-                    S.Save();
-                }
-                return;
+                if (old is Status.Done or Status.DoneNotSubmitted) Engine.Unfinish(s, t, now);
+                return null;
             }
-            int owed = Engine.PointsFor(t, S.ListOf(t), half: t.Status == Status.DoneNotSubmitted);
+            var prior = d.Log.Where(e => e.Kind == "Done" && e.TaskId == t.Id).ToList();
+            int owed = Engine.PointsFor(t, s.ListOf(t), half: t.Status == Status.DoneNotSubmitted);
             int got = prior.Sum(e => e.Points);
-            if (owed <= got) return;
-            var entry = new LogEntry { Kind = "Done", Text = t.Name, Tag = t.Tag, List = t.List, Points = owed - got, TaskId = t.Id };
-            var o = Engine.Record(S, DateTime.Now, entry, t, got == 0);
-            // Morgan's issue 10: finishing before the day she planned (or, with no plan, before it is due) earns extra.
-            if (got == 0 && Engine.EarlyBonus(t, DateTime.Now) is int bonus and > 0)
+            if (owed < got && prior.Count > 0)
             {
-                S.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Bonus", Text = "Finished early: " + t.Name, Points = bonus, TaskId = t.Id });
-                o.Said.Add("Plus " + bonus + " for finishing early. Overachiever.");
+                // A correction, not a penalty: Done not submitted is worth half.
+                prior[0].Points = owed;
+                foreach (var p in prior.Skip(1)) d.Log.Remove(p);
+                Engine.RecheckGoals(s, prior.Select(p => p.When.Date).Distinct().ToList(), now);
+                return null;
             }
-            S.Save();
-            Game.Announce(_w, "", o);
+            if (owed == got) return null;
+            var entry = new LogEntry { Kind = "Done", Text = t.Name, Tag = t.Tag, List = t.List, Points = owed - got, TaskId = t.Id };
+            // Morgan's issue 10: finishing before the day she planned (or, with no plan, before it is due) earns extra.
+            LogEntry? early = null;
+            if (got == 0 && Engine.EarlyBonus(t, now) is int bonus and > 0)
+                early = new LogEntry { Kind = "Bonus", Text = "Finished early: " + t.Name, Points = bonus, TaskId = t.Id, Tag = t.Tag, List = t.List };
+            var o = Engine.Record(s, now, entry, t, got == 0, early);
+            if (early != null) o.Add(Game.Other, "Plus " + early.Points + " for finishing early. Overachiever.");
+            return o;
+        }
+
+        private void ShowHappened()
+        {
+            string today = S.Key(DateTime.Now);
+            var lines = G.HappenedDay == today ? G.Happened.ToList() : new List<string>();
+            if (lines.Count == 0) lines.Add("Nothing yet today. Finish something and the wins and records land here.");
+            TextViewer.Show(_w, "What happened today", lines);
         }
 
         // ---- Scoreboard ----
@@ -151,7 +172,7 @@ namespace BusyBunny
             AutomationProperties.SetName(text, "Today's challenge");
             var accept = Layout.Button("_Accept", isDefault: true);
             var skip = Layout.Button("_Skip");
-            var other = Layout.Button("Show _another");
+            var other = Layout.Button("Show a_nother");
             var close = Layout.Button("_Close", isCancel: true);
 
             void Refresh()
@@ -189,8 +210,8 @@ namespace BusyBunny
                 G.ChallengeId++;
                 S.Save();
                 Refresh();
-                text.Focus();
-                _w.Say(text.Text);
+                // Focus stays on this button, so the new challenge is only announced, not read twice.
+                _w.Say(text.Text, true);
             };
             var buttons = new StackPanel { Orientation = Orientation.Horizontal };
             foreach (var b in new[] { accept, skip, other, close }) buttons.Children.Add(b);
@@ -327,10 +348,100 @@ namespace BusyBunny
             d.Log.Add(new LogEntry { Kind = "Done", When = new DateTime(2026, 10, 8, 10, 0, 0), Points = 10, TaskId = Guid.NewGuid() });
             Check(Engine.MissedADay(d, now), "missed day seen");
             var o2 = Engine.Record(store, now, new LogEntry { Kind = "Done", Text = "t", Points = 5, TaskId = Guid.NewGuid() }, null, true);
-            Check(d.Log.Any(x => x.Kind == "Comeback") && o2.Said[0].Contains("Welcome back"), "comeback bonus");
+            Check(d.Log.Any(x => x.Kind == "Comeback") && o2.Said.Any(x => x.Contains("Welcome back")), "comeback bonus");
             Check(Wrapped(store, now).Count > 2, "wrapped lines");
+
+            // Done, undone, done again pays once, and undoing takes back everything finishing caused.
             d.Log.Clear();
             d.Game = new GameState();
+            d.Play = new PlayState();
+            Engine.RollChallenge(d.Game, now);
+            d.Game.ChallengeId = Array.FindIndex(Engine.Challenges, c => c.Text.StartsWith("Finish three tasks"));
+            d.Game.ChallengeState = "Accepted";
+            d.Game.DailyGoal = 1000;
+            var a = new TaskItem { Name = "stats homework", List = "Homework", Size = Size.Medium, Status = Status.Today, CreatedAt = now };
+            d.Tasks.Add(a);
+            int pays = Engine.PointsFor(a, hw);
+            void Set(Status st) { var old = a.Status; a.Status = st; a.DoneAt = st == Status.Done ? now : null; Finish(store, a, old, now); }
+            Set(Status.Done);
+            Check(Engine.Total(d) == pays, "done pays");
+            Set(Status.Today);
+            Check(Engine.Total(d) == 0 && d.Game.ChallengeProgress == 0, "undone takes the points and the challenge step back");
+            Set(Status.Done);
+            Set(Status.Done);
+            Check(Engine.Total(d) == pays, "done, undone, done again pays once");
+            Set(Status.Today); Set(Status.Done); Set(Status.Today); Set(Status.Done);
+            Check(d.Game.ChallengeProgress == 1 && d.Game.ChallengeState == "Accepted" && !d.Log.Any(x => x.Kind == "Challenge"), "toggling one task does not farm the challenge");
+            Set(Status.DoneNotSubmitted);
+            Check(Engine.Total(d) == Engine.PointsFor(a, hw, half: true), "done to done not submitted corrects to half");
+            Set(Status.Done);
+            Check(Engine.Total(d) == pays, "back to done pays the rest");
+
+            // A bet on a task already done in time wins, even when it is settled after the deadline; undoing opens it again.
+            d.Log.Clear();
+            d.Log.Add(new LogEntry { Kind = "Done", When = now, Points = 100, TaskId = Guid.NewGuid() });
+            d.Play.Spent = 20;
+            d.Play.Bets.Add(new Bet { TaskId = a.Id, Name = a.Name, Stake = 20, By = now.AddHours(1) });
+            a.Status = Status.Done; a.DoneAt = now;
+            var (won, _, lost) = PlayTime.SettleBets(store, now.AddHours(2));
+            Check(won.Count == 1 && lost.Count == 0 && d.Log.Any(x => x.TaskId == a.Id && x.Points == 40), "a bet on a task done in time wins");
+            Engine.Unfinish(store, a, now);
+            Check(d.Play.Bets[0].State == "Open" && !d.Log.Any(x => x.TaskId == a.Id), "undoing reopens the bet and takes the winnings back");
+            // Won in time, deadline passed: un-finishing by mistake keeps the bet and its winnings.
+            var late = new Bet { TaskId = a.Id, Name = a.Name, Stake = 10, By = now.AddHours(-1), State = "Won", FinishedAt = now.AddHours(-2) };
+            d.Play.Bets.Add(late);
+            d.Log.Add(new LogEntry { Kind = "Bonus", When = now, Text = "Won the bet on " + a.Name, Points = 20, TaskId = a.Id });
+            Engine.Unfinish(store, a, now);
+            Check(late.State == "Won" && d.Log.Any(x => x.TaskId == a.Id && x.Points == 20), "a bet won before its deadline stays won after un-finishing");
+            d.Play.Bets.Remove(late);
+            d.Log.RemoveAll(x => x.TaskId == a.Id);
+
+            // Level up is said once, however often a task near the boundary is toggled.
+            var keepLog = d.Log.ToList();
+            d.Log.Clear();
+            d.Game = new GameState { DailyGoal = 1000 };
+            d.Log.Add(new LogEntry { Kind = "Done", When = now, Points = Engine.Threshold(2) - 1, TaskId = Guid.NewGuid() });
+            a.Status = Status.Done;
+            int ups = 0;
+            for (int i = 0; i < 2; i++)
+            {
+                var oo = Finish(store, a, Status.Today, now);
+                ups += oo?.Fun.Count(f => f.Text.StartsWith("Level up")) ?? 0;
+                a.Status = Status.Today; Finish(store, a, Status.Done, now); a.Status = Status.Done;
+            }
+            Check(ups == 1, "level up said once, not on every toggle");
+            d.Tasks.Remove(a);
+            d.Log.Clear();
+            d.Log.AddRange(keepLog);
+            var (_, back, _) = PlayTime.SettleBets(store, now.AddHours(2));
+            Check(back.Count == 1 && d.Play.Spent == 0 && d.Play.Bets[0].State == "Cancelled", "a bet on a deleted task is refunded");
+
+            // A boss bonus logged first does not cost the comeback, and an early bonus counts toward the goal.
+            d.Log.Clear();
+            d.Game = new GameState { DailyGoal = pays + 23 };
+            d.Log.Add(new LogEntry { Kind = "Done", When = now.AddDays(-6), Points = 10, TaskId = Guid.NewGuid() });
+            d.Log.Add(new LogEntry { Kind = "Bonus", When = now, Points = 10, Text = "Boss defeated", TaskId = a.Id });
+            var o3 = Engine.Record(store, now, new LogEntry { Kind = "Done", Points = pays, TaskId = a.Id }, a, true,
+                new LogEntry { Kind = "Bonus", Text = "Finished early", Points = 3 });
+            Check(d.Log.Any(x => x.Kind == "Comeback"), "a boss first still gets the comeback");
+            Check(d.Game.GoalDays.Contains(now.ToString("yyyy-MM-dd")), "the early bonus counts toward the daily goal");
+            a.Status = Status.Done;
+            d.Tasks.Add(a);
+            Engine.Unfinish(store, a, now);
+            Check(!d.Game.GoalDays.Contains(now.ToString("yyyy-MM-dd")) && !d.Log.Any(x => x.TaskId == a.Id), "undoing drops the goal day and every entry");
+            d.Tasks.Remove(a);
+
+            // One line per finish: the level up wins over the rest.
+            d.Log.Clear();
+            Game.Flush(null, store);
+            Game.Queue(null!, new Outcome { Gained = 5 });
+            Game.Queue(null!, Game.Chatter, "cheer");
+            Game.Queue(null!, Game.LevelUp, "Level up!");
+            string said = Game.Flush(null, store);
+            Check(said.Contains("Level up!") && !said.Contains("cheer") && d.Game.Happened.Any(x => x.EndsWith("cheer")), "one fun line, chosen by priority");
+            d.Log.Clear();
+            d.Game = new GameState();
+            d.Play = new PlayState();
         }
     }
 }

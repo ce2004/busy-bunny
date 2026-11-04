@@ -67,7 +67,8 @@ namespace BusyBunny
 
         /// <summary>The open tasks with this tag that could go on Today, most pressing first.</summary>
         public static List<TaskItem> Candidates(Store store, string tag) => store.Data.Tasks
-            .Where(t => t.Tag.Equals(tag, StringComparison.OrdinalIgnoreCase) && t.Status is Status.ThisWeek or Status.NextWeek)
+            // Archived lists stay put: a task moved to Today from one would only vanish (CanShowToday hides it).
+            .Where(t => t.Tag.Equals(tag, StringComparison.OrdinalIgnoreCase) && t.Status is Status.ThisWeek or Status.NextWeek && !store.ListOf(t).Archived)
             .OrderBy(t => t.Status == Status.ThisWeek ? 0 : 1)
             .ThenBy(t => t.Due ?? DateTime.MaxValue)
             .ThenBy(store.Rank)

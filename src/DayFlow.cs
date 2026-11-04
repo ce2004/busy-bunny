@@ -93,7 +93,7 @@ namespace BusyBunny
 
         /// <summary>Today tasks left over from before this day.</summary>
         public static List<TaskItem> LeftOver(Store store, DateTime now) => store.Data.Tasks
-            .Where(t => t.Status == Status.Today && (t.StatusSince ?? t.TouchedAt).Date < now.Date)
+            .Where(t => t.Status == Status.Today && (t.StatusSince ?? t.TouchedAt).Date < now.Date && !store.ListOf(t).Archived)
             .ToList();
 
         /// <summary>Moves them back to This week (mode week) or leaves them (mode keep). Returns how many were affected; undoable.</summary>
@@ -258,7 +258,7 @@ namespace BusyBunny
         public static int Push(Store store, DateTime now)
         {
             int n = 0;
-            foreach (var t in store.Data.Tasks.Where(t => t.Status != Status.Done && !store.DueSoon(t, now)).ToList())
+            foreach (var t in store.Data.Tasks.Where(t => t.Status != Status.Done && !store.DueSoon(t, now) && !store.ListOf(t).Archived).ToList())
             {
                 if (t.Status == Status.Today) { t.Status = Status.ThisWeek; t.StatusSince = now; t.TouchedAt = now; n++; }
                 else if (t.DoDate?.Date <= now.Date && t.Status != Status.Waiting && t.Status != Status.DoneNotSubmitted) { t.DoDate = now.Date.AddDays(1); t.TouchedAt = now; n++; }
@@ -356,6 +356,19 @@ namespace BusyBunny
             store.Data.Tasks.AddRange(new[] { planned, soon });
             Push(store, now);
             if (planned.DoDate != now.Date.AddDays(1) || fresh.Status != Status.ThisWeek || soon.Status != Status.Today) throw new Exception("rough day pushed the wrong tasks");
+
+            // Archived lists: plans, resets and rough days leave their tasks alone.
+            var shelf = new TaskList { Name = "Shelf", Archived = true };
+            store.Data.Lists.Add(shelf);
+            var stored = new TaskItem { Name = "stored", Tag = "PSY", List = "Shelf", Status = Status.Today, StatusSince = now.AddDays(-2) };
+            var stored2 = new TaskItem { Name = "stored2", Tag = "PSY", List = "Shelf", Status = Status.ThisWeek };
+            store.Data.Tasks.AddRange(new[] { stored, stored2 });
+            if (Rhythm.Candidates(store, "PSY").Contains(stored2)) throw new Exception("a weekday plan took an archived task");
+            if (LeftOver(store, now).Contains(stored)) throw new Exception("the reset took an archived task");
+            Push(store, now);
+            if (stored.Status != Status.Today) throw new Exception("a rough day moved an archived task");
+            store.Data.Tasks.RemoveAll(t => t.List == "Shelf");
+            store.Data.Lists.Remove(shelf);
         }
     }
 

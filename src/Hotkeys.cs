@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,6 +31,7 @@ namespace BusyBunny
         public void Attach(MainWindow w)
         {
             _w = w;
+            w.AddHelp("Quick add from any program: Control Alt Shift A. Read my day from any program: Control Alt Shift R. Settings, Keys turns them on or off");
             w.SourceInitialized += (_, _) =>
             {
                 _hwnd = new WindowInteropHelper(w).Handle;
@@ -49,8 +51,11 @@ namespace BusyBunny
             panel.Children.Add(read);
             yield return new Reminders.Page("Keys", panel, () =>
             {
-                settings.HotkeyQuickAdd = add.IsChecked == true;
-                settings.HotkeyRead = read.IsChecked == true;
+                bool wantAdd = add.IsChecked == true, wantRead = read.IsChecked == true;
+                // Only a change here registers again, so a taken key is not reported at every Settings OK.
+                if (wantAdd == settings.HotkeyQuickAdd && wantRead == settings.HotkeyRead) return;
+                settings.HotkeyQuickAdd = wantAdd;
+                settings.HotkeyRead = wantRead;
                 Register();
                 TellOnce();
             });
@@ -99,6 +104,16 @@ namespace BusyBunny
         private void QuickAdd()
         {
             if (_w == null) return;
+            // A window of Busy Bunny's is open already (Settings, Edit task, another Quick add): finish
+            // that first, rather than a second window stacked on top of it.
+            var open = _w.OwnedWindows.OfType<Window>().LastOrDefault(x => x.IsVisible);
+            if (open != null)
+            {
+                Reminders.Open();
+                open.Activate();
+                Speech.Say(open, "Finish this window first, then Control Alt Shift A opens Quick add.", true);
+                return;
+            }
             bool wasHidden = !_w.IsVisible;
             Reminders.Open();
             _w.OpenQuickAdd();

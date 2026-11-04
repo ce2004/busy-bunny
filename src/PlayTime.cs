@@ -23,8 +23,10 @@ namespace BusyBunny
 
         // Vex, the rival.
         public string RivalWeek { get; set; } = "";
-        /// <summary>Points Vex won from lost bets in RivalWeek.</summary>
+        /// <summary>Points Vex won from lost bets in RivalWeek (older saves; new losses go in RivalExtraByWeek).</summary>
         public int RivalExtra { get; set; }
+        /// <summary>Points Vex won from lost bets, by the week each bet's deadline was in.</summary>
+        public Dictionary<string, int> RivalExtraByWeek { get; set; } = new();
         public string RivalSettled { get; set; } = "";
         public string RivalPassed { get; set; } = "";
         public int RivalWins { get; set; }
@@ -50,7 +52,9 @@ namespace BusyBunny
         public string Name { get; set; } = "";
         public int Stake { get; set; }
         public DateTime By { get; set; }
-        /// <summary>Open, Won or Lost.</summary>
+        /// <summary>When the task was finished for a won bet. Kept so a won bet stays won after its deadline.</summary>
+        public DateTime? FinishedAt { get; set; }
+        /// <summary>Open, Won, Lost, or Cancelled (its task was deleted or archived, and the stake came back).</summary>
         public string State { get; set; } = "Open";
     }
 
@@ -70,6 +74,7 @@ namespace BusyBunny
         private MenuItem? _rivalMenu, _narratorMenu;
 
         public const string Rival = "Vex";
+        public const string MysteryLead = "Mystery box cleared: ", QuestLead = "Quest cleared: ";
 
         // ---- Points to spend ----
 
@@ -139,7 +144,8 @@ namespace BusyBunny
                 double share = day < now.Date ? 1 : Math.Clamp((now.Hour + now.Minute / 60.0 - 8) / 14, 0, 1);
                 total += perDay * share;
             }
-            int extra = d.Play.RivalWeek == start.ToString("yyyy-MM-dd") ? d.Play.RivalExtra : 0;
+            string key = start.ToString("yyyy-MM-dd");
+            int extra = (d.Play.RivalWeek == key ? d.Play.RivalExtra : 0) + d.Play.RivalExtraByWeek.GetValueOrDefault(key);
             return (int)Math.Round(total) + extra;
         }
 
@@ -281,82 +287,84 @@ namespace BusyBunny
         {
             var said = new List<string>();
             string thisWeek = WeekKey(now);
-            if (P.RivalWeek != thisWeek)
+            // Last week's score is settled once, whatever ran first this week.
+            var lastWeek = Engine.WeekStart(now).AddDays(-1);
+            string lastKey = WeekKey(lastWeek);
+            if (P.RivalSettled != lastKey)
             {
-                // Last week's score is settled before Vex starts fresh.
-                var lastWeek = Engine.WeekStart(now).AddDays(-1);
-                string lastKey = WeekKey(lastWeek);
-                if (P.RivalSettled != lastKey)
+                int hers = Engine.PointsInWeek(S.Data, lastWeek);
+                int vex = RivalScore(S.Data, lastWeek.AddHours(23.99), lastWeek);
+                if (hers > 0)
                 {
-                    int hers = Engine.PointsInWeek(S.Data, lastWeek);
-                    int vex = RivalScore(S.Data, lastWeek.AddHours(23.99), lastWeek);
-                    if (hers > 0)
+                    if (hers > vex)
                     {
-                        if (hers > vex)
-                        {
-                            P.RivalWins++;
-                            P.RivalLetter = DefeatLetter(S.Data.Game.BunnyName == "Bun" ? "rival" : S.Data.Game.BunnyName + "'s human", hers, vex);
-                            said.Add(Rival + " left you a letter. You won last week, " + hers + " to " + vex + ". Read it in Fun, Adventures, Rival.");
-                            Game.Award(_w, 15, "Beat " + Rival + " last week");
-                        }
-                        else { P.RivalLosses++; said.Add(Rival + " won last week, " + vex + " to " + hers + ", and will not shut up about it."); }
+                        P.RivalWins++;
+                        P.RivalLetter = DefeatLetter(S.Data.Game.BunnyName == "Bun" ? "rival" : S.Data.Game.BunnyName + "'s human", hers, vex);
+                        said.Add(Rival + " left you a letter. You won last week, " + hers + " to " + vex + ". Read it in Fun, Adventures, Rival.");
+                        Game.Award(_w, 15, "Beat " + Rival + " last week", silent: true);
                     }
+                    else { P.RivalLosses++; said.Add(Rival + " won last week, " + vex + " to " + hers + ", and will not shut up about it."); }
                 }
                 P.RivalSettled = lastKey;
-                P.RivalWeek = thisWeek;
-                P.RivalExtra = 0;
+                if (P.RivalWeek != thisWeek) { P.RivalWeek = thisWeek; P.RivalExtra = 0; }
+                foreach (var old in P.RivalExtraByWeek.Keys.Where(k => string.CompareOrdinal(k, WeekKey(now.AddDays(-21))) < 0).ToList()) P.RivalExtraByWeek.Remove(old);
             }
             if (StartQuest(S, now)) said.Add("This is a big week. Your quest: " + P.QuestName + ", " + P.QuestTasks.Count + " chapters. Fun, Adventures, This week's quest tells the story.");
             foreach (var pack in CollectStreakPacks(S.Data, now)) said.Add("You collected the " + pack + " sound pack. Pick it in Options, Sounds.");
             S.Save();
+            foreach (var line in said) Game.Note(S, line);
             if (said.Count > 0 && !quiet) _w.Say(string.Join(" ", said));
             else if (said.Count > 0) _w.Dispatcher.BeginInvoke(() => _w.Say(string.Join(" ", said)), DispatcherPriority.ApplicationIdle);
         }
 
         // ---- When a task is finished ----
 
+        /// <summary>
+        /// A finished task wins its bets, clears the mystery box and moves the quest on. Every award carries the task's id,
+        /// so un-finishing it takes them back (Engine.Unfinish). Lines go through Game.Queue: one is spoken per finish.
+        /// </summary>
         private void OnStatus(TaskItem t, Status old)
         {
             if (!Cleared(t) || Cleared(new TaskItem { Status = old })) return;
             var now = DateTime.Now;
-            var said = new List<string>();
 
-            // Bets.
-            foreach (var b in P.Bets.Where(b => b.TaskId == t.Id && b.State == "Open").ToList())
+            // Bets made in time.
+            foreach (var b in P.Bets.Where(b => b.TaskId == t.Id && b.State == "Open" && now <= b.By).ToList())
             {
                 b.State = "Won";
-                Game.Award(_w, b.Stake * 2, "Won the bet on " + t.Name);
+                b.FinishedAt = now;
+                Game.Award(_w, b.Stake * 2, "Won the bet on " + t.Name, taskId: t.Id);
             }
 
             // The mystery box.
             if (P.MysteryTask == t.Id && P.MysteryDay == S.Key(now))
             {
                 P.MysteryTask = null;
-                Game.Award(_w, 5, "Mystery box cleared: " + t.Name);
+                Game.Award(_w, 5, MysteryLead + t.Name, taskId: t.Id);
             }
 
-            // The quest.
+            // The quest. Chapters that were deleted or archived no longer count, so it can still be finished.
             if (P.QuestWeek == WeekKey(now) && !P.QuestDone && P.QuestTasks.Contains(t.Id))
             {
-                var tasks = P.QuestTasks.Select(id => S.Data.Tasks.FirstOrDefault(x => x.Id == id)).ToList();
+                var tasks = QuestChapters(S);
                 int cleared = tasks.Count(Cleared);
-                if (cleared > P.QuestCleared)
+                if (cleared > P.QuestCleared || cleared >= tasks.Count)
                 {
                     P.QuestCleared = cleared;
                     if (cleared >= tasks.Count)
                     {
                         P.QuestDone = true;
-                        said.Add(P.QuestName + ": every chapter cleared. Your bunny plants a tiny flag at the top. Quest complete.");
-                        Game.Award(_w, 25, "Quest cleared: " + P.QuestName);
+                        Game.Note(S, P.QuestName + ": every chapter cleared. Your bunny plants a tiny flag at the top. Quest complete.");
+                        Game.Award(_w, 25, QuestLead + P.QuestName, taskId: t.Id);
                     }
-                    else said.Add(P.QuestName + ", chapter " + cleared + " of " + tasks.Count + " cleared. " + StoryBeat(cleared, P.QuestName));
+                    else Game.Queue(_w, Game.Other, P.QuestName + ", chapter " + cleared + " of " + tasks.Count + " cleared. " + StoryBeat(cleared, P.QuestName));
                 }
             }
 
             // Packs from a new streak.
             foreach (var pack in CollectStreakPacks(S.Data, now))
             {
-                said.Add("New sound pack collected: " + pack + ". Pick it in Options, Sounds.");
+                Game.Queue(_w, Game.Goals, "New sound pack collected: " + pack + ". Pick it in Options, Sounds.");
                 Sounds.Play(Sounds.Event.SurpriseReward);
             }
 
@@ -365,44 +373,107 @@ namespace BusyBunny
             {
                 string week = WeekKey(now);
                 int hers = Engine.PointsInWeek(S.Data, now), vex = RivalScore(S.Data, now);
-                if (hers > vex && P.RivalPassed != week) { P.RivalPassed = week; said.Add(Rival + ": " + Grudges[_rng.Next(Grudges.Length)]); }
+                if (hers > vex && P.RivalPassed != week) { P.RivalPassed = week; Game.Queue(_w, Game.Chatter, Rival + ": " + Grudges[_rng.Next(Grudges.Length)]); }
                 else if (Cfg.RoastLevel > 0 && (now - P.RivalLastTaunt).TotalMinutes >= 20 && _rng.Next(3) == 0)
                 {
                     P.RivalLastTaunt = now;
                     int left = S.TodayAll(now).Count(x => !Cleared(x));
-                    said.Add(Rival + ": " + Fill(Taunts[_rng.Next(Taunts.Length)], t.Name, left));
+                    Game.Queue(_w, Game.Chatter, Rival + ": " + Fill(Taunts[_rng.Next(Taunts.Length)], t.Name, left));
                 }
             }
             S.Save();
 
-            // After the points and the cheer have been said.
-            if (said.Count > 0) _w.Dispatcher.BeginInvoke(() => _w.Say(string.Join(" ", said)), DispatcherPriority.Background);
-            if (Cfg.NarratorOn && Big(t)) _ = Narrate(t, now);
+            // The narrator waits its turn: it speaks only when nothing more important was said for this finish.
+            if (Cfg.NarratorOn && Big(t)) _ = Narrate(t, now, Game.QueueLate(_w, Game.Goals));
         }
 
-        private async Task Narrate(TaskItem t, DateTime now)
+        /// <summary>The quest's tasks that still exist and are not archived.</summary>
+        public static List<TaskItem> QuestChapters(Store s) =>
+            s.Data.Play.QuestTasks.Select(id => s.Data.Tasks.FirstOrDefault(x => x.Id == id)).Where(x => x != null && !s.ListOf(x).Archived).Select(x => x!).ToList();
+
+        /// <summary>Whether the narrator may send this task to Claude: never for a private or archived list, or one inside a private or archived list (rule 5).</summary>
+        public static bool MayNarrateWithClaude(Store s, TaskItem t)
+        {
+            // SmartBunny's own check walks the whole chain of parent lists.
+            var list = s.Data.Lists.FirstOrDefault(l => l.Name == t.List);
+            return list != null && !list.Archived && SmartBunny.MayShare(s, t);
+        }
+
+        private async Task Narrate(TaskItem t, DateTime now, Game.LateLine slot)
         {
             string last = S.Data.Log.Where(e => e.Kind == "Done" && e.TaskId != t.Id).OrderByDescending(e => e.When).FirstOrDefault()?.Text ?? "";
             string line = Trailer(t, now, last, _rng.Next(4));
-            if (await SmartBunny.WriteAsync("Write one dramatic movie trailer announcement, under 45 words, for Morgan finishing this: " + S.Line(t, now) +
-                ". Start like a trailer voice, such as In a world where. Make it funny and proud.") is string written) line = written;
+            if (MayNarrateWithClaude(S, t)
+                && await SmartBunny.WriteAsync("Write one dramatic movie trailer announcement, under 45 words, for Morgan finishing this: " + S.Line(t, now) +
+                ". Start like a trailer voice, such as In a world where. Make it funny and proud.", about: t) is string written) line = written;
             await Task.Delay(400);
-            _w.Say("The narrator: " + line);
+            if (!slot.Decided) await Task.Delay(1500);
+            if (slot.Chosen) _w.Say("The narrator: " + line);
+            else Game.Note(S, "The narrator: " + line);
         }
 
+        /// <summary>Settles open bets as of now (see CheckBets). Winnings carry the task's id. Does not save or speak.</summary>
+        public static (List<Bet> Won, List<Bet> Back, List<Bet> Lost) SettleBets(Store s, DateTime now)
+        {
+            var p = s.Data.Play;
+            var lost = new List<Bet>();
+            var back = new List<Bet>();
+            var won = new List<Bet>();
+            foreach (var b in p.Bets.Where(b => b.State == "Open").ToList())
+            {
+                var t = s.Data.Tasks.FirstOrDefault(x => x.Id == b.TaskId);
+                if (t == null || s.ListOf(t).Archived)
+                {
+                    b.State = "Cancelled";
+                    p.Spent = Math.Max(0, p.Spent - b.Stake);
+                    back.Add(b);
+                    continue;
+                }
+                if (Cleared(t) && (t.DoneAt ?? t.StatusSince ?? now) <= b.By)
+                {
+                    b.State = "Won";
+                    b.FinishedAt = t.DoneAt ?? t.StatusSince ?? now;
+                    var o = Engine.Record(s, now, new LogEntry { Kind = "Bonus", Text = "Won the bet on " + t.Name, Points = b.Stake * 2, TaskId = t.Id, Tag = t.Tag, List = t.List }, null, false);
+                    foreach (var line in o.Said) Game.Note(s, line);
+                    won.Add(b);
+                    continue;
+                }
+                if (b.By >= now) continue;
+                b.State = "Lost";
+                string key = WeekKey(b.By);
+                p.RivalExtraByWeek[key] = p.RivalExtraByWeek.GetValueOrDefault(key) + b.Stake;
+                lost.Add(b);
+            }
+            return (won, back, lost);
+        }
+
+        /// <summary>
+        /// Once a minute: settles bets. A task finished in time wins (even if it was finished some other way, like Edit
+        /// task); a deleted or archived task gives the stake back; a deadline passed loses it to Vex, credited to the week
+        /// of the deadline. Everything is said in one line at most, and only when the calm rules allow.
+        /// </summary>
         private void CheckBets(DateTime now)
         {
-            var lost = P.Bets.Where(b => b.State == "Open" && b.By < now).ToList();
-            if (lost.Count == 0) return;
-            string week = WeekKey(now);
-            if (P.RivalWeek != week) { P.RivalWeek = week; P.RivalExtra = 0; }
-            foreach (var b in lost)
+            if (!P.Bets.Any(b => b.State == "Open")) return;
+            var (won, back, lost) = SettleBets(S, now);
+            if (lost.Count + back.Count + won.Count == 0) return;
+            var parts = new List<string>();
+            if (won.Count > 0) parts.Add(won.Count == 1 ? "You won the bet on " + won[0].Name + ", " + won[0].Stake * 2 + " points." : "You won " + won.Count + " bets, " + won.Sum(b => b.Stake * 2) + " points.");
+            if (back.Count > 0) parts.Add(back.Count == 1 ? "The bet on " + back[0].Name + " is off, since that task is gone, so your " + back[0].Stake + " points are back."
+                : back.Count + " bets are off, since their tasks are gone, so your " + back.Sum(b => b.Stake) + " points are back.");
+            if (lost.Count > 0)
             {
-                b.State = "Lost";
-                P.RivalExtra += b.Stake;
-                _w.Say(Rival + ": " + Fill(Gloats[_rng.Next(Gloats.Length)], b.Name, stake: b.Stake));
+                bool gloat = Cfg.RivalOn && Cfg.RoastLevel > 0;
+                parts.Add(lost.Count == 1
+                    ? (gloat ? Rival + ": " + Fill(Gloats[_rng.Next(Gloats.Length)], lost[0].Name, stake: lost[0].Stake) : "The bet on " + lost[0].Name + " ran out of time, so " + Rival + " gets the " + lost[0].Stake + " points.")
+                    : lost.Count + " bets ran out of time, " + lost.Sum(b => b.Stake) + " points to " + Rival + (gloat ? ", who is insufferable about it." : "."));
             }
+            string line = string.Join(" ", parts);
+            Game.Note(S, line);
+            // Lost bets speak only with Vex's trash talk on; nothing speaks in quiet hours, class, a sprint, vacation or a rough day.
+            bool speak = (lost.Count == 0 || Cfg.RivalOn) && Game.MaySpeakUnprompted(S, now);
             S.Save();
+            if (speak) _w.Say(line);
         }
 
         // ---- Windows ----
@@ -423,7 +494,7 @@ namespace BusyBunny
                     : left.Select(r => r.Name + ", " + r.Cost + " points" + (r.Pack != null ? ", comes with the " + r.Pack + " sound pack" : "") + ". " + r.Feel).ToList();
             }
             Fill();
-            rooms.SelectionChanged += (_, _) => { if (rooms.SelectedIndex >= 0) Sounds.PlayNamed(Built(P).ElementAt(rooms.SelectedIndex).Sound); };
+            rooms.SelectionChanged += (_, _) => { if (rooms.SelectedIndex >= 0 && Sounds.Enabled) Sounds.PlayNamed(Built(P).ElementAt(rooms.SelectedIndex).Sound); };
             void BuildChosen()
             {
                 var left = Rooms.Where(r => !Built(P).Contains(r)).ToList();
@@ -436,7 +507,9 @@ namespace BusyBunny
                     _w.SaveAndRefresh();
                     Sounds.Play(Sounds.Event.SurpriseReward);
                     Fill();
-                    rooms.SelectedIndex = Built(P).ToList().IndexOf(left[i]);
+                    // The focused item went with the old list: put focus back on the shop, near where she was.
+                    int count = shop.Items.Count;
+                    if (count > 0) TextViewer.Select(shop, Math.Min(i, count - 1));
                 }
                 Speech.Say(w, said, true);
             }
@@ -470,7 +543,9 @@ namespace BusyBunny
                 "You: " + hers + " points. " + Rival + ": " + vex + " points.",
                 hers > vex ? "You are ahead by " + (hers - vex) + ". " + Rival + " is pretending not to care."
                     : hers == vex ? "Tied. " + Rival + " is sharpening a pencil menacingly."
-                    : "You are behind by " + (vex - hers) + ". " + Rival + ": " + Fill(Taunts[_rng.Next(Taunts.Length)], "one thing", S.TodayAll(now).Count(x => !Cleared(x))),
+                    : "You are behind by " + (vex - hers) + ". " + (Cfg.RivalOn && Cfg.RoastLevel > 0
+                        ? Rival + ": " + Fill(Taunts[_rng.Next(Taunts.Length)], "one thing", S.TodayAll(now).Count(x => !Cleared(x)))
+                        : "Plenty of week left."),
                 Rival + " earns a little every day, and rests on your rough days and vacations. Lost bets go to " + Rival + ".",
                 "Record:",
                 "Weeks you won: " + P.RivalWins + ". Weeks " + Rival + " won: " + P.RivalLosses + ".",
@@ -481,6 +556,12 @@ namespace BusyBunny
             {
                 lines.Add("Open bets:");
                 foreach (var b in open) lines.Add(b.Stake + " points on " + b.Name + ", by " + Words.Day(b.By, now) + " at " + Words.Time(b.By) + ".");
+            }
+            var settled = P.Bets.Where(b => b.State != "Open" && b.By >= now.AddDays(-7)).OrderByDescending(b => b.By).ToList();
+            if (settled.Count > 0)
+            {
+                lines.Add("Recent bets:");
+                foreach (var b in settled) lines.Add(b.Stake + " points on " + b.Name + ": " + (b.State == "Won" ? "won." : b.State == "Lost" ? "lost to " + Rival + "." : "called off, points back."));
             }
             TextViewer.Show(_w, "Rival: " + Rival, lines, l => l.EndsWith(":") && !l.Contains(". "));
         }
@@ -505,7 +586,7 @@ namespace BusyBunny
             panel.Children.Add(new TextBlock { Text = "Win and you get double back. Lose and " + Rival + " takes them. You have " + have + " points to spend.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) });
             panel.Children.Add(Layout.Row("I'll _finish", task, 440));
             panel.Children.Add(Layout.Row("_By", by, 440));
-            panel.Children.Add(Layout.Row("_Bet", stake, 200));
+            panel.Children.Add(Layout.Row("_Stake", stake, 200));
             var row = new StackPanel { Orientation = Orientation.Horizontal };
             var ok = Layout.Button("_Place the bet", isDefault: true);
             row.Children.Add(ok);
@@ -539,8 +620,11 @@ namespace BusyBunny
             var m = System.Text.RegularExpressions.Regex.Match(text, "^in (an?|one|two|three|four|five|six|[0-9]+) (hour|hours|minute|minutes|min|mins)$");
             if (m.Success)
             {
-                int n = m.Groups[1].Value switch { "a" or "an" or "one" => 1, "two" => 2, "three" => 3, "four" => 4, "five" => 5, "six" => 6, var x => int.Parse(x) };
-                return m.Groups[2].Value.StartsWith("h") ? now.AddHours(n) : now.AddMinutes(n);
+                int n = m.Groups[1].Value switch { "a" or "an" or "one" => 1, "two" => 2, "three" => 3, "four" => 4, "five" => 5, "six" => 6, var x => int.TryParse(x, out int v) ? v : -1 };
+                bool hours = m.Groups[2].Value.StartsWith("h");
+                // Two weeks at most, so a huge number is just not understood instead of an error.
+                if (n < 0 || n > (hours ? 14 * 24 : 14 * 24 * 60)) return null;
+                return hours ? now.AddHours(n) : now.AddMinutes(n);
             }
             if (text == "tonight") return now.Date.AddHours(21);
             var (when, hasTime) = Language.ParseDate(text, now);
@@ -584,7 +668,8 @@ namespace BusyBunny
                 Speech.Say(w, text.Text, true);
             };
             go.Click += (_, _) => { w.DialogResult = true; _w.SelectTask(pick); };
-            w.Loaded += (_, _) => { text.Focus(); Speech.Say(w, text.Text, true); };
+            // Focus reads the box; saying it too would read it twice.
+            w.Loaded += (_, _) => text.Focus();
             w.ShowDialog();
         }
 
@@ -661,6 +746,17 @@ namespace BusyBunny
             Check(Trailer(big, now, "", 0).Contains("2 days early"), "trailer timing");
             foreach (var l in Taunts.Concat(Grudges).Concat(Gloats).Concat(QuestStory)) Check(!l.Contains('*') && !l.Contains('#'), "line " + l);
             Check(DefeatLetter("rival", 120, 90).Contains("you won"), "letter");
+            Check(ByWhen("in 99999999999 hours", now) == null && ByWhen("in 99999999 hours", now) == null && ByWhen("in 300 hours", now) == now.AddHours(300), "huge bet times are refused, not errors");
+            var secret = new TaskList { Name = "Diary", PrivateFromBunny = true };
+            st.Data.Lists.Add(secret);
+            st.Data.Lists.Add(new TaskList { Name = "Diary notes", Parent = "Diary" });
+            Check(!MayNarrateWithClaude(st, new TaskItem { List = "Diary" }) && !MayNarrateWithClaude(st, new TaskItem { List = "Diary notes" }) && MayNarrateWithClaude(st, new TaskItem { List = "Homework" }), "the narrator never sends private lists to Claude");
+            // A lost bet counts for the week of its deadline, so Monday's settling sees it in last week.
+            var lastSunday = Engine.WeekStart(now).AddHours(-2);
+            st.Data.Tasks.Add(new TaskItem { Name = "late", List = "Homework", Status = Status.Today });
+            st.Data.Play.Bets.Add(new Bet { TaskId = st.Data.Tasks[^1].Id, Name = "late", Stake = 10, By = lastSunday });
+            var (_, _, gone) = SettleBets(st, now);
+            Check(gone.Count == 1 && RivalScore(st.Data, lastSunday, lastSunday) >= 10 && st.Data.Play.RivalExtraByWeek.ContainsKey(WeekKey(lastSunday)), "lost stake credited to its own week");
         }
     }
 }

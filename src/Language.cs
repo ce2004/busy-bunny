@@ -221,8 +221,10 @@ namespace BusyBunny
                 case "day after tomorrow" or "the day after tomorrow": return today.AddDays(2);
                 case "next week": return Coming(now, DayOfWeek.Monday, false).AddDays(today.DayOfWeek == DayOfWeek.Sunday ? 0 : 0);
                 case "this week" or "end of week" or "end of this week" or "end of the week" or "by end of week":
-                    return Coming(now, DayOfWeek.Friday, true);
-                case "weekend" or "this weekend" or "coming weekend": return Coming(now, DayOfWeek.Saturday, true);
+                    // Weeks start on Monday: on Saturday or Sunday this week's Friday has passed, so it means Sunday.
+                    return Coming(now, DayOfWeek.Friday, true) is var fri && fri <= Store.WeekEnd(now) ? fri : Store.WeekEnd(now);
+                case "weekend" or "this weekend" or "coming weekend":
+                    return today.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? today : Coming(now, DayOfWeek.Saturday, true);
                 case "next weekend": return Coming(now, DayOfWeek.Saturday, true).AddDays(7);
                 case "next month": return new DateTime(today.Year, today.Month, 1).AddMonths(1);
                 case "end of month" or "end of the month" or "end of this month":
@@ -301,12 +303,21 @@ namespace BusyBunny
         private static DateTime? MonthDay(int month, int day, int? year, DateTime today)
         {
             if (month < 1 || month > 12 || day < 1) return null;
-            int y = year ?? today.Year;
-            if (day > DateTime.DaysInMonth(y, month)) return null;
-            var d = new DateTime(y, month, day);
-            // No year given and well past: next year's.
-            if (year == null && d < today.AddDays(-7)) d = d.AddYears(1);
-            return d;
+            if (year is int y)
+            {
+                if (y < 1 || y > 9998 || day > DateTime.DaysInMonth(y, month)) return null;
+                return new DateTime(y, month, day);
+            }
+            // No year given: this year's, or next year's when this year's is well past. The year is picked
+            // first, so February 29 means the next leap year in reach and never quietly becomes the 28th.
+            for (int add = 0; add <= 1; add++)
+            {
+                int yy = today.Year + add;
+                if (day > DateTime.DaysInMonth(yy, month)) continue;
+                var d = new DateTime(yy, month, day);
+                if (add == 1 || d >= today.AddDays(-7)) return d;
+            }
+            return null;
         }
 
         /// <summary>
@@ -387,6 +398,19 @@ namespace BusyBunny
                 var (got, hasTime) = ParseDate(text, mon);
                 if (got != want || want != null && hasTime != time) throw new Exception("words '" + text + "' gave " + got + ", wanted " + want);
             }
+            void On(DateTime at, string text, DateTime want)
+            {
+                var (got, _) = ParseDate(text, at);
+                if (got != want) throw new Exception("words '" + text + "' on " + at.ToString("dddd MMM d yyyy") + " gave " + got + ", wanted " + want);
+            }
+            // Weeks start on Monday (sweep 9.4): on the weekend, the end of the week is Sunday, and this weekend is today.
+            On(new DateTime(2026, 10, 17, 9, 0, 0), "end of the week", new DateTime(2026, 10, 18));
+            On(new DateTime(2026, 10, 18, 9, 0, 0), "this week", new DateTime(2026, 10, 18));
+            On(new DateTime(2026, 10, 18, 9, 0, 0), "this weekend", new DateTime(2026, 10, 18));
+            On(new DateTime(2026, 10, 17, 9, 0, 0), "this weekend", new DateTime(2026, 10, 17));
+            // February 29 with no year: the next leap year, never the 28th.
+            On(new DateTime(2027, 11, 3, 9, 0, 0), "2/29", new DateTime(2028, 2, 29));
+            if (ParseDate("2/29", new DateTime(2028, 3, 20)).Item1 is DateTime clamp && clamp.Day != 29) throw new Exception("2/29 became " + clamp);
             Date("tuesda", new DateTime(2026, 10, 13));
             Date("tomorow", new DateTime(2026, 10, 13));
             Date("wensday", new DateTime(2026, 10, 14));

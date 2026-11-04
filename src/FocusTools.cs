@@ -93,10 +93,15 @@ namespace BusyBunny
 
         // Sprint
         private readonly DispatcherTimer _sprintTimer = new() { Interval = TimeSpan.FromSeconds(1) };
-        private DateTime _sprintEnd;
+        // In UTC, so a clock change at night never stretches or shortens a sprint.
+        private DateTime _sprintEndUtc, _lastTickUtc;
+        private double _awakeSeconds;
         private int _sprintMinutes;
         private TaskItem? _sprintTask;
-        private bool Sprinting => _sprintTimer.IsEnabled;
+        /// <summary>A sprint is running (Smarter Bunny holds its check-ins until it ends).</summary>
+        public bool Sprinting => _sprintTimer.IsEnabled;
+        /// <summary>Whether a sprint is running, for the calm rules (spec 8.1).</summary>
+        public static bool SprintRunning { get; private set; }
 
         // Boss
         private readonly Dictionary<Guid, int> _bossLeft = new();
@@ -110,9 +115,9 @@ namespace BusyBunny
         public void Attach(MainWindow w)
         {
             _w = w;
-            w.AddMenuItem("Fun", "_Start a sprint...", StartOrCheckSprint, "Ctrl+Shift+T");
+            w.AddMenuItem("Fun", "S_tart a sprint...", StartOrCheckSprint, "Ctrl+Shift+T");
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.T, StartOrCheckSprint, "Control Shift T: start a sprint, or hear the time left");
-            w.AddMenuItem("Fun", "Time per _class...", ShowTimePerClass);
+            w.AddMenuItem("Fun", "Time per c_lass...", ShowTimePerClass);
             w.AddMenuItem("Fun", "_Pick one for me", Roulette, "Ctrl+Shift+U");
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.U, Roulette, "Control Shift U: pick one task for me at random from the urgent ones");
             w.AddMenuItem("Fun", "_Quick wins", QuickWins, "Ctrl+Shift+Q");
@@ -132,8 +137,8 @@ namespace BusyBunny
             w.Store.HideFromToday.Add((t, _) => Cfg.LowEnergy && FocusLogic.HiddenWhenLow(t));
             w.Store.ReorderRules.Add((list, now) => Cfg.ShuffleMode ? FocusLogic.Shuffle(list, now) : list);
 
-            _sprintTimer.Tick += (_, _) => { if (DateTime.Now >= _sprintEnd) FinishSprint(); };
-            w.Closed += (_, _) => _sprintTimer.Stop();
+            _sprintTimer.Tick += (_, _) => SprintTick();
+            w.Closed += (_, _) => StopSprint();
 
             w.DetailParts.Add(BossText);
             w.Refreshed += CheckBosses;
@@ -148,11 +153,15 @@ namespace BusyBunny
         {
             if (Sprinting)
             {
-                var left = _sprintEnd - DateTime.Now;
+                var left = _sprintEndUtc - DateTime.UtcNow;
                 string t = _sprintTask != null ? " on " + _sprintTask.Name : "";
                 string time = left.TotalSeconds < 60 ? "less than a minute" : (int)Math.Ceiling(left.TotalMinutes) + " minutes";
                 var r = MessageBox.Show(_w, time + " left in your " + _sprintMinutes + " minute sprint" + t + ". Stop the sprint?", "Sprint", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
-                if (r == MessageBoxResult.Yes) { _sprintTimer.Stop(); _w.Say("Sprint stopped. No harm done, it just does not count.", true); }
+                if (r != MessageBoxResult.Yes) return;
+                // It may have finished, and been logged, while the question was up.
+                if (!Sprinting) { _w.Say("That sprint had already finished, and it counted.", true); return; }
+                StopSprint();
+                _w.Say("Sprint stopped. No harm done, it just does not count.", true);
                 return;
             }
             var minutes = new ComboBox();
@@ -173,24 +182,52 @@ namespace BusyBunny
             if (!Dialog(_w, "Start a sprint", panel, "Start")) return;
             _sprintMinutes = FocusLogic.SprintMinutes[Math.Max(0, minutes.SelectedIndex)];
             _sprintTask = which.SelectedIndex > 0 ? pool[which.SelectedIndex - 1] : null;
-            _sprintEnd = DateTime.Now.AddMinutes(_sprintMinutes);
+            _sprintEndUtc = DateTime.UtcNow.AddMinutes(_sprintMinutes);
+            _lastTickUtc = DateTime.UtcNow;
+            _awakeSeconds = 0;
             _sprintTimer.Start();
+            SprintRunning = true;
             _w.Say("Sprint started: " + _sprintMinutes + " minutes" + (_sprintTask != null ? " on " + _sprintTask.Name : "") + ". Control Shift T tells you the time left.", true);
+        }
+
+        private void StopSprint()
+        {
+            _sprintTimer.Stop();
+            SprintRunning = false;
+        }
+
+        /// <summary>Counts the time actually awake: a gap of more than a few seconds between ticks is the laptop asleep.</summary>
+        private void SprintTick()
+        {
+            var now = DateTime.UtcNow;
+            double gap = (now - _lastTickUtc).TotalSeconds;
+            _lastTickUtc = now;
+            if (gap > 0) _awakeSeconds += Math.Min(gap, 5);
+            if (now >= _sprintEndUtc) FinishSprint();
         }
 
         private void FinishSprint()
         {
-            _sprintTimer.Stop();
-            S.Remember("finishing a sprint");
+            StopSprint();
             var t = _sprintTask;
+            int awake = Math.Clamp((int)Math.Round(_awakeSeconds / 60), 0, _sprintMinutes);
+            bool slept = awake < _sprintMinutes - 1;
+            int minutes = slept ? awake : _sprintMinutes;
+            if (slept && minutes == 0)
+            {
+                _w.Say("Your sprint ended while the laptop was asleep, so there was nothing to count. Start another whenever you like.");
+                return;
+            }
+            S.Remember("finishing a sprint");
             S.Data.Log.Add(new LogEntry
             {
-                When = DateTime.Now, Kind = "Sprint", Minutes = _sprintMinutes,
-                Text = "Sprint, " + _sprintMinutes + " minutes" + (t != null ? " on " + t.Name : ""),
+                When = DateTime.Now, Kind = "Sprint", Minutes = minutes,
+                Text = "Sprint, " + minutes + " minutes" + (t != null ? " on " + t.Name : ""),
                 Tag = t?.Tag ?? "", List = t?.List ?? "", TaskId = t?.Id,
             });
             _w.SaveAndRefresh();
             Sounds.Play(Sounds.Event.SprintFinished);
+            if (slept) { _w.Say("Your sprint ended while the laptop was asleep. The " + minutes + " minutes before that counted."); return; }
             _w.Say("Sprint over, " + _sprintMinutes + " minutes. That counts as a win even if" + (t != null ? " " + t.Name + " is" : " the task is") + " not done. Showing up was the hard part.");
         }
 
@@ -237,15 +274,15 @@ namespace BusyBunny
             try
             {
                 int points = 10;
-                // Boss entries count bosses beaten; the points go through the game, logged as a bonus.
+                // Boss entries count bosses beaten; the points go through the game, logged as a bonus. Both carry the
+                // task's id, so un-finishing it takes them back. The line joins the one said for the finished task.
                 S.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Boss", Text = "Boss defeated: " + t.Name, Tag = t.Tag, List = t.List, TaskId = t.Id });
-                Game.Award(_w, points, "Boss defeated: " + t.Name);
+                Game.Award(_w, points, "Boss defeated: " + t.Name + ". Zero percent health. It never stood a chance, well, it stood a little", taskId: t.Id);
                 S.Save();
             }
             finally { _inBoss = false; }
             _bossLeft[t.Id] = 0;
             Sounds.Play(Sounds.Event.BossDefeated);
-            _w.Say("Boss defeated: " + t.Name + ". Zero percent health. It never stood a chance, well, it stood a little.");
         }
 
         // ---- Task roulette (12.8) ----
@@ -422,6 +459,8 @@ namespace BusyBunny
             panel.Children.Add(content);
             panel.Children.Add(buttons);
             win.Content = panel;
+            // Start on the first field, so NVDA reads more than the title.
+            win.Loaded += (_, _) => content.MoveFocus(new TraversalRequest(FocusNavigationDirection.First));
             win.ShowDialog();
             return result;
         }

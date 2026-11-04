@@ -28,7 +28,7 @@ namespace BusyBunny
             AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.E, () => { if (TabListName() is string l) TabSettings(l); else Say("Open a list's tab first, like Homework, then its settings show.", true); },
                 "View tab settings, with its priority scale: Control Shift E. The button is also at the bottom of each list tab");
             AddMenuItem("View", "Add a _category to this list...", () => { if (TabListName() is string l) AddCategory(l); else Say("Open a list's tab first, like Homework.", true); });
-            AddMenuItem("Task", "_Subtasks...", Subtasks, "Ctrl+Shift+B");
+            AddMenuItem("Task", "Su_btasks...", Subtasks, "Ctrl+Shift+B");
             AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.B, Subtasks, "Subtasks of the chosen task, to check off or add: Control Shift B");
             AddMenuItem("Task", "Put in a _category...", PutInCategory);
         }
@@ -78,6 +78,7 @@ namespace BusyBunny
         private void TabSettings(string listName)
         {
             if (_store.Data.Lists.FirstOrDefault(x => x.Name == listName) is not TaskList l) return;
+            var backTo = RememberFocus();
             var w = Layout.Dialog(this, l.Name + " tab settings");
             var lines = TextViewer.LinesList(TabSettingsLines(_store, l), l.Name + " tab settings", 300);
             lines.Width = 460;
@@ -101,7 +102,7 @@ namespace BusyBunny
             if (then == "settings") OpenSettings(listName);
             else if (then == "scale") OpenSettings(listName, "scale");
             else if (then == "category") AddCategory(listName);
-            else FocusTab(false);
+            else backTo();
         }
 
         // ---- Categories (issue 8) ----
@@ -178,8 +179,13 @@ namespace BusyBunny
         private void Subtasks()
         {
             if (CurrentOrSay() is not TaskItem t) return;
-            var back = _lastList;
+            // Back by list key and task, as Upcoming's day lists can be rebuilt while this is open.
+            string? backKey = _lastList == null ? null : ListKeyOf(_lastList);
             var w = Layout.Dialog(this, "Subtasks of " + t.Name);
+            // Each change is saved at once (and undoable), but the main window is rebuilt once, on close:
+            // a full refresh per check was slow with many tasks (spec 9.9).
+            bool changed = false;
+            void Changed() { changed = true; Save(); }
             var boxes = new StackPanel();
             AutomationProperties.SetName(boxes, "Subtasks");
             var scroll = new ScrollViewer { Content = boxes, MaxHeight = 320, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false };
@@ -204,9 +210,9 @@ namespace BusyBunny
                         _store.Remember((cb.IsChecked == true ? "checking off " : "unchecking ") + sub.Name);
                         sub.Done = cb.IsChecked == true;
                         t.TouchedAt = DateTime.Now;
-                        SaveAndRefresh();
+                        Changed();
                         bool all = t.Subtasks.All(s => s.Done);
-                        Say((sub.Done ? "Done: " : "Not done: ") + sub.Name + ". " + Count() + (all && sub.Done && t.Status != Status.Done ? " Every step is done. Control D marks the task done." : ""));
+                        Speech.Say(w, (sub.Done ? "Done: " : "Not done: ") + sub.Name + ". " + Count() + (all && sub.Done && t.Status != Status.Done ? " Every step is done. Control D marks the task done." : ""));
                     };
                     cb.PreviewKeyDown += (_, e) =>
                     {
@@ -215,9 +221,9 @@ namespace BusyBunny
                         int at = t.Subtasks.IndexOf(sub);
                         _store.Remember("deleting subtask " + sub.Name);
                         t.Subtasks.Remove(sub);
-                        SaveAndRefresh();
+                        Changed();
                         Fill(Math.Min(at, t.Subtasks.Count - 1));
-                        Say("Deleted " + sub.Name + ". Control Z in the main window brings it back.", true);
+                        Speech.Say(w, "Deleted " + sub.Name + ". Control Z in the main window brings it back.", true);
                     };
                     boxes.Children.Add(cb);
                 }
@@ -227,15 +233,15 @@ namespace BusyBunny
             void Add()
             {
                 string name = fresh.Text.Trim();
-                if (name.Length == 0) { Say("Type the subtask first.", true); fresh.Focus(); return; }
+                if (name.Length == 0) { Speech.Say(w, "Type the subtask first.", true); fresh.Focus(); return; }
                 _store.Remember("adding subtask " + name);
                 t.Subtasks.Add(new Subtask { Name = name });
                 t.TouchedAt = DateTime.Now;
-                SaveAndRefresh();
+                Changed();
                 fresh.Clear();
                 Fill(-1);
                 fresh.Focus();
-                Say("Added " + name + ". " + t.Subtasks.Count + (t.Subtasks.Count == 1 ? " subtask." : " subtasks."), true);
+                Speech.Say(w, "Added " + name + ". " + t.Subtasks.Count + (t.Subtasks.Count == 1 ? " subtask." : " subtasks."), true);
             }
             add.Click += (_, _) => Add();
             fresh.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; Add(); } };
@@ -252,14 +258,16 @@ namespace BusyBunny
             w.Loaded += (_, _) =>
             {
                 Fill(t.Subtasks.FindIndex(s => !s.Done) is int first && first >= 0 ? first : 0);
-                if (t.Subtasks.Count > 0) Say(Count());
+                if (t.Subtasks.Count > 0) Speech.Say(w, Count());
             };
             w.ShowDialog();
-            if (back != null && _lists.ContainsValue(back))
+            if (changed) Refresh();
+            if (backKey != null && _lists.TryGetValue(backKey, out var back) && back.IsVisible)
             {
                 int at = IndexOf(back, t.Id);
                 TextViewer.Select(back, at >= 0 ? at : Math.Max(0, back.SelectedIndex));
             }
+            else FocusTab(false);
         }
     }
 }

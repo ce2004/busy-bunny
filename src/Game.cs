@@ -32,12 +32,30 @@ namespace BusyBunny
         public int ChallengeId { get; set; }
         public int ChallengeProgress { get; set; }
         public int ChallengeShift { get; set; }
+        /// <summary>Tasks that counted toward today's challenge, each once; un-finishing one takes its step back.</summary>
+        public List<Guid> ChallengeTasks { get; set; } = new();
+        // What happened today (spec 8.1): every fun line, spoken or kept quiet, to hear later.
+        public string HappenedDay { get; set; } = "";
+        public List<string> Happened { get; set; } = new();
+        // Unprompted lines today, for the daily cap in spec 8.1.
+        public string UnpromptedDay { get; set; } = "";
+        public int UnpromptedCount { get; set; }
+        // Said once each, so un-finishing and re-finishing near a boundary never repeats them.
+        public int LevelAnnounced { get; set; }
+        public string GoalAnnounced { get; set; } = "";
+        public string WeekGoalAnnounced { get; set; } = "";
     }
 
     /// <summary>What happened when points were added: things to say, and the one sound that matters most.</summary>
     public sealed class Outcome
     {
+        /// <summary>Everything, in order, for the self-test and for What happened today.</summary>
         public List<string> Said { get; } = new();
+        /// <summary>Points this added, bonuses included.</summary>
+        public int Gained { get; set; }
+        /// <summary>The fun lines with their priority (Game.LevelUp first): only the most important one is spoken.</summary>
+        public List<(int Priority, string Text)> Fun { get; } = new();
+        public void Add(int priority, string text) { Fun.Add((priority, text)); Said.Add(text); }
         public Sounds.Event? Sound { get; set; }
         public void Ask(Sounds.Event e)
         {
@@ -170,73 +188,87 @@ namespace BusyBunny
         /// <summary>
         /// Adds a log entry that earns points, then checks everything it can change: comeback bonus, challenge, level,
         /// goals, streak, records and badges. Does not save. firstForTask is true when this task has earned nothing yet.
+        /// extra is a bonus earned with it (finishing early): it goes in first, so every check sees it.
+        /// Every entry a task causes carries its TaskId, so un-finishing it (Unfinish) takes them all back.
         /// </summary>
-        public static Outcome Record(Store store, DateTime now, LogEntry e, TaskItem? task, bool firstForTask)
+        public static Outcome Record(Store store, DateTime now, LogEntry e, TaskItem? task, bool firstForTask, LogEntry? extra = null)
         {
             var d = store.Data;
             var g = d.Game;
             var o = new Outcome();
             int totalBefore = Total(d), dayBefore = PointsOn(d, now), weekBefore = PointsInWeek(d, now);
             string dayKey = now.ToString("yyyy-MM-dd");
-            bool comeback = e.Kind == "Done" && firstForTask && dayBefore == 0 && MissedADay(d, now);
+            // From finished tasks only: a boss bonus logged a moment earlier must not cost her the comeback.
+            bool doneToday = d.Log.Any(x => x.When.Date == now.Date && x.Kind is "Done" or "Comeback" && x.Points > 0);
+            bool comeback = e.Kind == "Done" && firstForTask && !doneToday && MissedADay(d, now);
             e.When = now;
             d.Log.Add(e);
             int gained = e.Points;
+            if (extra != null)
+            {
+                extra.When = now;
+                extra.TaskId ??= e.TaskId;
+                d.Log.Add(extra);
+                gained += extra.Points;
+            }
             if (comeback)
             {
-                d.Log.Add(new LogEntry { When = now, Kind = "Comeback", Text = "Comeback bonus", Points = 10 });
+                d.Log.Add(new LogEntry { When = now, Kind = "Comeback", Text = "Comeback bonus", Points = 10, TaskId = e.TaskId });
                 gained += 10;
+                o.Add(Game.Goals, "Plus 10 for coming back. Welcome back. Nobody was counting the days, except the math.");
             }
-            o.Said.Add(comeback
-                ? e.Points + " points, plus 10 for coming back. Welcome back. Nobody was counting the days, except the math."
-                : e.Points + (e.Points == 1 ? " point." : " points."));
 
-            // Challenge progress.
-            if (task != null && firstForTask && g.ChallengeDay == dayKey && g.ChallengeState == "Accepted")
+            // Challenge progress: each task counts once a day, however often it is finished and un-finished.
+            if (task != null && g.ChallengeDay == dayKey && g.ChallengeState == "Accepted" && !g.ChallengeTasks.Contains(task.Id))
             {
                 var c = ChallengeToday(g);
                 if (c.Counts(task, now, store))
                 {
+                    g.ChallengeTasks.Add(task.Id);
                     g.ChallengeProgress++;
                     if (g.ChallengeProgress >= c.Target)
                     {
                         g.ChallengeState = "Done";
-                        d.Log.Add(new LogEntry { When = now, Kind = "Challenge", Text = c.Text, Points = c.Reward });
+                        d.Log.Add(new LogEntry { When = now, Kind = "Challenge", Text = c.Text, Points = c.Reward, TaskId = task.Id });
                         gained += c.Reward;
-                        o.Said.Add("Challenge done: " + c.Text + ". " + c.Reward + " bonus points. Show off.");
+                        o.Add(Game.Goals, "Challenge done: " + c.Text + ". " + c.Reward + " bonus points. Show off.");
                     }
-                    else o.Said.Add("Challenge: " + g.ChallengeProgress + " of " + c.Target + ".");
+                    else o.Add(Game.Other, "Challenge: " + g.ChallengeProgress + " of " + c.Target + ".");
                 }
             }
 
             int totalAfter = totalBefore + gained, dayAfter = dayBefore + gained, weekAfter = weekBefore + gained;
-            o.Said.Add(totalAfter + " total.");
+            o.Gained = gained;
+            o.Said.Insert(0, gained + (gained == 1 ? " point, " : " points, ") + totalAfter + " total.");
 
             int levelBefore = LevelFor(totalBefore), levelAfter = LevelFor(totalAfter);
-            if (levelAfter > levelBefore)
+            if (levelAfter > levelBefore && levelAfter > g.LevelAnnounced)
             {
-                o.Said.Add("Level up! You are level " + levelAfter + ": " + LevelName(levelAfter) + ".");
+                g.LevelAnnounced = levelAfter;
+                o.Add(Game.LevelUp, "Level up! You are level " + levelAfter + ": " + LevelName(levelAfter) + ".");
                 o.Ask(Sounds.Event.LevelUp);
             }
 
             // Daily goal and streak.
             int goal = DailyGoalFor(store, now);
-            if (dayAfter >= goal && !g.GoalDays.Contains(dayKey))
+            if (dayAfter >= goal && !g.GoalDays.Contains(dayKey) && g.GoalAnnounced == dayKey) g.GoalDays.Add(dayKey);
+            else if (dayAfter >= goal && !g.GoalDays.Contains(dayKey))
             {
                 g.GoalDays.Add(dayKey);
-                o.Said.Add("Daily goal reached: " + dayAfter + " of " + goal + ". You can stop now, or keep going. The bunny has no opinion.");
+                g.GoalAnnounced = dayKey;
+                o.Add(Game.Goals, "Daily goal reached: " + dayAfter + " of " + goal + ". You can stop now, or keep going. The bunny has no opinion.");
                 o.Ask(Sounds.Event.DailyGoal);
                 var (cur, longest) = Streaks(d, now);
                 if (cur >= 2)
                 {
-                    o.Said.Add("Streak extended: " + cur + " days in a row.");
+                    o.Add(Game.Goals, "Streak extended: " + cur + " days in a row.");
                     o.Ask(Sounds.Event.StreakExtended);
                 }
                 if (longest > g.LongestStreak)
                 {
                     if (g.LongestStreak >= 2)
                     {
-                        o.Said.Add("New personal record: longest streak, " + longest + " days.");
+                        o.Add(Game.Record, "New personal record: longest streak, " + longest + " days.");
                         g.RecordsBroken++;
                         o.Ask(Sounds.Event.PersonalRecord);
                     }
@@ -246,11 +278,13 @@ namespace BusyBunny
 
             // Weekly goal.
             string weekKey = WeekStart(now).ToString("yyyy-MM-dd");
-            if (weekAfter >= WeeklyGoalFor(d) && g.WeekGoalWeek != weekKey)
+            if (weekAfter >= WeeklyGoalFor(d) && g.WeekGoalWeek != weekKey && g.WeekGoalAnnounced == weekKey) { g.WeekGoalWeek = weekKey; g.WeekGoalsMet++; }
+            else if (weekAfter >= WeeklyGoalFor(d) && g.WeekGoalWeek != weekKey)
             {
                 g.WeekGoalWeek = weekKey;
+                g.WeekGoalAnnounced = weekKey;
                 g.WeekGoalsMet++;
-                o.Said.Add("Weekly goal reached: " + weekAfter + " points this week.");
+                o.Add(Game.Goals, "Weekly goal reached: " + weekAfter + " points this week.");
                 o.Ask(Sounds.Event.DailyGoal);
             }
 
@@ -261,7 +295,7 @@ namespace BusyBunny
                 {
                     g.RecordDayAnnounced = dayKey;
                     g.RecordsBroken++;
-                    o.Said.Add("New personal record: best day, beating " + g.BestDay + " points.");
+                    o.Add(Game.Record, "New personal record: best day, beating " + g.BestDay + " points.");
                     o.Ask(Sounds.Event.PersonalRecord);
                 }
                 g.BestDay = dayAfter;
@@ -272,17 +306,89 @@ namespace BusyBunny
                 {
                     g.RecordWeekAnnounced = weekKey;
                     g.RecordsBroken++;
-                    o.Said.Add("New personal record: best week, beating " + g.BestWeek + " points.");
+                    o.Add(Game.Record, "New personal record: best week, beating " + g.BestWeek + " points.");
                     o.Ask(Sounds.Event.PersonalRecord);
                 }
                 g.BestWeek = weekAfter;
             }
 
             foreach (var b in EarnBadges(store, now, task))
-            {
-                o.Said.Add("Badge earned: " + b.Name + ". " + b.How);
-            }
+                o.Add(Game.Badge, "Badge earned: " + b.Name + ". " + b.How);
             return o;
+        }
+
+        /// <summary>
+        /// A task went back out of finished (spec 8.2 B): takes back every entry finishing it caused, with its side
+        /// effects: comeback, challenge step and reward, bet winnings (the bet opens again), mystery box (open again),
+        /// quest reward, boss, and the goal day when the day no longer reaches the goal. Returns whether anything changed. Does not save.
+        /// </summary>
+        public static bool Unfinish(Store store, TaskItem t, DateTime now)
+        {
+            var d = store.Data;
+            var g = d.Game;
+            var p = d.Play;
+            // A bet won in time whose deadline has passed stays won, winnings and all: un-finishing by mistake
+            // at night must not hand Vex a bet she won in the afternoon. Bets still before their deadline reopen.
+            var keepWon = p.Bets.Any(b => b.TaskId == t.Id && b.State == "Won" && b.By <= now);
+            var mine = d.Log.Where(e => e.TaskId == t.Id && e.Kind is "Done" or "Bonus" or "Comeback" or "Challenge" or "Boss"
+                && !(keepWon && e.Kind == "Bonus" && e.Text.StartsWith("Won the bet on "))).ToList();
+            bool changed = mine.Count > 0;
+            var days = mine.Select(e => e.When.Date).ToHashSet();
+            foreach (var e in mine) d.Log.Remove(e);
+
+            // The challenge step, and the reward if the challenge is no longer met.
+            if (g.ChallengeTasks.Remove(t.Id))
+            {
+                changed = true;
+                if (g.ChallengeProgress > 0) g.ChallengeProgress--;
+                if (g.ChallengeState == "Done" && g.ChallengeProgress < ChallengeToday(g).Target)
+                {
+                    g.ChallengeState = "Accepted";
+                    d.Log.RemoveAll(e => e.Kind == "Challenge" && e.When.Date == now.Date);
+                    days.Add(now.Date);
+                }
+            }
+
+            // Bets won with it open again; the winnings went with the entries above.
+            foreach (var b in p.Bets.Where(b => b.TaskId == t.Id && b.State == "Won" && b.By > now)) { b.State = "Open"; b.FinishedAt = null; changed = true; }
+            if (mine.Any(e => e.Kind == "Bonus" && e.Text.StartsWith(PlayTime.MysteryLead)) && p.MysteryDay == store.Key(now)) p.MysteryTask = t.Id;
+
+            // The quest is no longer complete: its reward goes, whichever task finished it.
+            if (p.QuestTasks.Contains(t.Id) && p.QuestWeek == PlayTime.WeekKey(now))
+            {
+                var left = p.QuestTasks.Select(id => d.Tasks.FirstOrDefault(x => x.Id == id)).Where(x => x != null && !store.ListOf(x).Archived).ToList();
+                p.QuestCleared = left.Count(x => PlayTime.Cleared(x));
+                if (p.QuestDone)
+                {
+                    p.QuestDone = false;
+                    changed = true;
+                    var start = WeekStart(now);
+                    foreach (var e in d.Log.Where(e => e.Kind == "Bonus" && e.Text == PlayTime.QuestLead + p.QuestName && e.When.Date >= start).ToList())
+                    {
+                        days.Add(e.When.Date);
+                        d.Log.Remove(e);
+                    }
+                }
+            }
+            if (changed) RecheckGoals(store, days, now);
+            return changed;
+        }
+
+        /// <summary>Drops goal days (and this week's goal) that the points no longer reach, after points were taken back.</summary>
+        public static void RecheckGoals(Store store, IEnumerable<DateTime> days, DateTime now)
+        {
+            var d = store.Data;
+            var g = d.Game;
+            foreach (var day in days)
+            {
+                string key = day.ToString("yyyy-MM-dd");
+                if (g.GoalDays.Contains(key) && PointsOn(d, day) < DailyGoalFor(store, day)) g.GoalDays.Remove(key);
+            }
+            if (g.WeekGoalWeek == WeekStart(now).ToString("yyyy-MM-dd") && PointsInWeek(d, now) < WeeklyGoalFor(d))
+            {
+                g.WeekGoalWeek = "";
+                if (g.WeekGoalsMet > 0) g.WeekGoalsMet--;
+            }
         }
 
         /// <summary>Checks every badge and records the new ones.</summary>
@@ -327,6 +433,7 @@ namespace BusyBunny
             g.ChallengeDay = key;
             g.ChallengeState = "Offered";
             g.ChallengeProgress = 0;
+            g.ChallengeTasks = new();
             g.ChallengeShift = 0;
             g.ChallengeId = (today.DayOfYear * 7 + today.Year) % Challenges.Length;
         }
@@ -383,25 +490,140 @@ namespace BusyBunny
         };
     }
 
-    /// <summary>For other features: awarding points.</summary>
+    /// <summary>For other features: awarding points, and the one line said after a finished task.</summary>
     public static class Game
     {
+        // Fun line priorities (spec 8.1): level up, then records, then everything else.
+        public const int LevelUp = 0, Record = 1, Goals = 2, Other = 3, Badge = 4, Chatter = 5;
+
         /// <summary>
-        /// Gives points (a boss beaten, say), logs them and runs every check: level, goals, records, badges. Says the result
-        /// and plays the one sound that matters. kind is the Data.Log kind; leave it as Bonus so the points count.
+        /// Gives points (a boss beaten, say), logs them and runs every check: level, goals, records, badges. The points
+        /// join the line said after the finished task, and why is one of its fun lines. taskId ties the points to the task
+        /// that earned them, so un-finishing it takes them back. silent keeps everything for What happened today.
         /// </summary>
-        public static void Award(MainWindow w, int points, string why, string kind = "Bonus")
+        public static void Award(MainWindow w, int points, string why, string kind = "Bonus", Guid? taskId = null, bool silent = false)
         {
             if (points <= 0) return;
-            var o = Engine.Record(w.Store, DateTime.Now, new LogEntry { Kind = kind, Text = why, Points = points }, null, false);
+            var t = taskId is Guid id ? w.Store.Data.Tasks.FirstOrDefault(x => x.Id == id) : null;
+            var o = Engine.Record(w.Store, DateTime.Now, new LogEntry { Kind = kind, Text = why, Points = points, TaskId = taskId, Tag = t?.Tag ?? "", List = t?.List ?? "" }, null, false);
+            o.Fun.Insert(0, (Other, why + "."));
             w.Store.Save();
-            Announce(w, why, o);
+            if (silent) { foreach (var line in o.Said) Note(w.Store, line); return; }
+            Queue(w, o);
         }
 
         public static void Announce(MainWindow w, string lead, Outcome o)
         {
-            if (o.Sound is Sounds.Event s) Sounds.Play(s);
-            w.Say((lead.Length > 0 ? lead + ". " : "") + string.Join(" ", o.Said));
+            if (lead.Length > 0) o.Fun.Insert(0, (Other, lead + "."));
+            Queue(w, o);
+        }
+
+        // ---- One line per finished task (spec 8.1) ----
+
+        /// <summary>A fun line that arrives later (the narrator). Chosen says whether it may be spoken.</summary>
+        public sealed class LateLine { public int Priority; public bool Chosen; public bool Decided; }
+
+        private static readonly List<(int Priority, string Text)> Fun = new();
+        private static readonly List<LateLine> Late = new();
+        private static Outcome _sound = new();
+        private static int _gained;
+        private static bool _points, _scheduled;
+
+        /// <summary>Adds what Record found to the line said once this task (or every task marked at once) is handled.</summary>
+        public static void Queue(MainWindow w, Outcome o)
+        {
+            _points = true;
+            _gained += o.Gained;
+            if (o.Sound is Sounds.Event e) _sound.Ask(e);
+            Fun.AddRange(o.Fun);
+            Schedule(w);
+        }
+
+        /// <summary>Offers one fun line. Only the most important line of the moment is spoken; the rest go to What happened today.</summary>
+        public static void Queue(MainWindow w, int priority, string text)
+        {
+            if (text.Length == 0) return;
+            Fun.Add((priority, text));
+            Schedule(w);
+        }
+
+        /// <summary>Holds a place for a line that comes later. It is spoken only if nothing more important was.</summary>
+        public static LateLine QueueLate(MainWindow w, int priority)
+        {
+            var l = new LateLine { Priority = priority };
+            Late.Add(l);
+            Schedule(w);
+            return l;
+        }
+
+        private static void Schedule(MainWindow? w)
+        {
+            if (_scheduled || w == null) return;
+            _scheduled = true;
+            // After every feature has handled the change, and after the app's own Done line.
+            w.Dispatcher.BeginInvoke(() => Flush(w), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        /// <summary>Says the points and the single most important fun line, and keeps the rest.</summary>
+        public static string Flush(MainWindow? w, Store? store = null)
+        {
+            _scheduled = false;
+            store ??= w?.Store;
+            (int Priority, string Text)? best = Fun.Count == 0 ? null : Fun.OrderBy(f => f.Priority).First();
+            var late = Late.OrderBy(l => l.Priority).FirstOrDefault();
+            if (late != null && (best == null || late.Priority < best.Value.Priority)) { late.Chosen = true; best = null; }
+            foreach (var l in Late) l.Decided = true;
+            string text = _points && _gained > 0 && store != null ? _gained + (_gained == 1 ? " point, " : " points, ") + Engine.Total(store.Data) + " total." : "";
+            if (best != null) text += (text.Length > 0 ? " " : "") + best.Value.Text;
+            if (store != null) foreach (var f in Fun) Note(store, f.Text);
+            var sound = _sound.Sound;
+            Fun.Clear();
+            Late.Clear();
+            _sound = new Outcome();
+            _gained = 0;
+            _points = false;
+            if (w != null)
+            {
+                if (sound is Sounds.Event s) Sounds.Play(s);
+                if (text.Length > 0) w.Say(text);
+            }
+            return text;
+        }
+
+        /// <summary>Keeps a line for What happened today.</summary>
+        public static void Note(Store s, string line)
+        {
+            var g = s.Data.Game;
+            string today = s.Key(DateTime.Now);
+            if (g.HappenedDay != today) { g.HappenedDay = today; g.Happened = new(); }
+            if (g.Happened.Count >= 200) g.Happened.RemoveAt(0);
+            g.Happened.Add(DateTime.Now.ToString("h:mm tt") + ": " + line);
+        }
+
+        // ---- Calm rules (spec 8.1) ----
+
+        /// <summary>
+        /// Whether a line she did not ask for must stay quiet now: quiet hours (10 at night to 8 in the morning),
+        /// a class going on, a sprint, vacation or a rough day.
+        /// </summary>
+        public static bool Calm(Store s, DateTime now)
+        {
+            if (now.Hour >= 22 || now.Hour < 8) return true;
+            if (FocusTools.SprintRunning) return true;
+            if (s.Data.Days.TryGetValue(s.Key(now), out var day) && day.Mode is DayMode.Vacation or DayMode.RoughDay) return true;
+            return s.Data.Classes.Any(c => c.Days.Contains(now.DayOfWeek) && c.Start <= now.TimeOfDay && now.TimeOfDay < c.End);
+        }
+
+        /// <summary>Whether one unprompted line may be spoken now: not calm, and under 3 today. Counts it when it may.</summary>
+        public static bool MaySpeakUnprompted(Store s, DateTime now)
+        {
+            if (Calm(s, now)) return false;
+            var g = s.Data.Game;
+            string today = s.Key(now);
+            if (g.UnpromptedDay != today) { g.UnpromptedDay = today; g.UnpromptedCount = 0; }
+            if (g.UnpromptedCount >= 3) return false;
+            g.UnpromptedCount++;
+            return true;
         }
     }
 }

@@ -87,7 +87,8 @@ namespace BusyBunny
             var soundsOn = new CheckBox { Content = "_Play sounds", IsChecked = settings.SoundsOn, Margin = new Thickness(0, 4, 0, 4) };
             var soundsButton = Layout.Button("Choose s_ounds...");
             soundsButton.HorizontalAlignment = HorizontalAlignment.Left;
-            soundsButton.Click += (_, _) => { SoundsDialog.Show(w, settings); soundsOn.IsChecked = settings.SoundsOn; };
+            CheckBox? musicBox = null;
+            soundsButton.Click += (_, _) => { SoundsDialog.Show(w, settings); soundsOn.IsChecked = settings.SoundsOn; if (musicBox != null) musicBox.IsChecked = settings.MusicOn; };
             var shortMode = new CheckBox { Content = "S_hort mode: shorter task lines", IsChecked = settings.ShortMode, Margin = new Thickness(0, 10, 0, 4) };
             var autoUpdate = new CheckBox { Content = "Check for _updates automatically", IsChecked = settings.CheckForUpdatesAtStart, Margin = new Thickness(0, 4, 0, 4) };
             var hours = new ComboBox { ItemsSource = Enumerable.Range(1, 14).Select(h => h + (h == 1 ? " hour" : " hours")).ToList() };
@@ -100,6 +101,7 @@ namespace BusyBunny
             general.Children.Add(shortMode);
             general.Children.Add(autoUpdate);
             var music = new CheckBox { Content = "Background _music while Busy Bunny is in front", IsChecked = settings.MusicOn, Margin = new Thickness(0, 4, 0, 4) };
+            musicBox = music;
             general.Children.Add(music);
             general.Children.Add(Layout.Row("Hours _available on a typical day", hours));
             general.Children.Add(Layout.Row("_Warn me when urgent tasks are", warn));
@@ -117,13 +119,13 @@ namespace BusyBunny
             listPanel.Children.Add(Layout.Row("Place among the _tabs", position));
             listPanel.Children.Add(Layout.Row("Priority _scale", scales));
             listPanel.Children.Add(Layout.Row("Le_vels, highest first", levels, 420));
-            listPanel.Children.Add(Layout.Row("Custom scale na_me", customName));
+            listPanel.Children.Add(Layout.Row("_Custom scale name", customName));
 
             var parent = new ComboBox();
             var promote = Layout.Button("_Promote to its own list");
             promote.HorizontalAlignment = HorizontalAlignment.Left;
             var defStatus = new ComboBox { ItemsSource = Enum.GetValues<Status>().Where(s => s != Status.Done).Select(Words.Of).ToList() };
-            var inToday = new CheckBox { Content = "Show its tasks in _Today and Focus", Margin = new Thickness(0, 4, 0, 4) };
+            var inToday = new CheckBox { Content = "Show its tasks in Today and F_ocus", Margin = new Thickness(0, 4, 0, 4) };
             const string UsualSound = "Usual Task done sound";
             var finish = new ComboBox { ItemsSource = new[] { UsualSound }.Concat(Sounds.All).ToList() };
             // Morgan's issue 6: a sound pack for each tab, for adding, saving and finishing its tasks.
@@ -139,12 +141,12 @@ namespace BusyBunny
             AutomationProperties.SetHelpText(sections, "Like drawers inside the list, for example one per class. One per line, or separated by commas. Each shows in the list's tab as its own named list.");
             var archived = new CheckBox { Content = "_Archive this list: no tab, and its tasks show nowhere", Margin = new Thickness(0, 4, 0, 4) };
             var merge = Layout.Button("_Merge into another list...");
-            var delete = Layout.Button("De_lete this list...");
+            var delete = Layout.Button("Delete t_his list...");
             merge.HorizontalAlignment = delete.HorizontalAlignment = HorizontalAlignment.Left;
             AutomationProperties.SetHelpText(parent, "Choose a list to put this one inside, or None. A list with sub-lists of its own can't go inside another.");
             listPanel.Children.Add(Layout.Row("Sits _inside", parent));
             listPanel.Children.Add(promote);
-            listPanel.Children.Add(Layout.Row("Default status for _new tasks", defStatus));
+            listPanel.Children.Add(Layout.Row("Defa_ult status for new tasks", defStatus));
             listPanel.Children.Add(inToday);
             listPanel.Children.Add(Layout.Row("Categories, one per _line", sections, 420));
             listPanel.Children.Add(Layout.Row("Soun_d pack for this tab", pack, 420));
@@ -157,6 +159,13 @@ namespace BusyBunny
             listPanel.Children.Add(actions);
 
             var listScroll = new ScrollViewer { Content = listPanel, MaxHeight = 420, VerticalScrollBarVisibility = ScrollBarVisibility.Auto, Focusable = false };
+            // Add a new list is its own page with a button: arrowing through the closed Section menu
+            // passes over it without making a list or moving focus (spec 9.5). Enter on it makes one too.
+            var makeList = Layout.Button("Make the _new list");
+            makeList.HorizontalAlignment = HorizontalAlignment.Left;
+            var addPage = new StackPanel();
+            addPage.Children.Add(new TextBlock { Text = "A new list gets its own tab when you press OK. Press Make the new list, or Enter in the Section menu, then type its name.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 6, 0, 0) });
+            addPage.Children.Add(makeList);
             var statuses = Enum.GetValues<Status>().Where(s => s != Status.Done).ToArray();
             var parentChoices = new List<Pending>();
             var section = new ComboBox();
@@ -215,23 +224,30 @@ namespace BusyBunny
                 if (i <= 0) { current = null; body.Content = general; return; }
                 if (i <= P) { current = null; body.Content = pages[i - 1].Content; return; }
                 i -= P;
-                if (i > lists.Count)
-                {
-                    // Add a new list: made at once, at the end, and its section opened on the name.
-                    int n = 1;
-                    while (lists.Any(l => l.Name.Equals("New list " + n, StringComparison.OrdinalIgnoreCase))) n++;
-                    var p = new Pending { Name = "New list " + n };
-                    lists.Add(p);
-                    FillSections(lists.Count + P);
-                    LoadList(p);
-                    body.Content = listScroll;
-                    Speech.Say(w, "Added " + p.Name + ". Type its name, then choose its settings. It is made when you press OK.", true);
-                    w.Dispatcher.BeginInvoke(() => { name.Focus(); name.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
-                    return;
-                }
+                if (i > lists.Count) { current = null; body.Content = addPage; return; }
                 LoadList(lists[i - 1]);
                 body.Content = listScroll;
             }
+            // Add a new list: made at the end, and its section opened on the name.
+            void AddList()
+            {
+                int n = 1;
+                while (lists.Any(l => l.Name.Equals("New list " + n, StringComparison.OrdinalIgnoreCase))) n++;
+                var p = new Pending { Name = "New list " + n };
+                lists.Add(p);
+                FillSections(lists.Count + P);
+                LoadList(p);
+                body.Content = listScroll;
+                Speech.Say(w, "Added " + p.Name + ". Type its name, then choose its settings. It is made when you press OK.", true);
+                w.Dispatcher.BeginInvoke(() => { name.Focus(); name.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
+            }
+            makeList.Click += (_, _) => AddList();
+            section.PreviewKeyDown += (_, e) =>
+            {
+                if (e.Key != System.Windows.Input.Key.Enter || section.IsDropDownOpen || section.SelectedIndex != lists.Count + P + 1) return;
+                e.Handled = true;
+                AddList();
+            };
             int ListSection(Pending p) => lists.IndexOf(p) + 1 + P;
             section.SelectionChanged += (_, _) => { if (!loading) ShowSection(); };
 
@@ -346,7 +362,7 @@ namespace BusyBunny
                 int n = gone.Original == null ? 0 : store.Data.Tasks.Count(t => t.List == gone.Original);
                 string text = n == 0 ? gone.Name + " has no tasks. It goes away when you press OK."
                     : gone.Name + " has " + n + (n == 1 ? " task" : " tasks") + ". Delete them with it, or move them to another list. Control Z in the main window undoes either one.";
-                int i = Pick(w, "Delete " + gone.Name, text, "What to _do", new[] { "Delete the tasks too" }.Concat(targets.Select(o => "Move the tasks to " + o.Name)).ToList(), "_Delete list");
+                int i = Pick(w, "Delete " + gone.Name, text, "What to d_o", new[] { "Delete the tasks too" }.Concat(targets.Select(o => "Move the tasks to " + o.Name)).ToList(), "_Delete list");
                 if (i < 0) return;
                 string goneName = gone.Name;
                 TakeOut(gone, i == 0 ? null : targets[i - 1]);
@@ -424,11 +440,14 @@ namespace BusyBunny
                     else ListTools.MergeList(store.Data, gone.Original!, into.Real!.Name);
                 }
                 var made = new List<TaskList>();
+                // Every list's tasks by its old name first, then the new names: renaming Homework to Errands
+                // and Errands to Chores in one visit (or swapping two names) must not pour one list into another.
+                var tasksOf = lists.ToDictionary(p => p, p => store.Data.Tasks.Where(t => t.List == p.Real!.Name).ToList());
                 foreach (var p in lists)
                 {
                     var list = p.Real!;
                     if (list.Name != p.Name)
-                        foreach (var t in store.Data.Tasks.Where(t => t.List == list.Name)) t.List = p.Name;
+                        foreach (var t in tasksOf[p]) t.List = p.Name;
                     list.Name = p.Name;
                     list.Scale = p.Levels;
                     list.ScaleName = p.Levels.Length == 0 ? "" : p.ScaleName;
@@ -440,7 +459,7 @@ namespace BusyBunny
                     list.Types = p.Types.Count == Enum.GetValues<TaskType>().Length || p.Types.Count == 0 ? new() : p.Types.OrderBy(t => t).ToList();
                     list.Sections = ListTools.ParseSections(p.Sections);
                     // A shorter scale: tasks past its end take its lowest level; no scale clears them.
-                    foreach (var t in store.Data.Tasks.Where(t => t.List == p.Name && t.Priority > p.Levels.Length)) t.Priority = p.Levels.Length;
+                    foreach (var t in tasksOf[p].Where(t => t.Priority > p.Levels.Length)) t.Priority = p.Levels.Length;
                     made.Add(list);
                 }
                 // Parents by their final names. An archived parent's sub-lists become lists of their own.

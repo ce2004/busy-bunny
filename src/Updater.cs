@@ -160,15 +160,20 @@ namespace BusyBunny
                 // checks quietly failed. The latest-release link is not limited: ask it which version is
                 // newest, and only ask the API (once per new version) for its notes and checksum.
                 var latest = await LatestVersionAsync(TimeSpan.FromSeconds(10));
-                if (latest == null || latest <= Current) return null;
-                lock (AnswerGate) if (_known?.Version == latest) return _known;
+                if (latest == null || latest <= Current || latest == SkippedVersion()) return null;
+                // A release GitHub gave no checksum for is refused, so it is asked about again every few
+                // minutes, in case a fixed file is put up under the same version (R1 18).
+                lock (AnswerGate)
+                    if (_known?.Version == latest && (_known.Sha256 != null || DateTime.UtcNow - _knownAt < TimeSpan.FromMinutes(5))) return _known;
             }
             var r = Pick(ParseReleases(await ReleasesJsonAsync(TimeSpan.FromSeconds(quick ? 10 : 30)), AssetName), Current);
-            lock (AnswerGate) _known = r;
+            if (r != null && r.Version == SkippedVersion()) r = null;
+            lock (AnswerGate) { _known = r; _knownAt = DateTime.UtcNow; }
             return r;
         }
 
         private static Release? _known;
+        private static DateTime _knownAt;
 
         /// <summary>
         /// The version GitHub's latest-release download link points at (it redirects to the release's
@@ -220,6 +225,13 @@ namespace BusyBunny
         private static string ReadyFile => Exe + ".ready";
         private static string ReadyInfo => Exe + ".ready.txt";
         private static string Marker => Exe + ".updated-from.txt";
+        /// <summary>
+        /// Written when an update is swapped in: the old copy's file, its version, and how many times the
+        /// new copy has started. Deleted once the new copy has run fine for a minute (or closed normally).
+        /// </summary>
+        private static string Trial => Exe + ".trial.txt";
+        /// <summary>A version that did not start here and was rolled back: it is not offered again.</summary>
+        private static string Skip => Exe + ".skip-version.txt";
 
         /// <summary>The version of the ready copy, when there is one newer than this copy; stale ones are cleared.</summary>
         public static Version? ReadyVersion()
@@ -278,17 +290,25 @@ namespace BusyBunny
             string exe = Exe, old = exe + ".old";
             if (!TryDelete(old)) old = exe + ".old-" + DateTime.Now.ToString("yyyyMMddHHmmss");
             ClearReadOnly(exe);
-            for (int attempt = 1; ; attempt++)
+            // A virus scan often opens a brand new file for a moment: wait until nobody else has it open.
+            WaitUntilFree(ReadyFile);
+            // By hand, in two renames, so a failure at any point puts the old copy straight back: File.Replace
+            // could leave the exe renamed to .old and nothing in its place (R1 5, sweep 9.10).
+            Retry(() => File.Move(exe, old), "Nothing was changed. Busy Bunny could not replace itself in " + Path.GetDirectoryName(exe) +
+                ". If it is in Program Files, move it to your Documents folder and try again.");
+            try { Retry(() => File.Move(ReadyFile, exe), "The update could not be put in place."); }
+            catch
             {
-                // A virus scan often opens a brand new file for a moment: that clears by itself, so try a few times.
-                try { File.Replace(ReadyFile, exe, old, ignoreMetadataErrors: true); break; }
-                catch (IOException) when (attempt < 6) { System.Threading.Thread.Sleep(500); }
-                catch (UnauthorizedAccessException e)
+                for (int i = 0; i < 20 && !File.Exists(exe); i++)
                 {
-                    throw new InvalidOperationException("Nothing was changed. Busy Bunny could not replace itself in " + Path.GetDirectoryName(exe) +
-                        ". If it is in Program Files, move it to your Documents folder and try again.", e);
+                    try { File.Move(old, exe); }
+                    catch { System.Threading.Thread.Sleep(250); }
                 }
+                throw new InvalidOperationException("The update could not be put in place, so Busy Bunny is still on version " + Current + ". It will try again later.");
             }
+            try { File.WriteAllText(Trial, old + "\n" + Current + "\n0"); } catch { }
+            // This copy is the old one now: its own closing must not end the new copy's trial.
+            SwappedOut = true;
             TryDelete(ReadyInfo);
             if (restart)
             {
@@ -302,11 +322,117 @@ namespace BusyBunny
             return true;
         }
 
+        private static void WaitUntilFree(string path)
+        {
+            for (int i = 0; i < 20; i++)
+            {
+                try { using (new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None)) return; }
+                catch (IOException) { System.Threading.Thread.Sleep(250); }
+                catch { return; }
+            }
+        }
+
+        private static void Retry(Action act, string deniedWords)
+        {
+            for (int attempt = 1; ; attempt++)
+            {
+                try { act(); return; }
+                catch (IOException) when (attempt < 6) { System.Threading.Thread.Sleep(500); }
+                catch (UnauthorizedAccessException e) when (attempt >= 3) { throw new InvalidOperationException(deniedWords, e); }
+                catch (UnauthorizedAccessException) { System.Threading.Thread.Sleep(500); }
+            }
+        }
+
+        /// <summary>
+        /// At every start, before anything opens: if this copy was just installed by an update and its
+        /// last start never got as far as running (it crashed), the old copy is put back and started, and
+        /// this version is not offered again (R1 6, sweep 9.10). True when the caller should exit.
+        /// </summary>
+        public static bool RollBackIfBroken()
+        {
+            try
+            {
+                if (!File.Exists(Trial)) return false;
+                var lines = File.ReadAllLines(Trial);
+                string old = lines.Length > 0 ? lines[0].Trim() : "";
+                string oldVersion = lines.Length > 1 ? lines[1].Trim() : "";
+                int starts = lines.Length > 2 && int.TryParse(lines[2], out int n) ? n : 0;
+                if (old.Length == 0 || !File.Exists(old)) { TryDelete(Trial); return false; }
+                if (starts < 1)
+                {
+                    File.WriteAllText(Trial, old + "\n" + oldVersion + "\n" + (starts + 1));
+                    return false;
+                }
+                // The start before this one never reached MarkStartedOk: put the old copy back.
+                string exe = Exe, broken = exe + ".old-broken-" + Current;
+                TryDelete(broken);
+                File.Move(exe, broken);
+                try { File.Move(old, exe); }
+                catch { File.Move(broken, exe); throw; }
+                try { File.WriteAllText(Skip, Current.ToString()); } catch { }
+                TryDelete(Trial);
+                ErrorLog.Write("Version " + Current + " did not start properly after an update, so version " + oldVersion + " was put back.");
+                // Every older copy understands --after-update (it waits for this one to close); newer ones also read --rolled-back.
+                Process.Start(new ProcessStartInfo(exe, "--after-update " + Environment.ProcessId + " " + (oldVersion.Length > 0 ? oldVersion : "0.0.0") + " --rolled-back " + Current) { UseShellExecute = false })?.Dispose();
+                return true;
+            }
+            catch (Exception e)
+            {
+                ErrorLog.Write("Rolling back a broken update failed: " + e.GetType().Name + ": " + e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>Set once this copy has swapped a newer one in: the trial file then belongs to the new copy.</summary>
+        public static bool SwappedOut { get; private set; }
+
+        /// <summary>
+        /// A start that ended on purpose before the window opened (the tasks file was in use) is not
+        /// counted as a failed start, so a working update is never rolled back for it.
+        /// </summary>
+        public static void UndoTrialStart()
+        {
+            try
+            {
+                if (SwappedOut || !File.Exists(Trial)) return;
+                var lines = File.ReadAllLines(Trial);
+                if (lines.Length > 2 && int.TryParse(lines[2], out int n) && n > 0)
+                    File.WriteAllText(Trial, lines[0] + "\n" + lines[1] + "\n" + (n - 1));
+            }
+            catch { }
+        }
+
+        /// <summary>The new copy has run fine: the old copy is no longer needed as a way back.</summary>
+        public static void MarkStartedOk()
+        {
+            try
+            {
+                if (SwappedOut || !File.Exists(Trial)) return;
+                TryDelete(Trial);
+                CleanLeftovers();
+            }
+            catch { }
+        }
+
+        /// <summary>A version rolled back on this PC, newer than this copy, or null.</summary>
+        public static Version? SkippedVersion()
+        {
+            try
+            {
+                if (!File.Exists(Skip)) return null;
+                var v = NormalizeTag(File.ReadAllText(Skip));
+                if (v != null && v > Current) return v;
+                TryDelete(Skip);
+            }
+            catch { }
+            return null;
+        }
+
         /// <summary>ApplyReady that never throws, for starting and closing: a failure waits for the next time.</summary>
         public static bool ApplyReadyQuietly(bool restart)
         {
             try { return ApplyReady(restart); }
-            catch { return false; }
+            catch (Exception e) { ErrorLog.Write("Installing a ready update failed: " + e.GetType().Name + ": " + e.Message); return false; }
         }
 
         /// <summary>The version this copy was updated from when it was installed while closing, once; null otherwise.</summary>
@@ -385,6 +511,8 @@ namespace BusyBunny
             try
             {
                 string exe = Environment.ProcessPath!;
+                // While the new copy is on trial, the old one is the way back: keep it.
+                if (File.Exists(exe + ".trial.txt")) { TryDelete(exe + ".part"); return true; }
                 foreach (string f in Directory.GetFiles(Path.GetDirectoryName(exe)!, Path.GetFileName(exe) + ".old"))
                     all &= TryDelete(f);
                 TryDelete(exe + ".part"); // a download that was cut off

@@ -1,0 +1,253 @@
+Busy Bunny bug list
+
+This file keeps track of the bugs found in Busy Bunny, how each one was fixed, and what could not be tested. It was asked for by Morgan in sweep 9.12. It is plain text so that NVDA and a braille display can read it easily. Each bug is one line: what went wrong, then the word Fixed with how it was fixed. New rounds of bug hunting get a new section at the top.
+
+Version 0.12.0, November 4, 2026
+
+Your tasks and saving:
+
+If the tasks file was locked by another program, damaged or missing, Busy Bunny quietly started with the sample tasks and later saved over your real ones. Fixed: a locked file is waited for and then Busy Bunny refuses to start and tells you; a damaged file is replaced by the spare copy or the newest good backup and you are told; the sample tasks only appear on a true first run.
+
+A tasks file with empty entries in it crashed Busy Bunny on every start with no message. Fixed: empty entries are tidied up while the file is read.
+
+Saving could leave you with no tasks file at all if the swap failed or the power went out at the wrong moment. Fixed: the new file is written all the way to disk first, the old one is kept as a spare, and if the swap fails the spare or new file is moved back in at once.
+
+A failed save was not retried, often not announced, and closing the app or installing an update could lose the change. Fixed: Busy Bunny says once that it could not save, keeps retrying, tries again when you close, and asks before it lets you close with unsaved changes.
+
+The crash message said your tasks were safe even when a save had just failed. Fixed: the message now only says that when it is true, and Busy Bunny saves first.
+
+Errors on background threads left no line in the error log. Fixed: they are now logged like the others.
+
+Control Z undid things you did not do, such as a reminder that had just fired, so the reminder came back. Fixed: after an undo, reminders that already fired stay advanced, nudges already given stay given, and lists you made private stay private.
+
+With thousands of tasks, undo used a huge amount of memory and made every action slow. Fixed: undo steps are now compressed and capped at about 50 megabytes as well as 100 steps.
+
+Reading a day on a calendar or in a summary quietly created empty day records and made the file bigger. Fixed: reading no longer creates anything.
+
+Add several tasks needed one Control Z per task, and marking a repeating task done needed two. Fixed: both are now one undo step.
+
+Setting a task to Done in the edit form gave no points, no next copy of a repeating task, no sound and no speech, and could lose a bet. Fixed: it now goes through the same path as Control D.
+
+Checking or unchecking Ask for a new name each time it repeats in the edit form was thrown away. Fixed: the choice is now saved.
+
+Quick add used a list called Homework even if you had renamed or deleted it, and offered archived lists. Fixed: it uses the list you are on, and archived lists are left out.
+
+A new tag typed in Quick add stayed behind after Control Z. Fixed: the tag is added after the undo point is taken.
+
+Moving one task to another list kept a category that the new list does not have. Fixed: the category is cleared, as it already was for several tasks.
+
+Renaming lists in a chain or swapping two names in Settings poured one list into another. Fixed: renames now go by the old names in one pass.
+
+Arrowing onto Add a new list in Settings created a list and moved your focus. Fixed: it is now a page with a button, so arrowing creates nothing.
+
+Arrowing onto Add a new tag in Settings created a tag, a deleted last tag created one, and opening Settings with no tags created one. Fixed: tags are only made on purpose.
+
+Renaming or deleting a class tag left its accessibility requests, nudges and log entries behind on the old name. Fixed: they follow the rename.
+
+Renaming tags in a chain or a swap merged them. Fixed: tags are renamed in two passes.
+
+Merging or deleting a list left its repeat templates pointing at the old list, and categories that differed only in capital letters were lost. Fixed: templates move with the list and categories are matched without caring about capitals.
+
+Pressing Escape while Bunny was reading a due date gave a Something went wrong box. Fixed: the form checks that it is still open.
+
+With a filter or sort on, tasks in categories showed up twice. Fixed: the main list leaves out tasks that are in a category.
+
+Control F on a parent list searched only that list and not its sub lists. Fixed: sub lists are included.
+
+Choosing sounds inside Settings could be undone by pressing OK in Settings, so the music came back. Fixed: Settings refreshes its checkboxes after the sounds window.
+
+The Status and Move to boxes acted on the next task after a change, so the next task could be marked done or moved too. Fixed: the box remembers which task it was opened for and shows it again after each change. Tab from Status to Move to was also fixed.
+
+Privacy and Bunny:
+
+The summary line sent to Claude included the next meeting, tests, overdue and progress counts from private lists. Fixed: the summary is built only from lists Bunny may see.
+
+The narrator sent finished private tasks to Claude. Fixed: private lists, archived lists and lists nested under a private list use the local line only.
+
+Private list names leaked through Bunny's list of tabs, the open tab tool, the parent names and the manage list answers. Fixed: private lists are left out everywhere, and asking about one gets the same answer as a list that does not exist, including when Bunny tries to create one with that name.
+
+Making a list private did not clear what Bunny already remembered that day. Fixed: any change in privacy starts a new talk.
+
+Undo could quietly make a private list visible again. Fixed: private lists stay private after an undo.
+
+Typing a date in words on a private list sent the words to Claude. Fixed: Bunny does not read dates for private lists.
+
+The habits summary sent old names of renamed or deleted private lists. Fixed: only lists Bunny may see are counted.
+
+Tags used only on private tasks were sent to Claude with their descriptions. Fixed: only tags that visible tasks use are sent.
+
+Archived lists showed up in summaries, nudges, reviews and walks. Fixed: they are left out.
+
+Bunny could turn off its own Ask before deleting setting. Fixed: that setting can only be changed by you in Settings.
+
+Bunny's settings changes could not be undone but Bunny promised Control Z would. Fixed: Bunny now says honestly what Control Z can undo, and there is an Undo this change option for Bunny's task changes.
+
+A failed Bunny tool could leave half a change in place or leave an empty undo step. Fixed: values are checked first and a failed tool rolls back its own changes.
+
+Bunny turned unknown types, sizes, energy words, day modes and unreadable dates into normal values without saying so. Fixed: Bunny now gets an error that tells it what is allowed, so it can try again. A rough day set by Bunny also moves tasks like the menu one does.
+
+Bunny adding a task as already done gave no points or quest progress. Fixed: it goes through the normal done path.
+
+Bunny's check in hours could disagree with the Settings page and quietly change on OK. Fixed: the value snaps to what the page offers.
+
+Check ins ignored class times and meetings. Fixed: they stay quiet during a class or just before a meeting.
+
+An automatic briefing that failed offline spoke an error you did not ask for and used up the day. Fixed: automatic runs fail quietly and try again later.
+
+Some errors showed raw text from the Claude software, the website name in messages was out of date, and testing the key said that key did not work even when you were just offline. Fixed: short friendly lines for each case, the new website name, and the key message only for a real key problem.
+
+There was no way to stop Bunny, and waits could be very long. Fixed: Escape or Stop Bunny in the File menu stops it with Okay, Bunny stopped, and a run has a time cap that pauses while Bunny waits for your answer.
+
+Starting a new talk or changing privacy while Bunny was thinking could corrupt the talk for the rest of the day. Fixed: a talk counter makes a run that was cleared add nothing.
+
+Undo this change could undo the wrong step, fail after a restart, or never work for tasks marked done. Fixed: it checks the undo depth and the session, and ignores the game bookkeeping.
+
+The learning request timed out too early on long profiles. Fixed: it has its own longer time limit.
+
+Points lines from a Bunny tool that was rolled back still spoke. Fixed: the pending lines are dropped on a rollback.
+
+The setup guide never mentioned Smarter Bunny or private lists. Fixed: a new step covers the key and which lists to keep private.
+
+Points and games:
+
+Finishing a task through Edit task paid nothing and a bet on it could be lost. Fixed: edits go through the normal done path, and a bet on a finished task is never lost.
+
+Toggling one task done and not done again finished the daily challenge. Fixed: each task counts once and un-finishing takes it back.
+
+Un-finishing a task left most of what it paid: comeback, challenge, bet winnings, mystery box, quest and boss points. Fixed: every award is tied to its task and taken back, and a won bet is reopened.
+
+An early bonus that reached the daily goal never counted for the streak. Fixed: the bonus is counted before the goal check.
+
+Vex gloated with trash talk off, and gloated once per bet after the laptop woke. Fixed: lost bets are settled quietly when trash talk is off, and joined into one line otherwise.
+
+A bet on a deleted or archived task could only be lost. Fixed: those bets are refunded gently.
+
+One finished task, or a bulk Done, spoke many lines in a row. Fixed: a finish gives one combined points line and one fun line, with the rest kept for What happened today.
+
+Done to Done not submitted kept the full points. Fixed: points are corrected down to half.
+
+A boss as the first task after a missed day cost the comeback bonus. Fixed: the comeback is worked out from the finished task points only.
+
+A quest could never finish if one of its tasks was deleted. Fixed: missing tasks are not counted.
+
+A late Monday check in could skip last week's Vex result. Fixed: lost stakes go to the week of the bet and the week is settled once.
+
+I did a thing said it gave points that did not count. Fixed: the wording now says it counts toward today.
+
+Un-finishing a won bet after its deadline then re-finishing lost the stake. Fixed: the bet remembers when it was finished.
+
+Level up, goal and streak lines repeated when you toggled a task near a boundary. Fixed: each is announced once.
+
+Sprints used the clock and ran long or short on a time change. Fixed: sprints use a stopwatch. Stop the sprint now checks whether it already finished.
+
+The sprint window opened with nothing focused. Fixed: Minutes gets focus.
+
+Burrow room sounds played with sounds off, and building a room lost focus. Fixed: both.
+
+The Rival window taunted when the roast level was off. Fixed: a neutral line is used.
+
+A huge bet time such as 99999999999 hours caused an error. Fixed: it is checked and limited.
+
+Some lines were read twice because focus moved and the line was also announced. Fixed: only one of the two happens.
+
+Keys, menus and focus:
+
+Many menus had two items with the same Alt letter, so some letters did nothing. Fixed: every menu item has its own letter, and a self test fails if two clash.
+
+Windows had repeated Alt letters, such as Quick add, Edit task, Settings, Sounds, the challenge window, Place the bet and Tags. Fixed: unique letters in each window.
+
+The new day steps were skipped for a whole day if you did anything between midnight and the next minute tick. Fixed: the new day check keeps its own date.
+
+The update window popped up while you were typing or moving through tasks. Fixed: it waits for a quiet moment.
+
+After Settings or a dialog closed, focus jumped to the first list. Fixed: focus goes back to where you were.
+
+The Subtasks window spoke through the wrong window so NVDA could miss it, lost focus when closed from Upcoming, and was slow. Fixed: speech goes through the dialog, focus is restored by task, and the main list refreshes once on close.
+
+The global Quick add key opened on top of other dialogs. Fixed: it says to finish the open window first.
+
+Settings OK repeated the already taken hotkey warning each time. Fixed: hotkeys are only registered again when the Keys page changed.
+
+The Exit item showed Alt F4 though Alt F4 only hides to the tray. Fixed: the text now says so.
+
+Escape in a Status or Move to box did not back out. Fixed: Escape puts the box back and returns to the list.
+
+After a change made by Bunny or a reminder, the Task field and braille showed the wrong task. Fixed: the detail is shown again.
+
+The keyboard shortcuts list had gaps and the Report a problem links would break for a private repository. Fixed: missing lines added and the links replaced.
+
+Choosing No in Close anyway hid the window to the tray. Fixed: No keeps Busy Bunny open.
+
+Answers to shortcut keys were held back for up to two seconds. Fixed: keys are noticed before anything handles them.
+
+An interrupt line threw away waiting lines such as reminders and start notes. Fixed: waiting lines are spoken after the interrupt.
+
+Dates and repeats:
+
+Reminders that repeat every other Tuesday fired every Tuesday. Fixed: reminders use the same repeat rules as tasks.
+
+Monthly and yearly repeats drifted, for example January 31 became the 28th for ever. Fixed: the intended day is kept.
+
+This week and end of the week typed on a weekend gave next week, and this weekend on Sunday gave next Saturday. Fixed: weeks start on Monday throughout.
+
+February 29 was not understood in some years or became February 28 of a later year. Fixed: the year is picked first.
+
+A pasted syllabus put items in This week by counting seven days instead of by the Monday week. Fixed: it uses the Monday week.
+
+A meeting with a date but no time was announced as midnight or dropped. Fixed: the date is used and no time is spoken.
+
+Reminders were lost when a save failed at the same moment. Fixed: the reminder is said first, then saved.
+
+Updates:
+
+A failed update swap could leave no Busy Bunny program at all. Fixed: two careful renames, with the old program moved back if anything fails.
+
+A broken new version could not be rolled back. Fixed: the old program is kept until the new one has run properly, and if the new one fails to start it is put back with a message, and that version is not offered again.
+
+Install now disarmed the rollback. Fixed: the old copy no longer clears the trial.
+
+A new version that exited on purpose because the tasks file was locked was rolled back wrongly. Fixed: that start is not counted.
+
+A release with no checksum was remembered and refused for ever. Fixed: it is asked about again after a few minutes.
+
+Sounds:
+
+The screen could freeze if the sound driver hung. Fixed: all sound driver calls run on their own thread.
+
+A driver that hung for good killed sounds and music until restart. Fixed: after about fifteen seconds the stuck thread is dropped and a new one starts.
+
+The music loop could be read by two outputs at once. Fixed: the old output is detached before a new one starts.
+
+Speed:
+
+With thousands of tasks, every change rebuilt every tab and was slow. Fixed: only the open tab is rebuilt, others when you switch to them, and the list updates in place when possible.
+
+Searches and summaries slowed down with many tasks because of repeated list lookups. Fixed: faster lookups are used.
+
+Not fixed yet:
+
+You cannot change how many unprompted lines Bunny and the fun features say in a day. It is fixed at 3 and there is no setting yet.
+
+Undo does not roll back Best day, Best week and badges. If an undo takes points away, those records stay.
+
+Subtask names that contain an underscore turn the next letter into an access key in the Subtasks window.
+
+The narrator line can still be said while a Bunny run is going on.
+
+What was tested:
+
+The automatic self test, with checks for these fixes, runs on every release on GitHub.
+
+A real app test on the x64 server added a task, exited, and checked that it was saved.
+
+The menus were checked for clashing Alt letters.
+
+What could not be tested:
+
+No NVDA run and no braille display run happened this round. Everything about what NVDA says, how focus lands, and how the braille line looks was checked only by reading the code.
+
+There was no ARM64 machine to try, so the ARM64 build is untested in this round.
+
+Talk to Bunny was not run against Claude or a stand in, so stopping Bunny in the middle of an answer and the new error messages were only checked by the self test and by reading the code.
+
+The update rollback needs a real update from one version to the next to be tested for real.

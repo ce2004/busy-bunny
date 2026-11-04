@@ -156,12 +156,12 @@ namespace BusyBunny
 
             w.StatusChanged += (t, old) => { if (t.Status == Status.Done && old != Status.Done) Cheer(w, t); };
 
-            _finalsMenu = w.AddMenuItem("Fun", "Finals _week mode", () => SetFinals(w, _finalsMenu!.IsChecked));
+            _finalsMenu = w.AddMenuItem("Fun", "_Finals week mode", () => SetFinals(w, _finalsMenu!.IsChecked));
             _finalsMenu.IsCheckable = true;
             _finalsMenu.IsChecked = Cfg.FinalsMode;
             if (_finalsMenu.Parent is MenuItem top) top.SubmenuOpened += (_, _) => _finalsMenu.IsChecked = Cfg.FinalsMode;
             w.AddMenuItem("Fun", "I _did a thing...", () => DidAThing(w), "Ctrl+Shift+I");
-            w.AddMenuItem("Fun", "_Park a thought...", () => ParkAThought(w), "Ctrl+Shift+K");
+            w.AddMenuItem("Fun", "Park a thou_ght...", () => ParkAThought(w), "Ctrl+Shift+K");
             w.AddMenuItem("Fun", "View the p_arking lot...", () => ViewParkingLot(w));
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.I, () => DidAThing(w), "Ctrl+Shift+I: I did a thing, log something done that was never on a list");
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.K, () => ParkAThought(w), "Ctrl+Shift+K: park a stray thought without leaving where you are");
@@ -204,13 +204,14 @@ namespace BusyBunny
             var (done, total, _, _) = w.Store.Progress(now);
             string moment = Moment(done, total, t != null && Haunting(t, now), Comeback(w.Store, now));
             string? line = Compose(moment, now, Cfg, Rng);
-            if (line != null) w.Say(line);
+            // Spec 8.1: one fun line per finished task. The cheer and the surprise are offered; the most important line wins.
+            if (line != null) Game.Queue(w, Game.Chatter, line);
             if (Lucky(Rng))
             {
                 int roll = Rng.Next(10);
                 string reward = MakeSurprise(Cfg, Rng, roll < 5 ? 0 : roll < 8 ? 1 : 2);
                 Sounds.Play(Sounds.Event.SurpriseReward);
-                w.Say(reward);
+                Game.Queue(w, Game.Chatter, reward);
             }
             Cfg.Save();
         }
@@ -221,7 +222,7 @@ namespace BusyBunny
         {
             var dlg = Layout.Dialog(w, "I did a thing");
             var what = new TextBox();
-            var size = new ComboBox { ItemsSource = new[] { "Small, 1 point", "Medium, 2 points", "Large, 4 points" }, SelectedIndex = 0 };
+            var size = new ComboBox { ItemsSource = new[] { "Small, counts 1 toward today", "Medium, counts 2 toward today", "Large, counts 4 toward today" }, SelectedIndex = 0 };
             var ok = Layout.Button("OK", isDefault: true);
             var cancel = Layout.Button("Cancel", isCancel: true);
             ok.Click += (_, _) =>

@@ -15,6 +15,8 @@ namespace BusyBunny
             if (args.Length > 2 && args[0] == "--write-music") { MusicLoop.WriteWav(args[1], double.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture)); return 0; }
             if (args.Length > 2 && args[0] == "--write-sound") { File.WriteAllBytes(args[2], Sounds.WavOf(args[1]) ?? Array.Empty<byte>()); return 0; }
             bool updated = args.Length > 1 && args[0] == "--after-update" && int.TryParse(args[1], out int pid);
+            int back = Array.IndexOf(args, "--rolled-back");
+            if (back >= 0) RolledBackFrom = back + 1 < args.Length ? args[back + 1] : "the new version";
             if (updated) Updater.FinishUpdate(int.Parse(args[1])); // waits for the old copy to close first
             else Updater.CleanLeftovers();
 
@@ -27,6 +29,9 @@ namespace BusyBunny
             catch (System.Threading.AbandonedMutexException) { mine = true; }
             if (!mine) { show.Set(); return 0; }
 
+            // A new version that crashed on its last start is swapped back for the old one (sweep 9.10).
+            if (Updater.RollBackIfBroken()) { only.ReleaseMutex(); return 0; }
+
             // An update downloaded earlier and not yet installed (she chose Later, or Busy Bunny closed
             // first): install it now, before anything opens, and start the new copy.
             if (!updated && Updater.ApplyReadyQuietly(restart: true)) { only.ReleaseMutex(); return 0; }
@@ -35,18 +40,45 @@ namespace BusyBunny
 
             SpaceAsTyping();
             var app = new App { ShutdownMode = ShutdownMode.OnMainWindowClose };
+            Store? store = null;
             app.DispatcherUnhandledException += (_, e) =>
             {
                 Log(e.Exception);
-                MessageBox.Show("Something went wrong in Busy Bunny: " + e.Exception.Message + "\n\nYour tasks are safe. The details are in " + LogPath + ".", "Busy Bunny", MessageBoxButton.OK, MessageBoxImage.Warning);
+                // Only say the tasks are safe once they really are saved.
+                bool saved = store == null || store.TrySave();
+                MessageBox.Show("Something went wrong in Busy Bunny: " + e.Exception.Message + "\n\n" +
+                    (saved ? "Your tasks are saved." : "Your latest change could not be saved yet. Busy Bunny will keep trying, so leave it open for now.") +
+                    " Help, Report a problem copies the details for whoever helps you.", "Busy Bunny", MessageBoxButton.OK, MessageBoxImage.Warning);
                 e.Handled = true;
+            };
+            // Errors on other threads and in background tasks are written down too (R1 19); a last save is tried.
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                if (e.ExceptionObject is Exception x) Log(x); else ErrorLog.Write("Unhandled error: " + e.ExceptionObject);
+                if (e.IsTerminating) { try { store?.TrySave(); } catch { } }
+            };
+            System.Threading.Tasks.TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                Log(e.Exception);
+                e.SetObserved();
             };
             var settings = Settings.Load();
             UiSounds.Hook(app, settings);
             settings.Apply();
             Mixer.Start();
             Sounds.Warm();
-            var store = Store.Load();
+            try { store = Store.Load(); }
+            catch (StoreLockedException e)
+            {
+                // Locked is not damaged: nothing is replaced, nothing starts over. She tries again in a moment.
+                Log(e);
+                Updater.UndoTrialStart();
+                MessageBox.Show("Busy Bunny could not open your tasks, because another program is using the file right now (maybe a backup, sync or virus scan). Nothing was changed.\n\nWait a minute, then start Busy Bunny again.",
+                    "Busy Bunny", MessageBoxButton.OK, MessageBoxImage.Warning);
+                only.ReleaseMutex();
+                return 1;
+            }
+            Store.ExtraBackupFolder = settings.BackupCopyFolder.Length > 0 ? settings.BackupCopyFolder : null;
             var w = new MainWindow(store, settings) { Icon = Logo.Image() };
             app.MainWindow = w;
             new System.Threading.Thread(() =>
@@ -67,12 +99,26 @@ namespace BusyBunny
                 // After an update, the changelog opens by itself so the new things are easy to find.
                 // Only what is new since the copy that did the update (older copies do not say which they were).
                 Version? from = updated && args.Length > 2 ? Updater.NormalizeTag(args[2]) : closedFrom;
-                if (updated || closedFrom != null) w.Dispatcher.BeginInvoke(() => w.ShowChanges(from), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                if ((updated || closedFrom != null) && RolledBackFrom == null) w.Dispatcher.BeginInvoke(() => w.ShowChanges(from), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                 w.StartAutoUpdates();
                 w.OnStarted();
+                // Running fine for a minute: an update that just came in has proved itself, and the old copy can go.
+                WindowShown = true;
+                var ok = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+                ok.Tick += (_, _) => { ok.Stop(); Updater.MarkStartedOk(); };
+                ok.Start();
             });
-            // Closing with an update ready (she chose Later): install it now, quietly, for next time.
-            app.Exit += (_, _) => Updater.ApplyReadyQuietly(restart: false);
+            // Windows signing out or shutting down: save first (sweep 2.6).
+            app.SessionEnding += (_, _) => store?.TrySave();
+            app.Exit += (_, _) =>
+            {
+                // It opened and closed normally, so this version works.
+                if (WindowShown) Updater.MarkStartedOk();
+                // Never closes without trying to save.
+                store?.TrySave();
+                // Closing with an update ready (she chose Later): install it now, quietly, for next time.
+                Updater.ApplyReadyQuietly(restart: false);
+            };
             int code = app.Run();
             only.ReleaseMutex();
             return code;
@@ -112,14 +158,22 @@ namespace BusyBunny
         [System.Runtime.InteropServices.DllImport("user32.dll")]
         private static extern bool PostMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
 
-        public static string LogPath =>Path.Combine(Store.Folder, "error-log.txt");
+        public static string LogPath => ErrorLog.FilePath;
 
-        private static void Log(Exception e)
+        /// <summary>Set when this copy was started after a broken update was rolled back: the version that failed.</summary>
+        public static string? RolledBackFrom;
+        /// <summary>The main window has opened (for the update trial).</summary>
+        public static bool WindowShown;
+
+        private static void Log(Exception e) => ErrorLog.Write(e);
+
+        /// <summary>Deletes a self-test data file and everything saving leaves next to it (the new, spare and damaged copies).</summary>
+        internal static void DeleteTestFiles(string file)
         {
             try
             {
-                Directory.CreateDirectory(Store.Folder);
-                File.AppendAllText(LogPath, DateTime.Now + " version " + Updater.Current + "\n" + e + "\n\n");
+                foreach (var f in Directory.GetFiles(Path.GetDirectoryName(file)!))
+                    if (Path.GetFileName(f).StartsWith(Path.GetFileName(file), StringComparison.OrdinalIgnoreCase)) File.Delete(f);
             }
             catch { }
         }
@@ -141,6 +195,8 @@ namespace BusyBunny
         private static int SelfTest()
         {
             string result, musicLevel = "";
+            // Nothing the self-test does goes into her error log.
+            ErrorLog.Enabled = false;
             try
             {
                 foreach (string s in Sounds.All.Skip(1))
@@ -195,6 +251,20 @@ namespace BusyBunny
                 if (!saidNotYet) throw new Exception("a version still being built was not reported as not ready");
                 if (Updater.Pick(Updater.ParseReleases(releases, "BusyBunny-x64.exe"), new Version(9, 0, 0)) != null)
                     throw new Exception("update check offered an update to the newest copy");
+                // Sweep 9.10: a download with no checksum is refused before anything is fetched.
+                string noDigest = "[{\"tag_name\":\"v99.0.0\",\"body\":\"x\",\"assets\":[{\"name\":\"BusyBunny-x64.exe\",\"browser_download_url\":\"https://x/99\"}]}]";
+                var unsigned = Updater.Pick(Updater.ParseReleases(noDigest, "BusyBunny-x64.exe"), new Version(0, 1, 0));
+                if (unsigned == null || unsigned.Sha256 != null) throw new Exception("a release with no checksum was read wrong");
+                bool refused = false;
+                try { Updater.PrepareAsync(unsigned).GetAwaiter().GetResult(); }
+                catch (InvalidOperationException) { refused = true; }
+                if (!refused) throw new Exception("the updater did not refuse a download with no checksum");
+                // The speech queue: her key's answer always goes at once; lines nobody asked for wait 2 seconds.
+                var t0 = new DateTime(2026, 10, 12, 9, 0, 0);
+                if (!Speech.WouldSayNow(false, t0, t0.AddMilliseconds(500), t0.AddMilliseconds(600))) throw new Exception("speech held back the answer to a key press");
+                if (Speech.WouldSayNow(false, t0, t0.AddSeconds(-5), t0.AddMilliseconds(600))) throw new Exception("speech did not space out lines nobody asked for");
+                if (!Speech.WouldSayNow(false, t0, t0.AddSeconds(-5), t0.AddSeconds(2))) throw new Exception("speech held a line past 2 seconds");
+                if (!Speech.WouldSayNow(true, t0, t0.AddSeconds(-5), t0.AddMilliseconds(100))) throw new Exception("speech held back an interrupting line");
 
                 string file = Path.Combine(Path.GetTempPath(), "busybunny-selftest-" + Guid.NewGuid().ToString("N") + ".json");
                 try
@@ -224,10 +294,10 @@ namespace BusyBunny
                         string other = Path.Combine(Path.GetTempPath(), "busybunny-selftest-" + Guid.NewGuid().ToString("N") + ".json");
                         try { f.SelfTest(Store.Load(other)); }
                         catch (Exception e) { throw new Exception(f.GetType().Name + ": " + e.Message, e); }
-                        finally { try { File.Delete(other); } catch { } }
+                        finally { DeleteTestFiles(other); }
                     }
                 }
-                finally { try { File.Delete(file); } catch { } }
+                finally { DeleteTestFiles(file); }
                 result = "ok, version " + Updater.Current + ", " + (Sounds.All.Count - 1) + " sounds," + musicLevel;
             }
             catch (Exception e) { result = "FAIL: " + e; }

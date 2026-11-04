@@ -117,17 +117,40 @@ namespace BusyBunny
             to.Due = from.Due; to.DueHasTime = from.DueHasTime; to.Size = from.Size; to.IsMeeting = from.IsMeeting;
             to.Type = from.Type; to.DoDate = from.DoDate; to.Repeat = from.Repeat; to.RemindAt = from.RemindAt; to.RemindRepeat = from.RemindRepeat;
             to.Energy = from.Energy; to.GradeWeight = from.GradeWeight; to.Section = from.Section; to.Notes = from.Notes;
-            to.Subtasks = from.Subtasks; to.Comments = from.Comments;
+            to.Subtasks = from.Subtasks; to.Comments = from.Comments; to.RenameOnRepeat = from.RenameOnRepeat;
         }
+
+        /// <summary>A tag typed in the form that is not one of her tags yet. It is added by KeepNewTag, after the caller's Remember, so Control Z takes it away too.</summary>
+        static string _newTag = "";
+
+        /// <summary>Adds the new tag typed in the last Quick add or Edit task to her tags. Call it after Remember.</summary>
+        public static void KeepNewTag(Store store)
+        {
+            string tag = _newTag;
+            _newTag = "";
+            if (tag.Length > 0 && !store.Data.Tags.Any(t => t.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) store.Data.Tags.Add(new TagInfo { Name = tag });
+        }
+
+        /// <summary>A list made for meetings: the one called Meetings, or one whose only task type is Meeting (so a renamed one keeps working).</summary>
+        public static bool IsMeetingList(Store store, string list) =>
+            list == "Meetings" || store.Data.Lists.FirstOrDefault(l => l.Name == list) is TaskList l && l.Types.Count == 1 && l.Types[0] == TaskType.Meeting;
 
         public static TaskItem? Show(Window owner, Store store, string list, Status status, TaskItem? editing = null, TaskItem? from = null, string startSection = "")
         {
             var src = editing ?? from;
+            _newTag = "";
             if (src != null) { list = store.Data.Lists.Any(l => l.Name == src.List) ? src.List : list; status = src.Status; }
+            // Only lists that show somewhere: a task put on an archived list would vanish. Editing a task
+            // that already sits on one keeps that list in the menu, so saving does not move it.
+            var listNames = store.ActiveLists.Select(l => l.Name).ToList();
+            if (editing != null && !listNames.Contains(editing.List) && store.Data.Lists.Any(l => l.Name == editing.List)) listNames.Add(editing.List);
+            if (!listNames.Contains(list)) list = listNames.FirstOrDefault() ?? list;
             var w = Layout.Dialog(owner, editing == null ? "Quick add" : "Edit task");
+            bool closed = false;
+            w.Closed += (_, _) => closed = true;
             var name = new TextBox { Text = src?.Name ?? "" };
-            var type = new ComboBox { ItemsSource = TypeWords, SelectedIndex = src != null ? (int)src.Type : list == "Meetings" ? (int)TaskType.Meeting : 0 };
-            var lists = new ComboBox { ItemsSource = store.Data.Lists.Select(l => l.Name).ToList(), SelectedItem = list };
+            var type = new ComboBox { ItemsSource = TypeWords, SelectedIndex = src != null ? (int)src.Type : IsMeetingList(store, list) ? (int)TaskType.Meeting : 0 };
+            var lists = new ComboBox { ItemsSource = listNames, SelectedItem = list };
             var section = new ComboBox();
             var tagNames = store.Data.Tags.Select(t => t.Name).Concat(store.Data.Tasks.Select(t => t.Tag)).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(t => t).ToList();
             var tags = new ComboBox { IsEditable = true, ItemsSource = tagNames };
@@ -152,7 +175,7 @@ namespace BusyBunny
             AutomationProperties.SetName(daysPanel, "Repeat on");
             var customRepeat = new TextBox();
             AutomationProperties.SetHelpText(customRepeat, "In plain words, like every 3 days, every Monday and Thursday, or every other week on Tuesday.");
-            var rename = new CheckBox { Content = "As_k for a new name each time it repeats, like chapter 9 then chapter 10", Margin = new Thickness(0, 4, 0, 6) };
+            var rename = new CheckBox { Content = "Ask _for a new name each time it repeats, like chapter 9 then chapter 10", Margin = new Thickness(0, 4, 0, 6) };
             var remind = new TextBox();
             AutomationProperties.SetHelpText(remind, "A date and time, like tomorrow at 3 or 10/20 at 8:30 am. With no time it is 9 am. Leave it empty for none.");
             var remindRepeat = new ComboBox { IsEditable = true, ItemsSource = RepeatChoices };
@@ -242,11 +265,11 @@ namespace BusyBunny
                 ["due"] = Layout.Row("_Due", due),
                 ["dodate"] = Layout.Row("D_o date", doDate),
                 ["size"] = Layout.Row("Si_ze", size),
-                ["energy"] = Layout.Row("_Energy", energy),
-                ["weight"] = Layout.Row("_Grade weight in percent", weight),
+                ["energy"] = Layout.Row("Ener_gy", energy),
+                ["weight"] = Layout.Row("Grade weig_ht in percent", weight),
                 ["repeat"] = ScheduleRows(repeat, daysPanel, customRepeat, rename),
                 ["remind"] = Layout.Row("Re_minder date and time", remind),
-                ["remindrepeat"] = Layout.Row("Reminder rep_eat", remindRepeat),
+                ["remindrepeat"] = Layout.Row("Rem_inder repeat", remindRepeat),
             };
             void ApplyType()
             {
@@ -257,6 +280,8 @@ namespace BusyBunny
             type.SelectionChanged += (_, _) => ApplyType();
             ApplyType();
 
+            // Every access key in this form is a letter of its own (WPF only cycles between two alike):
+            // n y l a t, s p z g h, d o, r w f m i, e, u b k v, c x.
             // Sections with headings (Morgan's issue 14): NVDA says each group's name on the way in, and
             // Control Down and Control Up jump from one section to the next.
             var panel = new StackPanel { Margin = new Thickness(14) };
@@ -273,7 +298,7 @@ namespace BusyBunny
                 sections.Add((box, fields));
             }
             Section("Task", new Control[] { name, type, lists, section, tags },
-                Layout.Row("Task _name", name), Layout.Row("Task t_ype", type), Layout.Row("_List", lists), Layout.Row("Ca_tegory", section), Layout.Row("_Tag", tags));
+                Layout.Row("Task _name", name), Layout.Row("Task t_ype", type), Layout.Row("_List", lists), Layout.Row("C_ategory", section), Layout.Row("_Tag", tags));
             Section("Status and priority", new Control[] { statuses, priority, size, energy, weight },
                 Layout.Row("_Status", statuses), Layout.Row("_Priority", priority), rows["size"], rows["energy"], rows["weight"]);
             Section("Dates", new Control[] { due, doDate }, rows["due"], rows["dodate"]);
@@ -303,8 +328,8 @@ namespace BusyBunny
             subRows.Children.Add(Layout.Row("S_ubtasks", subList));
             subRows.Children.Add(Layout.Row("New su_btask", newSub));
             var subButtons = new StackPanel { Orientation = Orientation.Horizontal };
-            subButtons.Children.Add(B("Add s_ubtask", AddSub));
-            subButtons.Children.Add(B("Rena_me subtask", () =>
+            subButtons.Children.Add(B("Add subtask", AddSub));
+            subButtons.Children.Add(B("Rename subtask", () =>
             {
                 int i = subList.SelectedIndex;
                 if (i < 0) { Speech.Say(w, "No subtask to rename.", true); return; }
@@ -321,7 +346,7 @@ namespace BusyBunny
                 Speech.Say(w, subs[i].Name + (subs[i].Done ? " is done." : " is not done."), true);
                 if (subList.ItemContainerGenerator.ContainerFromIndex(i) is ListBoxItem it) it.Focus();
             }));
-            subButtons.Children.Add(B("Delete s_ubtask", () =>
+            subButtons.Children.Add(B("Remo_ve subtask", () =>
             {
                 int i = subList.SelectedIndex;
                 if (i < 0) { Speech.Say(w, "No subtask to delete.", true); return; }
@@ -335,8 +360,8 @@ namespace BusyBunny
             newSub.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter && newSub.Text.Trim().Length > 0) { e.Handled = true; AddSub(); } };
 
             var commentButtons = new StackPanel { Orientation = Orientation.Horizontal };
-            commentButtons.Children.Add(B("Add c_omment", AddComment));
-            Section("Comments", new Control[] { commentList, newComment }, Layout.Row("Co_mments", commentList), Layout.Row("New comme_nt", newComment), commentButtons);
+            commentButtons.Children.Add(B("Add comment", AddComment));
+            Section("Comments", new Control[] { commentList, newComment }, Layout.Row("_Comments", commentList), Layout.Row("New comment te_xt", newComment), commentButtons);
             newComment.PreviewKeyDown += (_, e) => { if (e.Key == Key.Enter && newComment.Text.Trim().Length > 0) { e.Handled = true; AddComment(); } };
 
             var ok = Layout.Button(editing == null ? "Add" : "Save", isDefault: true);
@@ -362,15 +387,18 @@ namespace BusyBunny
             // date it understood, says it, and the form carries on.
             async System.Threading.Tasks.Task<bool> Rescue(TextBox box, string what, Status week, bool withTime)
             {
-                if (!SmartBunny.CanReadDates) return false;
+                // A private list's text never goes to Claude, so its dates are not sent either.
+                string onList = lists.SelectedItem as string ?? list;
+                if (!SmartBunny.CanReadDatesFor(onList)) return false;
                 asking = true;
                 Speech.Say(w, "Bunny is working out that " + what + ".", true);
                 try
                 {
-                    var got = await SmartBunny.ReadDateAsync(box.Text, DateTime.Now, week);
-                    if (got is not (DateTime d, bool t)) return false;
+                    var got = await SmartBunny.ReadDateAsync(box.Text, DateTime.Now, week, onList);
+                    // Escape while Bunny was thinking closed the form: nothing more to do.
+                    if (closed || got is not (DateTime d, bool t)) return false;
                     box.Text = Show(d, t && withTime);
-                    Speech.Say(w, "Bunny read the " + what + " as " + Words.Day(d, DateTime.Now) + (t && withTime ? " at " + Words.Time(d) : "") + ".");
+                    Speech.Say(w, "Bunny read the " + what + " as " + Words.Day(d, DateTime.Now) + (t && withTime ? " at " + Words.Time(d) : "") + ".", true);
                     return true;
                 }
                 catch { return false; }
@@ -378,21 +406,25 @@ namespace BusyBunny
             }
             ok.Click += async (_, _) =>
             {
-                if (asking) return;
+                if (asking || closed) return;
                 if (name.Text.Trim().Length == 0) { Speech.Say(w, "Type a name for the task first.", true); name.Focus(); return; }
                 // A day on its own follows the status (Morgan's issue 14): Next week and Friday is next week's Friday.
                 var week = (Status)Math.Max(0, statuses.SelectedIndex);
                 var (when, hasTime) = Dates.Parse(due.Text, DateTime.Now, week);
                 if (due.Text.Trim().Length > 0 && when == null)
                 {
-                    if (await Rescue(due, "due date", week, true)) ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                    bool read = await Rescue(due, "due date", week, true);
+                    if (closed) return;
+                    if (read) ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                     else { Speech.Say(w, "Busy Bunny did not understand that due date. Try tomorrow, Friday, next Monday, or 10/20.", true); due.Focus(); }
                     return;
                 }
                 var (doWhen, _) = Dates.Parse(doDate.Text, DateTime.Now, week);
                 if (doDate.Text.Trim().Length > 0 && doWhen == null)
                 {
-                    if (await Rescue(doDate, "do date", week, false)) ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+                    bool read = await Rescue(doDate, "do date", week, false);
+                    if (closed) return;
+                    if (read) ok.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
                     else { Speech.Say(w, "Busy Bunny did not understand that do date. Try tomorrow, Friday, next Monday, or 10/20.", true); doDate.Focus(); }
                     return;
                 }
@@ -422,10 +454,11 @@ namespace BusyBunny
                 AddSub();
                 AddComment();
                 string listName = lists.SelectedItem as string ?? list;
+                if (!store.Data.Lists.Any(l => l.Name == listName)) { Speech.Say(w, "Pick a list for the task first.", true); lists.Focus(); return; }
                 var kind = (TaskType)Math.Max(0, type.SelectedIndex);
                 string tag = (tags.Text ?? "").Trim();
                 var known = store.Data.Tags.FirstOrDefault(t => t.Name.Equals(tag, StringComparison.OrdinalIgnoreCase));
-                if (tag.Length > 0 && known == null) { tag = tag.ToUpperInvariant(); store.Data.Tags.Add(new TagInfo { Name = tag }); }
+                if (tag.Length > 0 && known == null) { tag = tag.ToUpperInvariant(); _newTag = tag; }
                 else if (known != null) tag = known.Name;
                 made = editing != null ? editing.Copy() : new TaskItem { StatusSince = DateTime.Now };
                 made.Name = taskName;
@@ -451,7 +484,7 @@ namespace BusyBunny
                 made.Notes = notes.Text.Trim();
                 made.Subtasks = subs;
                 made.Comments = comments;
-                made.IsMeeting = kind == TaskType.Meeting || listName == "Meetings";
+                made.IsMeeting = kind == TaskType.Meeting || IsMeetingList(store, listName);
                 w.DialogResult = true;
             };
             w.Loaded += (_, _) => { name.Focus(); name.SelectAll(); };
@@ -546,7 +579,7 @@ namespace BusyBunny
             return rows.Select(r =>
             {
                 string l = r.List.SelectedItem as string ?? list;
-                bool meeting = l == "Meetings";
+                bool meeting = QuickAdd.IsMeetingList(store, l);
                 return new TaskItem
                 {
                     Name = r.Name, List = l, StatusSince = now,
@@ -568,9 +601,9 @@ namespace BusyBunny
     {
         public void Attach(MainWindow w)
         {
-            w.AddMenuItem("Task", "Add _several tasks...", () => AddSeveral(w), "Ctrl+Shift+N");
+            w.AddMenuItem("Task", "Add se_veral tasks...", () => AddSeveral(w), "Ctrl+Shift+N");
             w.AddMenuItem("Task", "Save as _template...", () => SaveTemplate(w));
-            w.AddMenuItem("Task", "New from t_emplate...", () => FromTemplate(w));
+            w.AddMenuItem("Task", "_New from template...", () => FromTemplate(w));
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.N, () => AddSeveral(w), "Control Shift N: add several tasks at once, one per line");
             w.StatusChanged += (t, old) => { if (t.Status == Status.Done && old != Status.Done) AddNextCopy(w, t); };
         }
@@ -589,7 +622,8 @@ namespace BusyBunny
                 string? typed = Prompt.Ask(w, "Name for the next one", "Next " + ((next.Due ?? next.DoDate) is DateTime nd ? Words.Day(nd, DateTime.Now) : "time") + ", the task is called", suggested);
                 next.Name = string.IsNullOrWhiteSpace(typed) ? suggested : typed.Trim();
             }
-            w.AddTask(next, announce: false);
+            // Part of the status change, which was remembered already: one Control Z undoes both.
+            w.AddTask(next, announce: false, remember: false);
             string when = (next.Due ?? next.DoDate) is DateTime d ? ", " + (next.Due != null ? "due " : "for ") + Words.Day(d, DateTime.Now) : "";
             w.Say("Next one added: " + next.Name + when + ".");
         }
@@ -616,9 +650,9 @@ namespace BusyBunny
             if (names.Count == 0) { w.Say("No tasks typed, so nothing was added.", true); return; }
             var status = w.Store.Data.Lists.FirstOrDefault(l => l.Name == list)?.DefaultStatus ?? Status.ThisWeek;
             if (NewTasks.Review(w, w.Store, names, list, status == Status.Today ? 0 : status == Status.NextWeek ? 2 : 1) is not List<TaskItem> made) return;
-            foreach (var t in made) w.AddTask(t, announce: false);
+            w.AddTasks(made);
             var where = made.Select(t => t.List).Distinct().ToList();
-            w.Say("Added " + made.Count + (made.Count == 1 ? " task" : " tasks") + " to " + string.Join(" and ", where) + ". Control Z undoes them one at a time.", true);
+            w.Say("Added " + made.Count + (made.Count == 1 ? " task" : " tasks") + " to " + string.Join(" and ", where) + "." + (made.Count > 1 ? " Control Z takes them all back." : ""), true);
         }
 
         static void SaveTemplate(MainWindow w)
@@ -692,6 +726,16 @@ namespace BusyBunny
             Check(Dates.Parse("tomorrow at 3", now).When == new DateTime(2026, 10, 13, 15, 0, 0), "tomorrow at 3");
             Check(Dates.Parse("10/20", now).When == new DateTime(2026, 10, 20), "10/20");
             Check(Dates.Parse("", now).When == null, "empty date");
+            // Edit task keeps Ask for a new name each time it repeats.
+            var to = new TaskItem();
+            QuickAdd.Apply(new TaskItem { Name = "chapter 9", Repeat = "every week", RenameOnRepeat = true, Status = Status.Done }, to);
+            Check(to.RenameOnRepeat && to.Status == Status.Done && to.DoneAt != null, "Apply copies RenameOnRepeat, the status and when it was done");
+            QuickAdd.Apply(new TaskItem { Name = "chapter 9", RenameOnRepeat = false }, to);
+            Check(!to.RenameOnRepeat && to.DoneAt == null, "Apply clears RenameOnRepeat and DoneAt");
+            // A meetings list stays one when renamed (its only task type is Meeting).
+            store.Data.Lists.Add(new TaskList { Name = "Calls", Types = new() { TaskType.Meeting } });
+            Check(QuickAdd.IsMeetingList(store, "Calls") && QuickAdd.IsMeetingList(store, "Meetings") && !QuickAdd.IsMeetingList(store, "Homework"), "meetings lists");
+            AccessKeys.SelfTest();
         }
     }
 }

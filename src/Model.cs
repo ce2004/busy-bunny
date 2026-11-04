@@ -196,6 +196,10 @@ namespace BusyBunny
         public DateTime? DoDate { get; set; }
         /// <summary>A repeat rule in plain words, like every Monday, or empty.</summary>
         public string Repeat { get; set; } = "";
+        /// <summary>The day of the month a monthly or yearly repeat is meant for, like 31 for the last day, so short months do not pull it earlier for good. 0 when not known yet.</summary>
+        public int RepeatDay { get; set; }
+        /// <summary>The same for the reminder's repeat.</summary>
+        public int RemindDay { get; set; }
         /// <summary>Ask for a new name each time it repeats, like chapter 9 readings becoming chapter 10 (Morgan's issue 5).</summary>
         public bool RenameOnRepeat { get; set; }
         public DateTime? RemindAt { get; set; }
@@ -252,12 +256,99 @@ namespace BusyBunny
         /// <summary>The burrow, Vex the rival, bets, quests and collected sound packs.</summary>
         public PlayState Play { get; set; } = new();
 
+        /// <summary>The day's settings, made and stored when missing: for setting something.</summary>
         public DayInfo Day(DateTime d)
         {
             string k = d.ToString("yyyy-MM-dd");
             if (!Days.TryGetValue(k, out var info)) Days[k] = info = new DayInfo();
             return info;
         }
+
+        /// <summary>The day's settings for reading only: a blank one when nothing was set, and nothing is stored.</summary>
+        public DayInfo PeekDay(DateTime d) => Days.TryGetValue(d.ToString("yyyy-MM-dd"), out var info) && info != null ? info : new DayInfo();
+
+        /// <summary>
+        /// Fills in anything a damaged, hand-edited or older file left out (a missing list or name), so
+        /// nothing later trips over a null. Called after every read.
+        /// </summary>
+        public Data Normalize()
+        {
+            Lists ??= new(); Tasks ??= new(); Tags ??= new(); Classes ??= new(); AccessRequests ??= new();
+            AccessNudges ??= new(); Log ??= new(); Days ??= new(); Templates ??= new(); Parking ??= new();
+            WeekdayPlans ??= new(); BunnyNotes ??= new(); BunnyProfile ??= ""; Game ??= new(); Play ??= new();
+            Lists.RemoveAll(l => l == null);
+            foreach (var l in Lists)
+            {
+                l.Name ??= ""; l.Scale ??= Array.Empty<string>(); l.ScaleName ??= ""; l.Parent ??= ""; l.Sections ??= new();
+                l.FinishSound ??= ""; l.SoundPack ??= ""; l.Types ??= new();
+                l.Sections.RemoveAll(s => s == null);
+            }
+            Tasks.RemoveAll(t => t == null);
+            Templates.RemoveAll(t => t == null);
+            foreach (var t in Tasks.Concat(Templates))
+            {
+                t.Name ??= ""; t.List ??= ""; t.Tag ??= ""; t.Repeat ??= ""; t.RemindRepeat ??= ""; t.Section ??= ""; t.Notes ??= "";
+                t.Comments ??= new(); t.Subtasks ??= new();
+                t.Comments.RemoveAll(c => c == null);
+                t.Subtasks.RemoveAll(s => s == null);
+                foreach (var c in t.Comments) c.Text ??= "";
+                foreach (var s in t.Subtasks) s.Name ??= "";
+            }
+            Tags.RemoveAll(x => x == null || x.Name == null);
+            foreach (var x in Tags) x.Description ??= "";
+            Classes.RemoveAll(c => c == null);
+            foreach (var c in Classes) { c.Tag ??= ""; c.Days ??= new(); c.Where ??= ""; }
+            Log.RemoveAll(e => e == null);
+            foreach (var e in Log) { e.Kind ??= ""; e.Text ??= ""; e.Tag ??= ""; e.List ??= ""; }
+            AccessNudges.RemoveAll(x => x == null);
+            Parking.RemoveAll(x => x == null);
+            BunnyNotes.RemoveAll(x => x == null);
+            foreach (var k in Days.Where(kv => kv.Value == null).Select(kv => kv.Key).ToList()) Days.Remove(k);
+            return this;
+        }
+    }
+
+    /// <summary>
+    /// Reads enum names like JsonStringEnumConverter, but a name this version does not know (written by
+    /// a newer Busy Bunny on the other laptop, or after going back a version) becomes a safe default
+    /// instead of making the whole file unreadable.
+    /// </summary>
+    public sealed class TolerantEnumConverter : JsonConverterFactory
+    {
+        public override bool CanConvert(Type t) => t.IsEnum;
+        public override JsonConverter CreateConverter(Type t, JsonSerializerOptions o) =>
+            (JsonConverter)Activator.CreateInstance(typeof(Conv<>).MakeGenericType(t))!;
+
+        private sealed class Conv<T> : JsonConverter<T> where T : struct, Enum
+        {
+            // An unknown status becomes This week: never Today, which would make it urgent.
+            private static T Fallback => typeof(T) == typeof(Status) ? (T)(object)Status.ThisWeek : default;
+
+            private static T From(string? s) =>
+                s != null && Enum.TryParse<T>(s, true, out var v) && Enum.IsDefined(v) ? v : Fallback;
+
+            public override T Read(ref Utf8JsonReader r, Type type, JsonSerializerOptions o)
+            {
+                if (r.TokenType == JsonTokenType.String) return From(r.GetString());
+                if (r.TokenType == JsonTokenType.Number && r.TryGetInt32(out int n))
+                {
+                    var v = (T)Enum.ToObject(typeof(T), n);
+                    return Enum.IsDefined(v) ? v : Fallback;
+                }
+                r.Skip();
+                return Fallback;
+            }
+
+            public override void Write(Utf8JsonWriter w, T value, JsonSerializerOptions o) => w.WriteStringValue(value.ToString());
+            public override T ReadAsPropertyName(ref Utf8JsonReader r, Type type, JsonSerializerOptions o) => From(r.GetString());
+            public override void WriteAsPropertyName(Utf8JsonWriter w, T value, JsonSerializerOptions o) => w.WritePropertyName(value.ToString());
+        }
+    }
+
+    /// <summary>Busy Bunny's tasks file is in use by another program and stayed that way: it is not damaged, so nothing is replaced.</summary>
+    public sealed class StoreLockedException : IOException
+    {
+        public StoreLockedException(string path, Exception inner) : base("The tasks file " + path + " is in use by another program.", inner) { }
     }
 
     /// <summary>
@@ -271,14 +362,37 @@ namespace BusyBunny
         public static string FilePath => Path.Combine(Folder, "tasks.json");
         public static string BackupFolder => Path.Combine(Folder, "Backups");
 
-        private static readonly JsonSerializerOptions Json = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
+        private static readonly JsonSerializerOptions Json = new() { WriteIndented = false, Converters = { new TolerantEnumConverter() } };
 
         /// <summary>A deep copy of anything saved in the data file.</summary>
-        public static T Clone<T>(T x) => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(x, Json), Json)!;
+        public static T Clone<T>(T x) => JsonSerializer.Deserialize<T>(JsonSerializer.SerializeToUtf8Bytes(x, Json), Json)!;
 
         public Data Data { get; private set; } = new();
-        // Undo history, newest last, at most 100 steps: the whole data file as it was.
-        private readonly List<(string Data, string What)> _undo = new();
+        // Undo history, newest last, at most 100 steps and about 50 MB: the whole data file as it was,
+        // compressed (a year of tasks is a few MB as text, so 100 plain copies ran to a gigabyte).
+        private readonly List<(byte[] Data, string What)> _undo = new();
+        private long _undoBytes;
+        private const long UndoLimit = 50L << 20;
+
+        // ---- Saving safely (sweep 2.6 and 9.2) ----
+
+        /// <summary>True while a change is only in memory because the last save failed. DataSafety keeps retrying.</summary>
+        public bool Dirty { get; private set; }
+        /// <summary>Why the last save failed, in Windows' words, or null.</summary>
+        public string? LastSaveError { get; private set; }
+        /// <summary>Raised each time a save fails. The change stays in memory and Dirty is set.</summary>
+        public event Action<Exception>? SaveFailed;
+        /// <summary>Raised when a save works again after failing.</summary>
+        public event Action? SaveRecovered;
+        /// <summary>Something to tell her after starting, like a damaged file that was replaced by a backup. Null when all was well.</summary>
+        public string? LoadNote { get; set; }
+        /// <summary>True when there was no data at all on this PC (no file, no backup): the sample tasks were loaded.</summary>
+        public bool FirstRun { get; private set; }
+        /// <summary>A second folder for the daily backup, like her Google Drive folder (sweep 2.2), or null. Set from Settings.</summary>
+        public static string? ExtraBackupFolder { get; set; }
+        /// <summary>The daily backups for a test store; real data uses BackupFolder. Null for a test store means no backups.</summary>
+        public string? BackupOverride { get; init; }
+        private string? MyBackups => PathOverride == null ? BackupFolder : BackupOverride;
 
         /// <summary>
         /// Features add rules here to keep tasks off Today and Focus, like vacation or low-energy mode.
@@ -296,67 +410,335 @@ namespace BusyBunny
         }
 
         public IEnumerable<TaskList> ActiveLists => Data.Lists.Where(l => !l.Archived);
+
+        /// <summary>
+        /// While set, the summary, progress, overdue and kind-of-day maths only count tasks this says yes to.
+        /// Smarter Bunny sets it through SummaryFor so private lists never reach Claude (sweep 2.1).
+        /// SummaryParts must use Counts too.
+        /// </summary>
+        public Func<TaskItem, bool>? SummaryFilter { get; private set; }
+        public bool Counts(TaskItem t) => (SummaryFilter == null || SummaryFilter(t)) && !IsArchived(t);
+        /// <summary>Whether the task's list is archived: those tasks show nowhere, so summaries leave them out.</summary>
+        public bool IsArchived(TaskItem t) => Data.Lists.FirstOrDefault(l => l.Name == t.List)?.Archived == true;
+        /// <summary>The summary line built only from tasks include says yes to.</summary>
+        public string SummaryFor(DateTime now, Func<TaskItem, bool> include, bool shortMode = false)
+        {
+            var before = SummaryFilter;
+            SummaryFilter = include;
+            try { return Summary(now, shortMode); }
+            finally { SummaryFilter = before; }
+        }
         public string Key(DateTime d) => d.ToString("yyyy-MM-dd");
 
         public string? PathOverride { get; init; }
         private string MyFile => PathOverride ?? FilePath;
 
-        public static Store Load(string? path = null)
+        /// <summary>
+        /// Loads her data. A file another program holds open (a sync or backup tool, a virus scan) is
+        /// waited for, never treated as damaged: if it stays locked this throws StoreLockedException and
+        /// nothing is replaced. A damaged file is kept for rescue and the newest good copy is loaded
+        /// instead (the last save's new file, the copy before it, then the daily backups), with LoadNote
+        /// saying so. Only a PC with no data at all gets the sample tasks.
+        /// </summary>
+        public static Store Load(string? path = null, string? backups = null)
         {
-            var s = new Store { PathOverride = path };
-            try
+            var s = new Store { PathOverride = path, BackupOverride = backups };
+            string file = s.MyFile;
+            if (File.Exists(file))
             {
-                if (File.Exists(s.MyFile))
-                    s.Data = JsonSerializer.Deserialize<Data>(File.ReadAllText(s.MyFile), Json) ?? Sample.Make();
+                string text = ReadWaiting(file);
+                var d = Parse(text);
+                if (d != null)
+                {
+                    s.Data = d;
+                    // A save that wrote its new copy but could not swap it in, and Busy Bunny closed after: that copy is newer.
+                    try
+                    {
+                        string fresh = file + ".new";
+                        if (File.Exists(fresh) && File.GetLastWriteTimeUtc(fresh) > File.GetLastWriteTimeUtc(file) && Parse(ReadWaiting(fresh, 2000)) is Data newer)
+                        {
+                            s.Data = newer;
+                            s.LoadNote = "Your last change had not been saved properly, so I loaded the newer copy of your tasks.";
+                            ErrorLog.Write("Loaded tasks.json.new, newer than tasks.json.");
+                        }
+                    }
+                    catch { }
+                }
                 else
-                    s.Data = Sample.Make();
+                {
+                    string kept = file + ".damaged-" + DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                    try { File.Copy(file, kept, true); }
+                    catch { s._keepDamagedAs = kept; } // the first save keeps it instead (as its spare copy)
+                    string keptWords = kept.Length > 0 ? " The damaged file is kept as " + Path.GetFileName(kept) + "." : "";
+                    var (good, from) = s.Rescue();
+                    if (good != null)
+                    {
+                        s.Data = good;
+                        s.LoadNote = "Your tasks file was damaged, so I loaded " + from + "." + keptWords;
+                    }
+                    else
+                    {
+                        // Never the sample tasks over a real file: empty lists, and the damaged file kept.
+                        s.Data = new Data { Lists = Sample.Lists() };
+                        s.LoadNote = "Your tasks file was damaged and I found no good backup, so your lists are empty for now." + keptWords +
+                            " Help, Report a problem copies the details, and File, Restore from a backup can bring back a copy you exported.";
+                    }
+                    ErrorLog.Write("Tasks file was damaged at start. " + (good != null ? "Loaded " + from + "." : "No good backup."));
+                }
             }
-            catch
+            else
             {
-                // A damaged file is kept for rescue, never overwritten; the app starts from the sample.
-                try { File.Copy(s.MyFile, s.MyFile + ".damaged-" + DateTime.Now.ToString("yyyyMMdd-HHmmss")); } catch { }
-                s.Data = Sample.Make();
+                var (good, from) = s.Rescue();
+                if (good != null)
+                {
+                    s.Data = good;
+                    s.LoadNote = "I could not find your tasks file, so I loaded " + from + ".";
+                    ErrorLog.Write("Tasks file was missing at start. Loaded " + from + ".");
+                }
+                else
+                {
+                    s.Data = Sample.Make();
+                    s.FirstRun = true;
+                }
             }
-            if (s.Data.Lists.Count == 0) s.Data.Lists = Sample.Lists();
-            // Saved before scales had names: name them from the library.
-            foreach (var l in s.Data.Lists)
-                if (l.Scale.Length > 0 && l.ScaleName.Length == 0) l.ScaleName = Scales.NameFor(l.Scale);
-            // Every tag on a task is a known tag.
-            foreach (var tag in s.Data.Tasks.Select(t => t.Tag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
-                if (!s.Data.Tags.Any(x => x.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) s.Data.Tags.Add(new TagInfo { Name = tag });
+            s.Tidy();
             return s;
         }
 
-        public void Save()
+        /// <summary>Reads the file, waiting up to about 8 seconds while another program has it open.</summary>
+        private static string ReadWaiting(string file, int waitMs = 8000)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(MyFile)!);
-            string text = JsonSerializer.Serialize(Data, Json);
-            string fresh = MyFile + ".new";
-            File.WriteAllText(fresh, text);
-            if (File.Exists(MyFile)) File.Replace(fresh, MyFile, null, ignoreMetadataErrors: true);
-            else File.Move(fresh, MyFile);
-            if (PathOverride == null) BackupToday(text);
+            var until = DateTime.UtcNow.AddMilliseconds(waitMs);
+            while (true)
+            {
+                try { return File.ReadAllText(file); }
+                catch (Exception e) when (e is (IOException or UnauthorizedAccessException) and not (FileNotFoundException or DirectoryNotFoundException))
+                {
+                    if (DateTime.UtcNow > until) throw new StoreLockedException(file, e);
+                    System.Threading.Thread.Sleep(250);
+                }
+            }
         }
 
-        private static void BackupToday(string text)
+        /// <summary>The data in this text, or null when it is not readable Busy Bunny data.</summary>
+        private static Data? Parse(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text) || text.TrimStart('\0', ' ', '\r', '\n', '\t').Length == 0) return null;
+            try { return JsonSerializer.Deserialize<Data>(text, Json)?.Normalize(); }
+            catch (Exception e) when (e is JsonException or NotSupportedException or InvalidOperationException or ArgumentException or FormatException) { return null; }
+        }
+
+        /// <summary>The newest good copy of the data, and words for where it came from; null when there is none.</summary>
+        private (Data? Data, string From) Rescue()
+        {
+            var tries = new List<(string File, Func<string> Words)>
+            {
+                (MyFile + ".new", () => "the copy from your last save"),
+                (MyFile + ".bak", () => "the copy from the save before that"),
+            };
+            if (MyBackups is string dir && Directory.Exists(dir))
+                foreach (var f in new DirectoryInfo(dir).GetFiles("tasks ????-??-??.json").OrderByDescending(f => f.Name))
+                {
+                    var name = f;
+                    tries.Add((f.FullName, () => DateTime.TryParseExact(name.Name[6..16], "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var day)
+                        ? "the backup from " + Words.Day(day, DateTime.Today)
+                        : "the newest daily backup"));
+                }
+            foreach (var (f, words) in tries)
+            {
+                try
+                {
+                    if (!File.Exists(f)) continue;
+                    var d = Parse(ReadWaiting(f, 2000));
+                    if (d != null && (d.Lists.Count > 0 || d.Tasks.Count > 0)) return (d, words());
+                }
+                catch { }
+            }
+            return (null, "");
+        }
+
+        /// <summary>Fixes up what older files lack: list scale names, and every tag on a task known as a tag.</summary>
+        private void Tidy()
+        {
+            Data.Normalize();
+            if (Data.Lists.Count == 0) Data.Lists = Sample.Lists();
+            // Saved before scales had names: name them from the library.
+            foreach (var l in Data.Lists)
+                if (l.Scale.Length > 0 && l.ScaleName.Length == 0) l.ScaleName = Scales.NameFor(l.Scale);
+            // Every tag on a task is a known tag.
+            foreach (var tag in Data.Tasks.Select(t => t.Tag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
+                if (!Data.Tags.Any(x => x.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) Data.Tags.Add(new TagInfo { Name = tag });
+        }
+
+        private DateTime _failLogged = DateTime.MinValue;
+        // A damaged tasks.json that could not be copied at start: the first save keeps it under this name.
+        private string? _keepDamagedAs;
+
+        /// <summary>Saves, and never throws: a failure is logged, announced through SaveFailed and retried by DataSafety.</summary>
+        public void Save() => TrySave();
+
+        /// <summary>Saves now. False when it failed: the change is still in memory, Dirty is set and SaveFailed was raised.</summary>
+        public bool TrySave()
         {
             try
             {
-                Directory.CreateDirectory(BackupFolder);
-                string today = Path.Combine(BackupFolder, "tasks " + DateTime.Now.ToString("yyyy-MM-dd") + ".json");
-                if (File.Exists(today)) return;
-                File.WriteAllText(today, text);
-                var old = new DirectoryInfo(BackupFolder).GetFiles("tasks ????-??-??.json").OrderByDescending(f => f.Name).Skip(30);
-                foreach (var f in old) f.Delete();
+                SaveOrThrow();
+                LastSaveError = null;
+                if (Dirty)
+                {
+                    Dirty = false;
+                    if (PathOverride == null) ErrorLog.Write("Saving tasks worked again.");
+                    _failLogged = DateTime.MinValue;
+                    SaveRecovered?.Invoke();
+                }
+                return true;
             }
-            catch { }
+            catch (Exception e)
+            {
+                Dirty = true;
+                LastSaveError = e.Message;
+                // Once per run of failures (and every 10 minutes while it lasts), so retries every few seconds do not fill the log.
+                if (PathOverride == null && DateTime.UtcNow - _failLogged > TimeSpan.FromMinutes(10))
+                {
+                    _failLogged = DateTime.UtcNow;
+                    ErrorLog.Write("Saving tasks failed: " + e.GetType().Name + ": " + e.Message);
+                }
+                try { SaveFailed?.Invoke(e); } catch { }
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Writes tasks.json.new straight through to the disk, then swaps it in, keeping the one before as
+        /// tasks.json.bak. If the swap fails halfway, the newest copy is put back in place at once, so there
+        /// is always a tasks.json.
+        /// </summary>
+        private void SaveOrThrow()
+        {
+            string file = MyFile, fresh = file + ".new";
+            // Quick test stores (no backups folder) keep no spare copy, so a self-test leaves nothing behind.
+            string? bak = PathOverride != null && BackupOverride == null ? null : file + ".bak";
+            Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+            // A swap that failed last time can leave her data only in the new file: put it in place first, never over it.
+            if (!File.Exists(file) && File.Exists(fresh)) { try { File.Move(fresh, file); } catch { } }
+            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(Data, Json);
+            using (var fs = new FileStream(fresh, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16, FileOptions.WriteThrough))
+            {
+                fs.Write(bytes, 0, bytes.Length);
+                fs.Flush(true);
+            }
+            if (File.Exists(file))
+            {
+                string? keep = _keepDamagedAs ?? bak;
+                for (int attempt = 1; ; attempt++)
+                {
+                    try { File.Replace(fresh, file, keep, ignoreMetadataErrors: true); _keepDamagedAs = null; break; }
+                    catch (Exception) when (attempt < 3 && File.Exists(file) && File.Exists(fresh)) { System.Threading.Thread.Sleep(100); }
+                    catch
+                    {
+                        // Halfway: tasks.json may be gone while the new copy (or the one before) is still there.
+                        if (!File.Exists(file))
+                        {
+                            try { if (File.Exists(fresh)) File.Move(fresh, file); else if (bak != null && File.Exists(bak)) File.Copy(bak, file); } catch { }
+                        }
+                        throw;
+                    }
+                }
+            }
+            else File.Move(fresh, file);
+            BackupToday(bytes);
+        }
+
+        private DateTime _extraTried = DateTime.MinValue;
+        private string _extraDone = "";
+
+        private void BackupToday(byte[] bytes)
+        {
+            if (MyBackups is not string dir) return;
+            string name = "tasks " + DateTime.Now.ToString("yyyy-MM-dd") + ".json";
+            try
+            {
+                Directory.CreateDirectory(dir);
+                string today = Path.Combine(dir, name);
+                if (!File.Exists(today))
+                {
+                    File.WriteAllBytes(today, bytes);
+                    foreach (var f in new DirectoryInfo(dir).GetFiles("tasks ????-??-??.json").OrderByDescending(f => f.Name).Skip(30)) f.Delete();
+                }
+            }
+            catch (Exception e) { if (PathOverride == null) ErrorLog.Write("Daily backup failed: " + e.GetType().Name + ": " + e.Message); }
+            // The copy in her own folder: once a day, and after a failure (Google Drive not running) again ten minutes later.
+            if (ExtraBackupFolder is string extra && extra.Length > 0 && PathOverride == null && _extraDone != extra + "|" + name && DateTime.Now - _extraTried > TimeSpan.FromMinutes(10))
+            {
+                _extraTried = DateTime.Now;
+                if (CopyBackupTo(extra, bytes, out _)) _extraDone = extra + "|" + name;
+            }
+        }
+
+        /// <summary>The subfolder of her chosen folder that holds the copies.</summary>
+        public static string ExtraFolderIn(string folder) => Path.Combine(folder, "Busy Bunny backups");
+
+        /// <summary>Writes today's backup into folder's Busy Bunny backups subfolder, keeping the last 30 there. False with the reason when it failed.</summary>
+        public bool CopyBackupTo(string folder, byte[]? bytes, out string error)
+        {
+            error = "";
+            try
+            {
+                if (!Directory.Exists(folder)) { error = "that folder is not there right now"; return false; }
+                string dir = ExtraFolderIn(folder);
+                Directory.CreateDirectory(dir);
+                bytes ??= JsonSerializer.SerializeToUtf8Bytes(Data, Json);
+                string target = Path.Combine(dir, "tasks " + DateTime.Now.ToString("yyyy-MM-dd") + ".json");
+                string part = target + ".part";
+                File.WriteAllBytes(part, bytes);
+                File.Move(part, target, true);
+                foreach (var f in new DirectoryInfo(dir).GetFiles("tasks ????-??-??.json").OrderByDescending(f => f.Name).Skip(30)) f.Delete();
+                return true;
+            }
+            catch (Exception e)
+            {
+                error = e.Message;
+                if (PathOverride == null) ErrorLog.Write("Copying the backup to her folder failed: " + e.GetType().Name + ": " + e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>Writes the data as it is now to another file, as Export a backup does; works even while saving to tasks.json fails.</summary>
+        public void WriteCopy(string path)
+        {
+            byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(Data, Json);
+            string part = path + ".part";
+            File.WriteAllBytes(part, bytes);
+            File.Move(part, path, true);
         }
 
         /// <summary>Call before any change: Undo puts every task back the way it was here.</summary>
         public void Remember(string what)
         {
-            _undo.Add((JsonSerializer.Serialize(Data, Json), what));
-            if (_undo.Count > 100) _undo.RemoveAt(0);
+            byte[] packed = Pack(JsonSerializer.SerializeToUtf8Bytes(Data, Json));
+            _undo.Add((packed, what));
+            _undoBytes += packed.Length;
+            while (_undo.Count > 1 && (_undo.Count > 100 || _undoBytes > UndoLimit))
+            {
+                _undoBytes -= _undo[0].Data.Length;
+                _undo.RemoveAt(0);
+            }
+        }
+
+        private static byte[] Pack(byte[] raw)
+        {
+            using var ms = new MemoryStream();
+            using (var z = new System.IO.Compression.BrotliStream(ms, System.IO.Compression.CompressionLevel.Fastest, true)) z.Write(raw, 0, raw.Length);
+            return ms.ToArray();
+        }
+
+        private static byte[] Unpack(byte[] packed)
+        {
+            using var src = new MemoryStream(packed);
+            using var z = new System.IO.Compression.BrotliStream(src, System.IO.Compression.CompressionMode.Decompress);
+            using var ms = new MemoryStream();
+            z.CopyTo(ms);
+            return ms.ToArray();
         }
 
         /// <summary>Reads a data file for a restore: null when it is not Busy Bunny data.</summary>
@@ -364,7 +746,7 @@ namespace BusyBunny
         {
             try
             {
-                var d = JsonSerializer.Deserialize<Data>(File.ReadAllText(path), Json);
+                var d = Parse(File.ReadAllText(path));
                 return d != null && d.Lists.Count > 0 ? d : null;
             }
             catch { return null; }
@@ -374,19 +756,41 @@ namespace BusyBunny
         public void ReplaceData(Data d)
         {
             Data = d;
-            foreach (var l in Data.Lists)
-                if (l.Scale.Length > 0 && l.ScaleName.Length == 0) l.ScaleName = Scales.NameFor(l.Scale);
-            foreach (var tag in Data.Tasks.Select(t => t.Tag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase))
-                if (!Data.Tags.Any(x => x.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) Data.Tags.Add(new TagInfo { Name = tag });
+            Tidy();
             Save();
         }
 
+        /// <summary>How many steps Control Z can go back.</summary>
+        public int UndoCount => _undo.Count;
+
+        /// <summary>
+        /// Puts the data back as it was before the last change, and says what was undone. A few things
+        /// are carried over from now, because they are not hers to undo: a list made private stays private
+        /// (sweep R3), a reminder that already went off is not brought back to go off again, and nudges
+        /// already given stay given.
+        /// </summary>
         public string? Undo()
         {
             if (_undo.Count == 0) return null;
-            var (data, what) = _undo[^1];
+            var (packed, what) = _undo[^1];
             _undo.RemoveAt(_undo.Count - 1);
-            Data = JsonSerializer.Deserialize<Data>(data, Json)!;
+            _undoBytes -= packed.Length;
+            var back = JsonSerializer.Deserialize<Data>(Unpack(packed), Json)!.Normalize();
+            var current = Data;
+            var now = DateTime.Now;
+            foreach (var l in back.Lists)
+                if (current.Lists.Any(c => c.Name == l.Name && c.PrivateFromBunny)) l.PrivateFromBunny = true;
+            var byId = current.Tasks.GroupBy(t => t.Id).ToDictionary(g => g.Key, g => g.First());
+            foreach (var t in back.Tasks)
+                if (byId.TryGetValue(t.Id, out var c) && t.RemindAt != c.RemindAt && t.RemindAt is DateTime was && was <= now)
+                {
+                    t.RemindAt = c.RemindAt;
+                    t.RemindRepeat = c.RemindRepeat;
+                    t.RemindDay = c.RemindDay;
+                }
+            foreach (var n in current.AccessNudges) if (!back.AccessNudges.Contains(n)) back.AccessNudges.Add(n);
+            Data = back;
+            Tidy();
             Save();
             return what;
         }
@@ -435,7 +839,7 @@ namespace BusyBunny
         /// </summary>
         public (List<TaskItem> ToDo, List<TaskItem> Due) Today(DateTime now)
         {
-            var open = Data.Tasks.Where(t => t.Status != Status.Done && CanShowToday(t, now)).ToList();
+            var open = Data.Tasks.Where(t => t.Status != Status.Done && Counts(t) && CanShowToday(t, now)).ToList();
             var planned = open.Where(t => PlannedToday(t, now)).ToList();
             var todo = UrgentOrder(planned.Where(t => IsUrgent(t, now)), now)
                 .Concat(Reorder(planned.Where(t => !IsUrgent(t, now)).OrderBy(Rank).ToList(), now)).ToList();
@@ -459,7 +863,7 @@ namespace BusyBunny
         /// mode, a rough day and a list kept out of Today never hide these: an overdue task must never get lost.
         /// </summary>
         public List<TaskItem> Overdue(DateTime now) => Data.Tasks
-            .Where(t => IsOverdue(t, now) && Data.Lists.FirstOrDefault(l => l.Name == t.List)?.Archived != true)
+            .Where(t => IsOverdue(t, now) && Counts(t) && Data.Lists.FirstOrDefault(l => l.Name == t.List)?.Archived != true)
             .OrderBy(t => t.Due).ThenBy(Rank).ToList();
 
         /// <summary>Everything on Today once, to do first: planned for today, then overdue, then due today.</summary>
@@ -467,7 +871,8 @@ namespace BusyBunny
         {
             var (todo, due) = Today(now);
             var all = todo.ToList();
-            foreach (var t in Overdue(now).Concat(due)) if (!all.Contains(t)) all.Add(t);
+            var seen = new HashSet<TaskItem>(all);
+            foreach (var t in Overdue(now).Concat(due)) if (seen.Add(t)) all.Add(t);
             return all;
         }
 
@@ -492,7 +897,7 @@ namespace BusyBunny
         /// <summary>Open tasks planned or due later this week, not already on Today: the ones to get ahead on.</summary>
         public List<TaskItem> GetAhead(DateTime now)
         {
-            var today = TodayAll(now);
+            var today = new HashSet<TaskItem>(TodayAll(now));
             return Data.Tasks.Where(t => !today.Contains(t) && CanShowToday(t, now) && (PlanGroup(t, now) == Status.ThisWeek || DueGroup(t, now) == Status.ThisWeek))
                 .OrderBy(t => t.DoDate ?? t.Due ?? DateTime.MaxValue).ThenBy(Rank).ToList();
         }
@@ -502,10 +907,11 @@ namespace BusyBunny
             Data.Days.TryGetValue(Key(now), out var d) && d.Hours > 0 ? d.Hours : Data.HoursAvailable;
 
         /// <summary>What counts toward today: everything on Today plus what was finished today.</summary>
-        public (int Done, int Total, int PointsDone, int PointsTotal) Progress(DateTime now)
+        public (int Done, int Total, int PointsDone, int PointsTotal) Progress(DateTime now) => Progress(now, TodayAll(now));
+
+        private (int Done, int Total, int PointsDone, int PointsTotal) Progress(DateTime now, List<TaskItem> open)
         {
-            var open = TodayAll(now);
-            var finished = Data.Tasks.Where(t => t.Status == Status.Done && t.DoneAt?.Date == now.Date).ToList();
+            var finished = Data.Tasks.Where(t => t.Status == Status.Done && t.DoneAt?.Date == now.Date && Counts(t)).ToList();
             var all = open.Concat(finished).ToList();
             // Done but not submitted earns half (spec 5.4).
             int pointsDone = finished.Sum(t => Words.Points(t.Size)) + open.Where(t => t.Status == Status.DoneNotSubmitted).Sum(t => Words.Points(t.Size)) / 2;
@@ -515,10 +921,12 @@ namespace BusyBunny
         }
 
         /// <summary>The Bunny set for the day as a whole (spec 6.2f), worked out from urgent tasks and hours of work.</summary>
-        public string DayType(DateTime now)
+        public string DayType(DateTime now) => DayType(now, null);
+
+        private string DayType(DateTime now, List<TaskItem>? todayAll)
         {
-            if (Data.Days.TryGetValue(Key(now), out var set) && set.DayType.Length > 0) return set.DayType;
-            var all = TodayAll(now);
+            if (Data.Days.TryGetValue(Key(now), out var set) && set != null && set.DayType.Length > 0) return set.DayType;
+            var all = todayAll ?? TodayAll(now);
             var urgent = all.Where(t => IsUrgent(t, now)).ToList();
             double hours = all.Where(t => t.Status != Status.DoneNotSubmitted).Sum(t => Words.Hours(t.Size));
             int dueSoon = urgent.Count(t => DueSoon(t, now));
@@ -532,21 +940,28 @@ namespace BusyBunny
         /// <summary>One line, braille friendly (spec 9.6): 3 of 8 done today, test Friday, next meeting at 2.</summary>
         public string Summary(DateTime now, bool shortMode = false)
         {
-            var (done, total, pd, pt) = Progress(now);
+            // Today's list is worked out once here: with thousands of tasks it is the slow part.
+            var todayAll = TodayAll(now);
+            var (done, total, pd, pt) = Progress(now, todayAll);
             var parts = new List<string> { done + " of " + total + " done today" };
             int late = Overdue(now).Count;
             if (late > 0) parts.Add(late + " overdue");
             if (!shortMode && pt > 0) parts.Add(pd * 100 / pt + " percent of today's effort");
-            var meeting = Data.Tasks.Where(t => t.IsMeeting && t.Status != Status.Done && t.Due > now).OrderBy(t => t.Due).FirstOrDefault();
+            // A meeting with no time counts for its whole day, and is said without a time (not 12 am).
+            var meeting = Data.Tasks.Where(t => t.IsMeeting && t.Status != Status.Done && t.Due is DateTime d && (t.DueHasTime ? d > now : d.Date >= now.Date) && Counts(t))
+                .OrderBy(t => t.DueHasTime ? t.Due : t.Due!.Value.Date.AddDays(1).AddTicks(-1)).FirstOrDefault();
             if (meeting?.Due is DateTime md)
             {
-                var gap = md - now;
-                string when = md.Date == now.Date ? "at " + Words.Time(md) : Words.Day(md, now) + " at " + Words.Time(md);
-                parts.Add("next meeting " + when + (md.Date == now.Date && !shortMode ? ", in " + Gap(gap) : ""));
+                if (meeting.DueHasTime)
+                {
+                    string when = md.Date == now.Date ? "at " + Words.Time(md) : Words.Day(md, now) + " at " + Words.Time(md);
+                    parts.Add("next meeting " + when + (md.Date == now.Date && !shortMode ? ", in " + Gap(md - now) : ""));
+                }
+                else parts.Add("next meeting " + Words.Day(md, now));
             }
             foreach (var part in SummaryParts)
                 if (part(now, shortMode) is string p && p.Length > 0) parts.Add(p);
-            if (!shortMode) parts.Add("a " + DayType(now) + " day");
+            if (!shortMode) parts.Add("a " + DayType(now, todayAll) + " day");
             return string.Join(", ", parts) + ".";
         }
 

@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
@@ -46,9 +47,27 @@ namespace BusyBunny
         private string Personality => Personalities.FirstOrDefault(p => p.Name.Equals(Cfg.BunnyPersonality, StringComparison.OrdinalIgnoreCase)).Name ?? Personalities[0].Name;
         public static readonly string[] Voices = { "Read the whole answer out loud", "Just say Bunny answered", "Say nothing, I'll read it in the answers box" };
 
-        /// <summary>Whether Bunny may see a task: not on a list she keeps private from Bunny.</summary>
-        private static bool Seen(Store store, TaskItem t) => !store.ListOf(t).PrivateFromBunny;
+        /// <summary>Whether a list is kept from Bunny: private itself, or inside a private list.</summary>
+        public static bool ListPrivate(Store s, TaskList l)
+        {
+            var visited = new HashSet<string>();
+            TaskList? at = l;
+            while (at != null && visited.Add(at.Name))
+            {
+                if (at.PrivateFromBunny) return true;
+                string parent = at.Parent;
+                at = parent.Length > 0 ? s.Data.Lists.FirstOrDefault(x => x.Name == parent) : null;
+            }
+            return false;
+        }
+        /// <summary>Whether anything about a task may go to Claude: its list, and the list around it, are not private. The narrator checks this too.</summary>
+        public static bool MayShare(Store s, TaskItem t) => !ListPrivate(s, s.ListOf(t));
+        /// <summary>Whether Bunny may see a task: shareable, and not on an archived list (archived lists show nowhere).</summary>
+        private static bool Seen(Store store, TaskItem t) => MayShare(store, t) && !store.ListOf(t).Archived;
         private bool Seen(TaskItem t) => Seen(S, t);
+        private static IEnumerable<TaskList> VisibleLists(Store s) => s.Data.Lists.Where(l => !ListPrivate(s, l));
+        /// <summary>Which lists are private right now; when this changes, Bunny's talk starts over so nothing said before goes out again.</summary>
+        private static string PrivateSignature(Store s) => string.Join("|", s.Data.Lists.Where(l => ListPrivate(s, l)).Select(l => l.Name).OrderBy(n => n, StringComparer.Ordinal));
 
         private MainWindow _w = null!;
         private Settings Cfg => _w.AppSettings;
@@ -62,6 +81,16 @@ namespace BusyBunny
         private readonly List<MessageParam> _history = new();
         private DateTime _historyDay;
         private bool _busy;
+        private CancellationTokenSource? _stop, _learnStop;
+        private bool _stoppedByHand;
+        private string _privateSig = "";
+        private DateTime _lastTyped;
+        // Bumped whenever the talk starts over; a run that sees it change adds nothing to the history.
+        private int _talk;
+        // When the run cap fires; paused while she answers one of Bunny's windows.
+        private DateTime _deadline;
+        // Points and fun lines from Bunny's tools, held until Bunny's answer is said.
+        private readonly List<string> _held = new();
 
         // ---- The key, encrypted for this Windows user ----
 
@@ -92,6 +121,7 @@ namespace BusyBunny
             AutomationProperties.SetHelpText(_answers, "What you and Bunny said, newest at the bottom. Options, Smarter Bunny chooses whether Bunny also reads its answers out loud.");
             _ask.PreviewKeyDown += (_, e) =>
             {
+                if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None && (_busy || _learning)) { e.Handled = true; Stop(); return; }
                 if (e.Key != Key.Enter || Keyboard.Modifiers != ModifierKeys.None) return;
                 e.Handled = true;
                 Send(_ask.Text);
@@ -106,12 +136,17 @@ namespace BusyBunny
             w.AddMenuItem("File", "_Talk to Bunny", FocusAsk, "Ctrl+Shift+A");
             w.AddMenuItem("File", "Bunny, check o_n me now", () => CheckIn(byHand: true));
             w.AddMenuItem("File", "Start a ne_w talk with Bunny", NewTalk);
+            w.AddMenuItem("File", "Stop B_unny", Stop);
+            w.AddMenuItem("File", "Bunny _changes today...", ShowChanges);
+            w.PreviewKeyDown += (_, _) => _lastTyped = DateTime.Now;
+            _changesFile = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(w.Store.PathOverride ?? Store.FilePath)!, "bunny-changes.json");
+            _changes = LoadChanges(_changesFile, DateTime.Now);
             w.AddMenuItem("Options", "Smarter _Bunny...", () => w.OpenSettingsAt(PageName));
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.A, FocusAsk, "Control Shift A: Talk to Bunny. Type, then Enter. Bunny can add and change tasks, settings and more");
             w.MinuteTick += () => { var now = DateTime.Now; if (ShouldCheckIn(now)) CheckIn(byHand: false); else Auto(now); };
             w.Started += Soon;
             w.AddMenuItem("File", "Bunny, get to _know me again", () => { if (!Ready) { CheckIn(true); return; } _ = Learn(first: true); });
-            w.NewDay += _ => _history.Clear();
+            w.NewDay += _ => { _history.Clear(); _talk++; };
         }
 
         private void FocusAsk()
@@ -120,8 +155,39 @@ namespace BusyBunny
             if (!Ready) _w.Say("Talk to Bunny. Bunny needs a Claude API key first: Options, Smarter Bunny.", false);
         }
 
+        /// <summary>Stops Bunny while it thinks: Escape in the Talk to Bunny box, or File, Stop Bunny.</summary>
+        private void Stop()
+        {
+            if (_stop == null && _learnStop == null) { _w.Say("Bunny is not thinking about anything right now.", true); return; }
+            _stoppedByHand = true;
+            try { _stop?.Cancel(); _learnStop?.Cancel(); } catch (ObjectDisposedException) { }
+            _w.Say("Stopping Bunny.", true);
+        }
+
+        /// <summary>Her private lists changed: what was said before may hold their tasks, so the talk starts over.</summary>
+        private void PrivacyChanged(bool madePrivate)
+        {
+            StopForNewTalk();
+            _history.Clear();
+            _answers.Clear();
+            _privateSig = PrivateSignature(S);
+            if (madePrivate)
+                _w.Dispatcher.BeginInvoke(() => _w.Say("Bunny started a new talk, so nothing it saw before goes to Claude again. If Bunny learned about that list before, Options, Smarter Bunny, Forget what Bunny learned clears it."),
+                    System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        /// <summary>The talk starts over: a run still going is stopped and adds nothing to the new talk.</summary>
+        private void StopForNewTalk()
+        {
+            _talk++;
+            if (_stop == null) return;
+            _stoppedByHand = true;
+            try { _stop.Cancel(); } catch (ObjectDisposedException) { }
+        }
+
         private void NewTalk()
         {
+            StopForNewTalk();
             _history.Clear();
             _answers.Clear();
             _w.Say("New talk with Bunny. It still remembers its notes about you.", true);
@@ -147,7 +213,7 @@ namespace BusyBunny
                 _w.OpenSettingsAt(PageName);
                 return;
             }
-            if (_busy) { _w.Say("Bunny is still thinking about the last one.", true); return; }
+            if (_busy) { _w.Say("Bunny is still thinking about the last one. Escape stops it.", true); return; }
             _ask.Clear();
             Log("You: " + text);
             _ = Run(text, focusBack: _ask);
@@ -171,18 +237,22 @@ namespace BusyBunny
         {
             if (!Ready || _busy || _learning) return;
             if (!_w.IsVisible || !_w.IsActive || _w.OwnedWindows.Count > 0) return;
+            // Never while she is typing: no window pops up under her fingers.
+            if (_ask.IsKeyboardFocusWithin && _ask.Text.Length > 0 || (now - _lastTyped).TotalSeconds < 60) return;
             if ((now - _learnFailed).TotalMinutes < 60) return;
-            if (S.Data.BunnyLearned == default) { _ = Learn(first: true); return; }
-            if ((now - S.Data.BunnyLearned).TotalDays >= 7) { _ = Learn(first: false); return; }
-            if (Cfg.BunnyBriefing && Cfg.BunnyBriefedDay != S.Key(now) && now.Hour >= 5 && now.Hour < 22) Briefing(now);
+            if (S.Data.BunnyLearned == default) { _ = Learn(first: true, quiet: true); return; }
+            if ((now - S.Data.BunnyLearned).TotalDays >= 7) { _ = Learn(first: false, quiet: true); return; }
+            if (Cfg.BunnyBriefing && Cfg.BunnyBriefedDay != S.Key(now) && now.Hour >= 5 && now.Hour < 22 && (now - _briefFailed).TotalMinutes >= 30) Briefing(now);
         }
 
-        private void Briefing(DateTime now)
+        private DateTime _briefFailed;
+
+        /// <summary>The daily briefing. The day counts as briefed only once it worked; a failure stays quiet and tries again later.</summary>
+        private async void Briefing(DateTime now)
         {
-            Cfg.BunnyBriefedDay = S.Key(now);
-            Cfg.Save();
             Log("Bunny's briefing for " + now.ToString("dddd", CultureInfo.InvariantCulture) + ":");
-            _ = Run(BriefingPrompt, focusBack: null);
+            if (await Run(BriefingPrompt, focusBack: null, quiet: true)) { Cfg.BunnyBriefedDay = S.Key(now); Cfg.Save(); }
+            else _briefFailed = DateTime.Now;
         }
 
         private const string BriefingPrompt =
@@ -200,8 +270,9 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         /// <summary>Habits from her history, worked out here so Claude gets numbers, not guesses. Private lists are left out.</summary>
         public static string Habits(Store s, DateTime now)
         {
-            bool Hidden(string list) => s.Data.Lists.Any(l => l.Name == list && l.PrivateFromBunny);
-            var done = s.Data.Log.Where(e => e.Kind == "Done" && e.When > now.AddDays(-120) && !Hidden(e.List)).ToList();
+            // Only log entries for lists that exist now and Bunny may see: an old name of a renamed private list stays out.
+            var visible = VisibleLists(s).Select(l => l.Name).ToHashSet();
+            var done = s.Data.Log.Where(e => e.Kind == "Done" && e.When > now.AddDays(-120) && visible.Contains(e.List)).ToList();
             var sb = new StringBuilder();
             sb.AppendLine("Tasks finished in the last 120 days: " + done.Count + ".");
             if (done.Count > 0)
@@ -216,14 +287,14 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                 int days = done.Select(e => e.When.Date).Distinct().Count();
                 sb.AppendLine("Active days: " + days + ", about " + Math.Round(done.Count / (double)Math.Max(1, days), 1) + " tasks on a day she works.");
             }
-            var finished = s.Data.Tasks.Where(t => t.Status == Status.Done && t.Due != null && t.DoneAt != null && !Hidden(t.List)).ToList();
+            var finished = s.Data.Tasks.Where(t => t.Status == Status.Done && t.Due != null && t.DoneAt != null && MayShare(s, t)).ToList();
             if (finished.Count > 0)
             {
                 int late = finished.Count(t => t.DoneAt!.Value.Date > t.Due!.Value.Date);
                 int early = finished.Count(t => t.DoneAt!.Value.Date < t.Due!.Value.Date);
                 sb.AppendLine("Finished tasks with a due date: " + finished.Count + ", " + early + " early, " + (finished.Count - early - late) + " on the day, " + late + " late.");
             }
-            var open = s.Data.Tasks.Where(t => t.Status != Status.Done && !Hidden(t.List) && !s.ListOf(t).Archived).ToList();
+            var open = s.Data.Tasks.Where(t => t.Status != Status.Done && Seen(s, t)).ToList();
             if (open.Count > 0)
             {
                 sb.AppendLine("Open tasks: " + open.Count + ", " + open.Count(t => Store.IsOverdue(t, now)) + " overdue, on average " + Math.Round(open.Average(t => (now - t.CreatedAt).TotalDays)) + " days old.");
@@ -249,43 +320,62 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         }
 
         /// <summary>Bunny studies her lists, schedule, tasks and history, and keeps what it learned. The first time, it welcomes her.</summary>
-        public async Task<bool> Learn(bool first, bool welcome = true)
+        /// <summary>Her open tasks as Bunny may see them, for Learn.</summary>
+        public static string OpenTaskLines(Store s, DateTime now) => string.Join("\n", s.Data.Tasks.Where(t => Seen(s, t) && t.Status != Status.Done)
+            .OrderBy(t => t.Due ?? DateTime.MaxValue).Take(150).Select(t => Describe(s, t, now)));
+
+        public async Task<bool> Learn(bool first, bool welcome = true, bool quiet = false)
         {
             if (_learning || !Ready) return false;
             _learning = true;
+            _stoppedByHand = false;
+            using var stop = new CancellationTokenSource(TimeSpan.FromMinutes(3));
+            _learnStop = stop;
             if (first) { Log("Bunny is getting to know you."); Say("Bunny is getting to know you. Give it a moment."); }
             try
             {
                 var now = DateTime.Now;
-                string tasks = string.Join("\n", S.Data.Tasks.Where(t => Seen(t) && t.Status != Status.Done && !S.ListOf(t).Archived)
-                    .OrderBy(t => t.Due ?? DateTime.MaxValue).Take(150).Select(t => Describe(t, now)));
+                string tasks = OpenTaskLines(S, now);
                 string ask = "Her chosen personality for you: " + Personality + ", " + Personalities.First(p => p.Name == Personality).How + ".\n\n" +
-                    "Overview:\n" + Overview(now) + "\nHabits from her history:\n" + Habits(S, now) + "\nHer open tasks:\n" + (tasks.Length > 0 ? tasks : "none yet") +
+                    "Overview:\n" + OverviewFor(S, Cfg, _w.TabNames, now) + "\nHabits from her history:\n" + Habits(S, now) + "\nHer open tasks:\n" + (tasks.Length > 0 ? tasks : "none yet") +
                     (S.Data.BunnyProfile.Length > 0 ? "\n\nWhat you knew before:\n" + S.Data.BunnyProfile : "") +
                     (first && welcome ? "\n\nThis is the first time you are meeting her properly: write the welcome." : "\n\nNo welcome this time.");
-                var response = await Client().Messages.Create(new MessageCreateParams
+                var response = await MakeClient(SavedKey(), TimeSpan.FromMinutes(3), retries: 0).Messages.Create(new MessageCreateParams
                 {
                     Model = ModelId,
                     MaxTokens = 16000,
                     OutputConfig = new OutputConfig { Effort = Effort.Medium },
                     System = LearnPrompt,
                     Messages = [new UserMessageParam { Content = ask }],
-                });
+                }, stop.Token);
                 var (profile, hello) = ParseLearned(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                 if (profile.Length == 0) throw new Exception("Bunny came back with nothing.");
                 S.Data.BunnyProfile = profile;
                 S.Data.BunnyLearned = now;
                 S.Save();
-                if (first && welcome && hello.Length > 0) Welcome(hello);
+                if (first && welcome && hello.Length > 0)
+                {
+                    // While she is busy typing or in a window, the hello waits in the answers box instead of popping up.
+                    if (_w.OwnedWindows.Count > 0 || _ask.IsKeyboardFocusWithin && _ask.Text.Length > 0 || (DateTime.Now - _lastTyped).TotalSeconds < 20)
+                    {
+                        Log("Bunny: " + hello);
+                        Say("Bunny got to know you. Its hello is in Bunny's answers.");
+                    }
+                    else Welcome(hello);
+                }
                 return true;
             }
             catch (Exception e)
             {
-                _learnFailed = DateTime.Now;
-                if (first) { Log("Bunny: " + Problem(e)); Say(Problem(e)); }
+                if (stop.IsCancellationRequested) e = _stoppedByHand ? new Stopped() : new TooSlow();
+                if (e is not Stopped) _learnFailed = DateTime.Now;
+                Note(e);
+                // Automatic learning stays quiet when it fails: the answers box has it, and it tries again later.
+                if (first || e is Stopped) Log("Bunny: " + Problem(e));
+                if (first && !quiet || e is Stopped) Say(Problem(e));
                 return false;
             }
-            finally { _learning = false; }
+            finally { _learning = false; _learnStop = null; }
         }
 
         private void Say(string text)
@@ -326,13 +416,28 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
 
         private bool ShouldCheckIn(DateTime now)
         {
-            if (!Ready || _busy || Cfg.BunnyCheckHours <= 0) return false;
-            if (now.Hour < 9 || now.Hour >= 21) return false;
+            if (!Ready || _busy || _learning || Cfg.BunnyCheckHours <= 0) return false;
             if (Cfg.BunnyLastCheck == default) { Cfg.BunnyLastCheck = now; Cfg.Save(); return false; }
             if ((now - Cfg.BunnyLastCheck).TotalHours < Cfg.BunnyCheckHours) return false;
             if (!_w.IsVisible || !_w.IsActive || _w.OwnedWindows.Count > 0) return false;
-            if (S.Data.Days.TryGetValue(S.Key(now), out var d) && d.Mode == DayMode.Vacation) return false;
-            return true;
+            if (_ask.IsKeyboardFocusWithin && _ask.Text.Length > 0 || (now - _lastTyped).TotalSeconds < 60) return false;
+            return CheckInBlocked(S, Cfg, now, Features.Get<FocusTools>()?.Sprinting == true) == null;
+        }
+
+        /// <summary>
+        /// Why Bunny should not check in now, or null when it may (sweep 2.5): outside her check-in hours,
+        /// a vacation or rough day, a class (10 minutes either side), a sprint, or a meeting within 30 minutes.
+        /// </summary>
+        public static string? CheckInBlocked(Store s, Settings cfg, DateTime now, bool sprinting)
+        {
+            int from = Math.Clamp(cfg.BunnyCheckFrom, 0, 23), until = Math.Clamp(cfg.BunnyCheckUntil, 1, 24);
+            if (now.Hour < from || now.Hour >= until) return "outside her check-in hours";
+            if (s.Data.Days.TryGetValue(s.Key(now), out var d) && d.Mode is DayMode.Vacation or DayMode.RoughDay) return "a vacation or rough day";
+            var margin = TimeSpan.FromMinutes(10);
+            if (s.Data.Classes.Any(c => c.Days.Contains(now.DayOfWeek) && now.TimeOfDay >= c.Start - margin && now.TimeOfDay <= c.End + margin)) return "class";
+            if (sprinting) return "a sprint";
+            if (s.Data.Tasks.Any(t => t.IsMeeting && t.Status != Status.Done && t.Due is DateTime m && t.DueHasTime && Math.Abs((m - now).TotalMinutes) <= 30)) return "a meeting";
+            return null;
         }
 
         private void CheckIn(bool byHand)
@@ -342,7 +447,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             Cfg.BunnyLastCheck = DateTime.Now;
             Cfg.Save();
             Log(byHand ? "You: check on me." : "Bunny checks in.");
-            _ = Run(CheckInPrompt, focusBack: null);
+            _ = Run(CheckInPrompt, focusBack: null, quiet: !byHand);
         }
 
         private const string CheckInPrompt =
@@ -354,63 +459,184 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         // ---- Talking to Claude ----
 
         private sealed class Declined : Exception { }
+        private sealed class Stopped : Exception { }
+        private sealed class TooSlow : Exception { }
 
-        private async Task Run(string userText, UIElement? focusBack)
+        /// <summary>One talk with Claude. True when Bunny answered or she stopped it; false when it failed. Quiet runs (automatic ones) say nothing on failure.</summary>
+        private async Task<bool> Run(string userText, UIElement? focusBack, bool quiet = false)
         {
             _busy = true;
+            _stoppedByHand = false;
+            // A cap on the whole run, on top of each request's own timeout. It is paused while she answers a window.
+            using var stop = new CancellationTokenSource(RunCap);
+            _deadline = DateTime.UtcNow + RunCap;
+            _stop = stop;
+            int talk = _talk;
+            _held.Clear();
             int before = _history.Count;
-            if (Cfg.BunnyVoice == 0) Speech.Say(_w, "Bunny is thinking.");
+            if (Cfg.BunnyVoice == 0 && !quiet) Speech.Say(_w, "Bunny is thinking.");
+            var slow = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(10) };
+            slow.Tick += (_, _) =>
+            {
+                slow.Stop();
+                if (!_busy || stop.IsCancellationRequested) return;
+                Log("Bunny is still thinking. Escape in the Talk to Bunny box stops it.");
+                if (Cfg.BunnyVoice != 2 && !quiet) Speech.Say(_w, "Bunny is still thinking. Escape stops it.");
+            };
+            slow.Start();
             string reply;
+            bool ok = true;
             try
             {
-                if (_historyDay != DateTime.Today || _history.Count > 80) { _history.Clear(); _historyDay = DateTime.Today; before = 0; }
-                _history.Add(new UserMessageParam { Content = Context(DateTime.Now) + "\n\n" + userText });
-                reply = Clean(await Loop());
+                string sig = PrivateSignature(S);
+                if (_historyDay != DateTime.Today || _history.Count > 80 || sig != _privateSig) { _history.Clear(); _historyDay = DateTime.Today; _privateSig = sig; before = 0; }
+                _history.Add(new UserMessageParam { Content = ContextFor(S, Cfg, DateTime.Now, _w.OpenListName, _w.ChosenTask) + "\n\n" + userText });
+                reply = Clean(await Loop(stop.Token, talk));
             }
             catch (Exception e)
             {
-                // Back to how the talk was, so the next question starts clean.
-                if (_history.Count > before) _history.RemoveRange(before, _history.Count - before);
+                // Back to how the talk was, so the next question starts clean. If the talk started over meanwhile, it stays empty.
+                if (_talk != talk) _history.Clear();
+                else if (_history.Count > before) _history.RemoveRange(before, _history.Count - before);
+                if (stop.IsCancellationRequested) e = _stoppedByHand ? new Stopped() : new TooSlow();
+                ok = e is Stopped;
+                Note(e);
                 reply = Problem(e);
             }
             finally
             {
+                slow.Stop();
                 _busy = false;
+                _stop = null;
                 Speech.Muted = false;
             }
             Log("Bunny: " + reply);
             if (focusBack != null && _w.IsActive && _w.OwnedWindows.Count == 0) focusBack.Focus();
+            if (quiet && !ok) return false;
             if (Cfg.BunnyVoice == 0) Speech.Say(_w, reply, true);
             else if (Cfg.BunnyVoice == 1) Speech.Say(_w, "Bunny answered.", true);
+            if (_held.Count > 0) Speech.Say(_w, string.Join(" ", _held));
+            _held.Clear();
+            return ok;
         }
 
-        private static string Problem(Exception e) => e switch
+        private static readonly TimeSpan RunCap = TimeSpan.FromMinutes(3);
+
+        /// <summary>Shows something that waits for her (ask_user, the delete question) with the run cap paused, so her thinking time never counts.</summary>
+        private T WhileSheAnswers<T>(Func<T> show)
         {
-            Declined => "Bunny can't help with that one. Try asking another way.",
-            AnthropicUnauthorizedException or AnthropicForbiddenException => "Claude did not accept the API key. Check it in Options, Smarter Bunny.",
-            AnthropicRateLimitException => "Claude is busy or the account has hit its limit. Try again in a minute, or check your credit at console.anthropic.com.",
-            Anthropic5xxException => "Claude is having a moment. Try again in a minute.",
-            AnthropicIOException or System.Net.Http.HttpRequestException or TaskCanceledException => "Bunny could not reach Claude. Check the internet connection and try again.",
-            AnthropicBadRequestException b when b.Message.Contains("credit", StringComparison.OrdinalIgnoreCase) => "The Claude account is out of credit. Add some at console.anthropic.com, then try again.",
-            _ => "Something went wrong talking to Claude: " + Short(e.Message, 200),
-        };
+            var stop = _stop;
+            var left = _deadline - DateTime.UtcNow;
+            try { stop?.CancelAfter(Timeout.InfiniteTimeSpan); } catch (ObjectDisposedException) { }
+            try { return show(); }
+            finally
+            {
+                if (left < TimeSpan.FromSeconds(30)) left = TimeSpan.FromSeconds(30);
+                _deadline = DateTime.UtcNow + left;
+                try { stop?.CancelAfter(left); } catch (ObjectDisposedException) { }
+            }
+        }
+
+        private const string NoCredit = "The Claude account is out of credit. Add some at platform.claude.com, then try again.";
+        private const string NoAnswer = "Bunny could not get an answer. Try again in a minute.";
+        private const string Offline = "Bunny could not reach Claude. Check the internet connection and try again.";
+
+        /// <summary>A short, plain line for any problem talking to Claude (sweep 9.7). Details go to the local error file only.</summary>
+        public static string Problem(Exception e)
+        {
+            switch (e)
+            {
+                case Declined: return "Bunny can't help with that one. Try asking another way.";
+                case Stopped: return "Okay, Bunny stopped.";
+                case TooSlow: return "Bunny took too long and stopped. Try again, or ask for something smaller.";
+            }
+            if (StatusCode(e) is int code) return ProblemFor(code, e.Message + " " + Body(e));
+            return e switch
+            {
+                AnthropicUnauthorizedException or AnthropicForbiddenException => ProblemFor(401, ""),
+                AnthropicNotFoundException => ProblemFor(404, ""),
+                AnthropicRateLimitException => ProblemFor(429, e.Message),
+                Anthropic5xxException => ProblemFor(500, e.Message),
+                AnthropicBadRequestException => ProblemFor(400, e.Message),
+                TaskCanceledException or TimeoutException => "Claude took too long to answer. Try again in a minute.",
+                AnthropicIOException or System.Net.Http.HttpRequestException or System.Net.Sockets.SocketException => Offline,
+                _ when e.InnerException is System.Net.Http.HttpRequestException or System.Net.Sockets.SocketException => Offline,
+                _ => NoAnswer,
+            };
+        }
+
+        /// <summary>What a status code from Claude means for her, in one short line.</summary>
+        public static string ProblemFor(int code, string body)
+        {
+            bool money = body.Contains("credit", StringComparison.OrdinalIgnoreCase) || body.Contains("billing", StringComparison.OrdinalIgnoreCase) || body.Contains("balance", StringComparison.OrdinalIgnoreCase);
+            return code switch
+            {
+                401 or 403 => "Claude did not accept the API key. Check it in Options, Smarter Bunny.",
+                402 => NoCredit,
+                400 when money => NoCredit,
+                404 => "Bunny's Claude model is not available. Check for a Busy Bunny update.",
+                413 => "That was too long for Bunny. Try a shorter piece.",
+                429 when money => NoCredit,
+                429 => "Claude is busy, or the account has hit its limit. Try again in a minute. The limits are at platform.claude.com.",
+                529 => "Claude is overloaded right now. Try again in a few minutes.",
+                >= 500 => "Claude is having a moment. Try again in a minute.",
+                _ => NoAnswer,
+            };
+        }
+
+        /// <summary>The HTTP status of an error from Claude, when it has one.</summary>
+        private static int? StatusCode(Exception e)
+        {
+            try
+            {
+                var v = e.GetType().GetProperty("StatusCode")?.GetValue(e);
+                return v switch { System.Net.HttpStatusCode h => (int)h, int i => i, null => null, _ => int.TryParse(v.ToString(), out int n) ? n : null };
+            }
+            catch { return null; }
+        }
+
+        private static string Body(Exception e)
+        {
+            try { return e.GetType().GetProperty("ResponseBody")?.GetValue(e)?.ToString() ?? ""; }
+            catch { return ""; }
+        }
+
+        /// <summary>Writes what went wrong to bunny-errors.txt next to the tasks file, for a bug report. No task text goes in it.</summary>
+        private static void Note(Exception e)
+        {
+            if (e is Stopped or Declined) return;
+            try
+            {
+                string file = System.IO.Path.Combine(Store.Folder, "bunny-errors.txt");
+                var lines = System.IO.File.Exists(file) ? System.IO.File.ReadAllLines(file).ToList() : new List<string>();
+                lines.Add(DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture) + " " + e.GetType().Name + (StatusCode(e) is int c ? " " + c : "") + ": " + Short(e.Message.Replace("\r", " ").Replace("\n", " "), 300));
+                System.IO.File.WriteAllLines(file, lines.Skip(Math.Max(0, lines.Count - 50)));
+            }
+            catch { }
+        }
 
         private static string Short(string s, int n) => s.Length <= n ? s : s[..n] + "...";
 
-        private AnthropicClient Client()
+        private AnthropicClient Client() => MakeClient(SavedKey(), TimeSpan.FromSeconds(120));
+
+        /// <summary>A Claude client with a short timeout and one retry, so a slow or busy Claude never keeps her waiting for minutes.</summary>
+        private static AnthropicClient MakeClient(string key, TimeSpan timeout, int retries = 1)
         {
-            var client = new AnthropicClient { ApiKey = SavedKey(), Timeout = TimeSpan.FromMinutes(3) };
             // For testing only: a stand-in server instead of Claude.
-            if (Environment.GetEnvironmentVariable("BUSYBUNNY_CLAUDE_URL") is string url && url.Length > 0) client = new AnthropicClient { ApiKey = SavedKey(), Timeout = TimeSpan.FromMinutes(3), BaseUrl = url };
-            return client;
+            if (Environment.GetEnvironmentVariable("BUSYBUNNY_CLAUDE_URL") is string url && url.Length > 0)
+                return new AnthropicClient { ApiKey = key, Timeout = timeout, MaxRetries = retries, BaseUrl = url };
+            return new AnthropicClient { ApiKey = key, Timeout = timeout, MaxRetries = retries };
         }
 
-        private async Task<string> Loop()
+        private async Task<string> Loop(CancellationToken stop, int talk)
         {
+            // After every wait: if the talk started over meanwhile, this run adds nothing more.
+            void Still() { if (_talk != talk) throw new Stopped(); stop.ThrowIfCancellationRequested(); }
             var client = Client();
             var tools = ToolList();
             for (int round = 0; round < 15; round++)
             {
+                stop.ThrowIfCancellationRequested();
                 var response = await client.Messages.Create(new MessageCreateParams
                 {
                     Model = ModelId,
@@ -420,7 +646,8 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                     Messages = _history.ToList(),
                     OutputConfig = new OutputConfig { Effort = Effort.Medium },
                     CacheControl = new CacheControlEphemeral(),
-                });
+                }, stop);
+                Still();
                 if (response.StopReason == "refusal") throw new Declined();
 
                 var assistant = new List<ContentBlockParam>();
@@ -450,14 +677,30 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
 
                 foreach (var use in calls)
                 {
+                    stop.ThrowIfCancellationRequested();
                     string result;
                     bool failed = false;
                     Speech.Muted = true;
-                    try { result = await RunTool(use.Name, use.Input); }
-                    catch (Exception e) { result = "That did not work: " + e.Message; failed = true; }
+                    BeginTool();
+                    try
+                    {
+                        result = await RunTool(use.Name, use.Input);
+                        // The game's points and fun lines wait until Bunny's answer has been said.
+                        if (Game.Flush(null, S) is string line && line.Length > 0) _held.Add(line);
+                        EndTool();
+                    }
+                    catch (Exception e)
+                    {
+                        // Lines for a change that is rolled back are dropped with it.
+                        Game.Flush(null, S);
+                        RollBack();
+                        result = "That did not work, and nothing was changed: " + e.Message;
+                        failed = true;
+                    }
                     finally { Speech.Muted = false; }
                     results.Add(new ToolResultBlockParam { ToolUseID = use.ID, Content = result, IsError = failed });
                 }
+                Still();
                 _history.Add(new UserMessageParam { Content = results });
             }
             return "Bunny got a bit lost there. Try asking again, one thing at a time.";
@@ -473,9 +716,10 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         }
 
         /// <summary>A short piece of writing for the game (the narrator, Vex's letters), or null when Bunny is not set up or it fails.</summary>
-        public static async Task<string?> WriteAsync(string request)
+        public static async Task<string?> WriteAsync(string request, TaskItem? about = null)
         {
             if (_me == null || !Ready) return null;
+            if (about != null && !MayShare(_me.S, about)) return null;
             try
             {
                 var response = await _me.Client().Messages.Create(new MessageCreateParams
@@ -493,9 +737,9 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         }
 
         /// <summary>A date phrase the form could not read, worked out by Claude. Null when it is not a date.</summary>
-        public static async Task<(DateTime When, bool HasTime)?> ReadDateAsync(string text, DateTime now, Status week)
+        public static async Task<(DateTime When, bool HasTime)?> ReadDateAsync(string text, DateTime now, Status week, string? list = null)
         {
-            if (_me == null || !Ready) return null;
+            if (_me == null || !Ready || !_me.MayReadDatesOn(list)) return null;
             var response = await _me.Client().Messages.Create(new MessageCreateParams
             {
                 Model = ModelId,
@@ -507,6 +751,16 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             });
             string reply = string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)).Trim();
             return ParseWhen(reply) is (DateTime d, bool t) ? (d, t) : null;
+        }
+
+        /// <summary>Whether a task form's dates may go to Claude: the task's list is not private.</summary>
+        public static bool CanReadDatesFor(string list) => CanReadDates && _me!.MayReadDatesOn(list);
+        private bool MayReadDatesOn(string? list)
+        {
+            if (list != null) return S.Data.Lists.FirstOrDefault(l => l.Name == list) is not TaskList l || !ListPrivate(S, l);
+            // No list given: stay away from Claude when the chosen task or the open tab is private.
+            if (_w.ChosenTask is TaskItem t && !MayShare(S, t)) return false;
+            return _w.OpenListName is not string open || S.Data.Lists.FirstOrDefault(l => l.Name == open) is not TaskList ol || !ListPrivate(S, ol);
         }
 
         /// <summary>YYYY-MM-DD or YYYY-MM-DD HH:mm, or else plain words as the form reads them.</summary>
@@ -528,7 +782,7 @@ How you talk:
 Write plain spoken sentences, short and warm, in the personality she picked, which the context line gives. Two to five sentences is usually right. Never use Markdown, headings, bullets, tables, emoji, the pound sign or the asterisk. Say dates as words, like Friday, November 6, never as numbers with slashes. Do not read out task ids. Match the roast dial in the context line: 0 is plain and gentle, 1 gentle, 2 lightly teasing, 3 spicy, 4 savage but never mean about her worth, her disability or her health.
 
 What you can do:
-You can look at and change her tasks, lists, categories, settings and day with your tools, and you should just do what she asks instead of telling her how. Look things up with find_tasks or get_overview before changing them; never guess an id. After changing things, say briefly what you did, and that Control Z undoes it when that helps. If her request is unclear in a way that matters, like which of two tasks, ask in your reply or with ask_user. Use ask_user when a small window with choices is easier than typing, and for check-ins. You can keep short notes about her with remember, like goals, what helps her focus, or class names; keep them useful and kind, and never store passwords or health details she did not ask you to keep.
+You can look at and change her tasks, lists, categories, settings and day with your tools, and you should just do what she asks instead of telling her how. Look things up with find_tasks or get_overview before changing them; never guess an id. After changing things, say briefly what you did. Changes to tasks, lists, days and notes can be undone with Control Z, one step at a time. Settings changes cannot be undone with Control Z; she can undo your latest change from File, Bunny changes today, so never promise Control Z for settings. bunny_changes_today lists what you changed today. If her request is unclear in a way that matters, like which of two tasks, ask in your reply or with ask_user. Use ask_user when a small window with choices is easier than typing, and for check-ins. You can keep short notes about her with remember, like goals, what helps her focus, or class names; keep them useful and kind, and never store passwords or health details she did not ask you to keep.
 
 Being helpful beyond the list:
 Help her plan: suggest what to do first, break big assignments into subtasks, spread work across the week with do dates, notice overdue and piled-up tasks, and offer low-energy mode or a rough day when she sounds worn out. Celebrate wins. Be honest when a plan does not fit the hours she has.
@@ -536,33 +790,48 @@ When she cannot get started, help with just the first two minutes: one tiny, con
 Some of her lists may be private: you cannot see their tasks and must not ask what is on them. If she seems in real distress or talks about harming herself, be caring, encourage her to reach out to someone she trusts, and mention that in the US she can call or text 988.
 
 Limits:
-You can only use features Busy Bunny already has. You cannot add new features, buttons, sounds or screens, change how the app works, or reach other apps, email or the internet. When she asks for something the app cannot do, say so plainly, and tell her she can ask for it with Help, Request a feature, which opens a new issue on GitHub; offer to open it with open_feature_request. Never pretend to have done something you did not do. You cannot see or change the API key.
+You can only use features Busy Bunny already has. You cannot add new features, buttons, sounds or screens, change how the app works, or reach other apps, email or the internet. When she asks for something the app cannot do, say so plainly, and tell her she can ask for it with Help, Request a feature, which opens a new issue on GitHub; offer to open it with open_feature_request. Never pretend to have done something you did not do. You cannot see or change the API key, and only she can change whether you ask before deleting.
 
 Busy Bunny in brief:
 Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overdue and Focus now), Upcoming, Board, Search, and one tab per list, each with its categories. Statuses: Today, This week, Next week, Done not submitted, Waiting on someone, Done. A do date is the day she plans to do a task; on that day it shows on Today. Each list has its own priority scale, highest first, like Coffee: Triple shot, Double shot, Single shot, Decaf. Task types: general, assignment, test, meeting, event, personal goal. Sizes: small, medium, large, multi-day. Energy: easy or brain heavy. Keys: Control N quick add, F2 edit, Control D done, Control 1 to 6 set status, Delete, Control Z undo, Control R read my day, Control F search, Control Shift A talk to Bunny, Control Comma settings, Shift with arrows to select several tasks. The game gives karma points, levels, streaks and badges for finishing tasks. Fun, Adventures has the burrow (rooms bought with points), Vex the rival bunny, bets on finishing a task by a time, mystery boxes, quest weeks, the dramatic narrator and the sound pack collection. Fun menu has the kind of day, rough day, and everything is too much. View menu has low-energy mode and shuffle mode.";
 
-        private string Context(DateTime now)
+        private static string PersonalityOf(Settings cfg) => Personalities.FirstOrDefault(p => p.Name.Equals(cfg.BunnyPersonality, StringComparison.OrdinalIgnoreCase)).Name ?? Personalities[0].Name;
+
+        /// <summary>Bunny's copy of the summary line: only tasks Bunny may see count (sweep 2.1).</summary>
+        public static string BunnySummary(Store s, DateTime now) => s.SummaryFor(now, t => Seen(s, t));
+
+        private static readonly string[] Kinds = { "Fox at the door", "Hop to it", "Nibble on it", "Burrow nap" };
+        /// <summary>The kind of day, worked out only from tasks Bunny may see.</summary>
+        private static string KindOfDay(Store s, DateTime day)
+        {
+            if (s.Data.Days.TryGetValue(s.Key(day), out var set) && set.DayType.Length > 0) return set.DayType;
+            string line = BunnySummary(s, day);
+            return Kinds.FirstOrDefault(k => line.EndsWith("a " + k + " day.")) ?? "";
+        }
+
+        /// <summary>The context line that goes with every talk, check-in and briefing.</summary>
+        public static string ContextFor(Store s, Settings cfg, DateTime now, string? openList, TaskItem? chosen)
         {
             var sb = new StringBuilder();
             sb.Append("(Context from Busy Bunny, not typed by her: now is ").Append(now.ToString("dddd, MMMM d, yyyy, h:mm tt", CultureInfo.InvariantCulture))
-              .Append(". ").Append(S.Summary(now)).Append(" Roast dial: ").Append(Cfg.RoastLevel).Append('.');
-            string who = Personality;
+              .Append(". ").Append(BunnySummary(s, now)).Append(" Roast dial: ").Append(cfg.RoastLevel).Append('.');
+            string who = PersonalityOf(cfg);
             sb.Append(" Your personality: ").Append(who).Append(", ").Append(Personalities.First(p => p.Name == who).How).Append('.');
-            bool privateOpen = _w.OpenListName is string ol && S.Data.Lists.Any(l => l.Name == ol && l.PrivateFromBunny);
-            if (_w.TabNames.Count > 0 && _w.OpenListName is string open && !privateOpen) sb.Append(" She is on the ").Append(open).Append(" tab.");
-            if (_w.ChosenTask is TaskItem t) sb.Append(Seen(t) ? " Her cursor is on the task [" + Short(t) + "] " + S.Line(t, now) + "." : " Her cursor is on a private task.");
-            if (S.Data.BunnyProfile.Length > 0) sb.Append(" What you have learned about her: ").Append(S.Data.BunnyProfile.Replace("\n", " | ")).Append('.');
-            if (S.Data.BunnyNotes.Count > 0) sb.Append(" Your notes about her: ").Append(string.Join(" | ", S.Data.BunnyNotes)).Append('.');
+            if (openList != null && s.Data.Lists.FirstOrDefault(l => l.Name == openList) is TaskList ol && !ListPrivate(s, ol)) sb.Append(" She is on the ").Append(ol.Name).Append(" tab.");
+            if (chosen != null) sb.Append(Seen(s, chosen) ? " Her cursor is on the task [" + Short(chosen) + "] " + s.Line(chosen, now) + "." : " Her cursor is on a task you cannot see.");
+            if (s.Data.BunnyProfile.Length > 0) sb.Append(" What you have learned about her: ").Append(s.Data.BunnyProfile.Replace("\n", " | ")).Append('.');
+            if (s.Data.BunnyNotes.Count > 0) sb.Append(" Your notes about her: ").Append(string.Join(" | ", s.Data.BunnyNotes)).Append('.');
             sb.Append(')');
             return sb.ToString();
         }
 
         private static string Short(TaskItem t) => t.Id.ToString("N")[..8];
 
-        private string Describe(TaskItem t, DateTime now)
+        private string Describe(TaskItem t, DateTime now) => Describe(S, t, now);
+        private static string Describe(Store s, TaskItem t, DateTime now)
         {
             var sb = new StringBuilder();
-            sb.Append('[').Append(Short(t)).Append("] ").Append(S.Line(t, now)).Append(". List ").Append(t.List);
+            sb.Append('[').Append(Short(t)).Append("] ").Append(s.Line(t, now)).Append(". List ").Append(t.List);
             if (t.Section.Length > 0) sb.Append(", category ").Append(t.Section);
             sb.Append(". Type ").Append(t.Type).Append(", size ").Append(t.Size);
             if (t.Due is DateTime d) sb.Append(", due ").Append(d.ToString(t.DueHasTime ? "yyyy-MM-dd HH:mm" : "yyyy-MM-dd", CultureInfo.InvariantCulture));
@@ -578,47 +847,66 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             return sb.Append('.').ToString();
         }
 
-        private string Overview(DateTime now)
+        /// <summary>The tab names Bunny may hear: none of a private list's.</summary>
+        public static List<string> VisibleTabs(Store s, IEnumerable<string> tabs)
+        {
+            var hidden = s.Data.Lists.Where(l => ListPrivate(s, l)).SelectMany(l => new[] { l.Name, l.TabName }).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return tabs.Where(t => !hidden.Contains(t)).ToList();
+        }
+
+        /// <summary>Tags Bunny may hear: not ones used only on private tasks.</summary>
+        private static IEnumerable<TagInfo> VisibleTags(Store s)
+        {
+            var shown = s.Data.Tasks.Where(t => MayShare(s, t)).Select(t => t.Tag).Concat(s.Data.Classes.Select(c => c.Tag)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var hidden = s.Data.Tasks.Where(t => !MayShare(s, t)).Select(t => t.Tag).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            return s.Data.Tags.Where(t => shown.Contains(t.Name) || !hidden.Contains(t.Name));
+        }
+
+        /// <summary>The overview for get_overview and Learn. Nothing from a private list goes in it.</summary>
+        public static string OverviewFor(Store S, Settings cfg, IEnumerable<string> tabs, DateTime now)
         {
             var sb = new StringBuilder();
             sb.AppendLine("Now: " + now.ToString("dddd yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + ". This week ends Sunday " + Store.WeekEnd(now).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + ".");
-            sb.AppendLine("Summary: " + S.Summary(now));
-            sb.AppendLine("Tabs: " + string.Join(", ", _w.TabNames) + ".");
+            sb.AppendLine("Summary: " + BunnySummary(S, now));
+            sb.AppendLine("Tabs: " + string.Join(", ", VisibleTabs(S, tabs)) + ".");
             sb.AppendLine("Lists, in tab order:");
-            int hidden = S.Data.Lists.Count(l => l.PrivateFromBunny && !l.Archived);
-            if (hidden > 0) sb.AppendLine(hidden + (hidden == 1 ? " list is" : " lists are") + " private: you cannot see them or their tasks.");
-            foreach (var l in S.Data.Lists.Where(l => !l.Archived && !l.PrivateFromBunny))
+            if (S.Data.Lists.Any(l => ListPrivate(S, l))) sb.AppendLine("Some lists are private: you cannot see them or their tasks.");
+            foreach (var l in VisibleLists(S).Where(l => !l.Archived))
             {
                 int open = S.Data.Tasks.Count(t => t.List == l.Name && t.Status != Status.Done);
                 sb.Append("  ").Append(l.Name);
-                if (l.Parent.Length > 0) sb.Append(" (inside ").Append(l.Parent).Append(')');
+                if (l.Parent.Length > 0 && !S.Data.Lists.Any(x => x.Name == l.Parent && ListPrivate(S, x))) sb.Append(" (inside ").Append(l.Parent).Append(')');
                 sb.Append(": ").Append(open).Append(" open. Priority scale ").Append(l.Scale.Length == 0 ? "none" : l.ScaleName + ": " + string.Join(", ", l.Scale.Select((s, i) => (i + 1) + " " + s)));
                 sb.Append(". Categories: ").Append(l.Sections.Count == 0 ? "none" : string.Join(", ", l.Sections));
                 sb.Append(". New tasks start as ").Append(Words.Of(l.DefaultStatus)).Append(l.InToday ? "." : ". Kept out of Today.").AppendLine();
             }
-            var archived = S.Data.Lists.Where(l => l.Archived && !l.PrivateFromBunny).Select(l => l.Name).ToList();
+            var archived = VisibleLists(S).Where(l => l.Archived).Select(l => l.Name).ToList();
             if (archived.Count > 0) sb.AppendLine("Archived lists: " + string.Join(", ", archived) + ".");
-            if (S.Data.Tags.Count > 0) sb.AppendLine("Tags: " + string.Join(", ", S.Data.Tags.Select(t => t.Name + (t.Description.Length > 0 ? " (" + t.Description + ")" : ""))) + ".");
+            var tags = VisibleTags(S).ToList();
+            if (tags.Count > 0) sb.AppendLine("Tags: " + string.Join(", ", tags.Select(t => t.Name + (t.Description.Length > 0 ? " (" + t.Description + ")" : ""))) + ".");
             if (S.Data.Classes.Count > 0)
                 sb.AppendLine("Class times: " + string.Join("; ", S.Data.Classes.Select(c => c.Tag + " " + string.Join(" ", c.Days) + " " + c.Start.ToString(@"hh\:mm") + " to " + c.End.ToString(@"hh\:mm") + (c.Where.Length > 0 ? " at " + c.Where : ""))) + ".");
             var day = S.Data.Days.TryGetValue(S.Key(now), out var d) ? d : new DayInfo();
-            sb.AppendLine("Today: " + (day.Mode == DayMode.Normal ? "a normal day" : day.Mode == DayMode.Vacation ? "vacation" : "a rough day") + ", " + S.HoursToday(now) + " hours available, kind of day " + S.DayType(now) +
+            sb.AppendLine("Today: " + (day.Mode == DayMode.Normal ? "a normal day" : day.Mode == DayMode.Vacation ? "vacation" : "a rough day") + ", " + S.HoursToday(now) + " hours available, kind of day " + KindOfDay(S, now) +
                 (day.Energy.Length > 0 ? ", energy " + day.Energy : "") + ". Usual hours a day: " + S.Data.HoursAvailable + ".");
             int points = Engine.Total(S.Data);
             sb.AppendLine("Game: " + points + " karma points, level " + Engine.LevelFor(points) + ", " + Engine.LevelName(Engine.LevelFor(points)) + ".");
-            sb.AppendLine("Settings: " + string.Join(", ", SettingValues().Select(kv => kv.Key + " " + kv.Value)) + ".");
+            sb.AppendLine("Settings: " + string.Join(", ", SettingValues(cfg, S).Select(kv => kv.Key + " " + kv.Value)) + ".");
             sb.AppendLine(S.Data.BunnyNotes.Count == 0 ? "Your notes about her: none yet." : "Your notes about her: " + string.Join(" | ", S.Data.BunnyNotes.Select((n, i) => (i + 1) + ". " + n)));
             return sb.ToString();
         }
 
-        private Dictionary<string, object> SettingValues() => new()
+        private Dictionary<string, object> SettingValues() => SettingValues(Cfg, S);
+        /// <summary>The settings Bunny may see and change. Ask before deleting is not one of them: only she changes that.</summary>
+        private static Dictionary<string, object> SettingValues(Settings c, Store s) => new()
         {
-            ["sounds_on"] = Cfg.SoundsOn, ["sound_volume"] = Cfg.SoundVolume, ["music_on"] = Cfg.MusicOn, ["music_volume"] = Cfg.MusicVolume,
-            ["short_mode"] = Cfg.ShortMode, ["low_energy_mode"] = Cfg.LowEnergy, ["shuffle_mode"] = Cfg.ShuffleMode, ["roast_level"] = Cfg.RoastLevel,
-            ["emojis_on"] = Cfg.EmojisOn, ["finals_mode"] = Cfg.FinalsMode, ["morning_check_in"] = Cfg.MorningCheckIn, ["warn_when_urgent_more_than"] = Cfg.UrgentWarnAbove,
-            ["hours_available"] = S.Data.HoursAvailable, ["keep_in_tray"] = Cfg.KeepInTray, ["follow_up_days"] = Cfg.FollowUpDays,
-            ["check_for_updates"] = Cfg.CheckForUpdatesAtStart, ["bunny_check_in_hours"] = Cfg.BunnyCheckHours, ["bunny_asks_before_deleting"] = Cfg.BunnyAskBeforeDelete,
-            ["bunny_personality"] = Personality, ["bunny_reads_answers_out_loud"] = Cfg.BunnyVoice == 0, ["bunny_daily_briefing"] = Cfg.BunnyBriefing,
+            ["sounds_on"] = c.SoundsOn, ["sound_volume"] = c.SoundVolume, ["music_on"] = c.MusicOn, ["music_volume"] = c.MusicVolume,
+            ["short_mode"] = c.ShortMode, ["low_energy_mode"] = c.LowEnergy, ["shuffle_mode"] = c.ShuffleMode, ["roast_level"] = c.RoastLevel,
+            ["emojis_on"] = c.EmojisOn, ["finals_mode"] = c.FinalsMode, ["morning_check_in"] = c.MorningCheckIn, ["warn_when_urgent_more_than"] = c.UrgentWarnAbove,
+            ["hours_available"] = s.Data.HoursAvailable, ["keep_in_tray"] = c.KeepInTray, ["follow_up_days"] = c.FollowUpDays,
+            ["check_for_updates"] = c.CheckForUpdatesAtStart, ["bunny_check_in_hours"] = c.BunnyCheckHours,
+            ["bunny_check_in_from"] = c.BunnyCheckFrom, ["bunny_check_in_until"] = c.BunnyCheckUntil,
+            ["bunny_personality"] = PersonalityOf(c), ["bunny_reads_answers_out_loud"] = c.BunnyVoice == 0, ["bunny_daily_briefing"] = c.BunnyBriefing,
         };
 
         // ---- Tools ----
@@ -707,7 +995,9 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         warn_when_urgent_more_than = Int("Warn when tasks to do today go over this many, 0 for never."),
                         hours_available = Int("Hours she has for work on a typical day, 1 to 14."), keep_in_tray = Bool("Keep running in the tray when closed."),
                         follow_up_days = Int("Days before nudging about a task waiting on someone."), check_for_updates = Bool("Check for updates automatically."),
-                        bunny_check_in_hours = Int("Hours between your check-ins, 0 for never."), bunny_asks_before_deleting = Bool("Ask her before you delete tasks."),
+                        bunny_check_in_hours = Int("Hours between your check-ins: 0 for never, or 1, 2, 3, 4, 6 or 8."),
+                        bunny_check_in_from = Int("The hour your check-ins may start, 0 to 23, on a 24-hour clock."),
+                        bunny_check_in_until = Int("The hour your check-ins stop, 1 to 24, on a 24-hour clock. Later than bunny_check_in_from."),
                         bunny_personality = OneOf("Your personality.", Personalities.Select(p => p.Name).ToArray()),
                         bunny_daily_briefing = Bool("Your short briefing the first time she opens Busy Bunny each day."),
                         bunny_reads_answers_out_loud = Bool("Whether her screen reader reads your answers out loud, or just says Bunny answered."),
@@ -725,6 +1015,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 T("remember", "Keeps a short note about her for later talks, like a goal or what helps her.", new { note = Str("The note, one sentence.") }, "note"),
                 T("forget", "Removes your notes about her: one by its number from get_overview, or all.", new { number = Int("The note's number."), all = Bool("True removes every note.") }),
                 T("open_tab", "Opens a tab on the main screen, like Today, Focus, Overdue is on Today, Board, Upcoming, or a list's tab, and puts her in its tasks.", new { name = Str("The tab's name.") }, "name"),
+                T("bunny_changes_today", "Every change you made for her today, newest first, one line each. She can undo your latest one from File, Bunny changes today.", new { }),
                 T("open_feature_request", "Opens a new feature request on GitHub in her browser, for something Busy Bunny cannot do yet. Only when she agrees.", new { idea = Str("A short title for the idea.") }, "idea"),
             };
         }
@@ -781,16 +1072,172 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             return found;
         }
 
-        private async Task<string> RunTool(string name, IReadOnlyDictionary<string, JsonElement> a)
-        {
-            var now = DateTime.Now;
-            switch (name)
-            {
-                case "get_overview":
-                    return Overview(now);
+        // ---- Undo for a tool, and Bunny changes today ----
 
-                case "find_tasks":
-                {
+        // Undo steps the running tool made, and what it changed, for Bunny changes today.
+        private int _steps;
+        private string? _change;
+        private List<Guid> _changeTasks = new();
+        private List<string> _changeLists = new();
+        private Dictionary<string, JsonElement>? _settingsBefore, _settingsAfter;
+        private List<BunnyChange> _changes = new();
+        private string _changesFile = "";
+
+        /// <summary>Takes an undo step before a tool changes anything; a failure rolls every step back.</summary>
+        private void Begin(string what) { S.Remember(what); _steps++; }
+
+        private void BeginTool()
+        {
+            _steps = 0;
+            _change = null;
+            _changeTasks = new();
+            _changeLists = new();
+            _settingsBefore = _settingsAfter = null;
+        }
+
+        /// <summary>A tool failed: put back what it changed, so there is no half change and no empty undo step.</summary>
+        private void RollBack()
+        {
+            if (_steps == 0) return;
+            for (; _steps > 0; _steps--) S.Undo();
+            _w.SaveAndRefresh();
+        }
+
+        /// <summary>A tool worked: when it changed something, it goes on Bunny changes today.</summary>
+        private void EndTool()
+        {
+            if (_change == null) return;
+            _changes.Add(new BunnyChange
+            {
+                When = DateTime.Now, What = _change, Steps = _steps, After = _steps > 0 ? DataHash(S) : "", UndoDepth = S.UndoCount, Session = SessionId,
+                SettingsBefore = _settingsBefore, SettingsAfter = _settingsAfter, Tasks = _changeTasks, Lists = _changeLists,
+            });
+            SaveChanges(_changesFile, _changes);
+        }
+
+        /// <summary>One change Bunny made, kept for today in bunny-changes.json next to the tasks file.</summary>
+        public sealed class BunnyChange
+        {
+            public DateTime When { get; set; }
+            public string What { get; set; } = "";
+            /// <summary>Undo steps it took; undoing it from the list needs the data to be just as Bunny left it (After).</summary>
+            public int Steps { get; set; }
+            public string After { get; set; } = "";
+            public Dictionary<string, JsonElement>? SettingsBefore { get; set; }
+            public Dictionary<string, JsonElement>? SettingsAfter { get; set; }
+            public List<Guid> Tasks { get; set; } = new();
+            public List<string> Lists { get; set; } = new();
+            public bool Undone { get; set; }
+            /// <summary>How deep the undo history was right after, and which run of the app made it: undo lives in memory only.</summary>
+            public int UndoDepth { get; set; }
+            public Guid Session { get; set; }
+        }
+
+        private static readonly Guid SessionId = Guid.NewGuid();
+
+        /// <summary>A fingerprint of the data, leaving out the game's diary (What happened today, unprompted counts), which the game writes a moment after a change.</summary>
+        public static string DataHash(Store s)
+        {
+            var node = JsonSerializer.SerializeToNode(s.Data) as System.Text.Json.Nodes.JsonObject;
+            if (node?["Game"] is System.Text.Json.Nodes.JsonObject game)
+                foreach (var key in new[] { "Happened", "HappenedDay", "UnpromptedDay", "UnpromptedCount" }) game.Remove(key);
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(node?.ToJsonString() ?? "")));
+        }
+
+        public static List<BunnyChange> LoadChanges(string file, DateTime now)
+        {
+            try
+            {
+                if (file.Length > 0 && System.IO.File.Exists(file))
+                    return (JsonSerializer.Deserialize<List<BunnyChange>>(System.IO.File.ReadAllText(file)) ?? new()).Where(c => c.When.Date == now.Date).ToList();
+            }
+            catch { }
+            return new();
+        }
+
+        private static void SaveChanges(string file, List<BunnyChange> changes)
+        {
+            if (file.Length == 0) return;
+            try
+            {
+                changes.RemoveAll(c => c.When.Date != DateTime.Today);
+                System.IO.File.WriteAllText(file, JsonSerializer.Serialize(changes));
+            }
+            catch { }
+        }
+
+        /// <summary>Today's changes, newest first, one line each. For Claude, changes that touch a private list now are left out.</summary>
+        public static List<string> ChangeLines(Store s, IEnumerable<BunnyChange> changes, DateTime now, bool forClaude) => changes
+            .Where(c => c.When.Date == now.Date && (!forClaude || Shareable(s, c)))
+            .OrderByDescending(c => c.When)
+            .Select(c => Words.Time(c.When) + ": " + c.What + (c.Undone ? " (undone)" : ""))
+            .ToList();
+
+        private static bool Shareable(Store s, BunnyChange c) =>
+            c.Tasks.All(id => s.Data.Tasks.FirstOrDefault(t => t.Id == id) is not TaskItem t || MayShare(s, t)) &&
+            c.Lists.All(n => s.Data.Lists.FirstOrDefault(l => l.Name == n) is not TaskList l || !ListPrivate(s, l));
+
+        /// <summary>Undoes one of Bunny's changes when nothing has changed since; otherwise says plainly to use Control Z.</summary>
+        private string UndoChange(BunnyChange c)
+        {
+            if (c.Undone) return "That change is already undone.";
+            if (c.Steps > 0 && (c.Session != SessionId || S.UndoCount != c.UndoDepth || DataHash(S) != c.After))
+                return "Something changed after Bunny did that, so it cannot be undone from here. Control Z undoes changes one step at a time, newest first.";
+            if (c.SettingsAfter != null && c.SettingsBefore != null)
+            {
+                var now = RawSettings(c.SettingsAfter.Keys);
+                if (c.SettingsAfter.Any(kv => !now.TryGetValue(kv.Key, out var v) || v.GetRawText() != kv.Value.GetRawText()))
+                    return "Those settings were changed again since, so Bunny left them as they are. Change them in Options, Settings.";
+            }
+            for (int i = 0; i < c.Steps; i++)
+                if (S.Undo() == null) { _w.SaveAndRefresh(); return "Bunny could only undo part of that. Control Z undoes changes one step at a time, newest first."; }
+            if (c.SettingsBefore != null)
+            {
+                foreach (var key in c.SettingsBefore.Keys) SetSetting(key, ReadSetting(c.SettingsBefore, key, undoing: true));
+                _w.SettingsChanged();
+            }
+            else _w.SaveAndRefresh();
+            c.Undone = true;
+            SaveChanges(_changesFile, _changes);
+            return "Undid: " + c.What + ".";
+        }
+
+        /// <summary>File, Bunny changes today: every change Bunny made today, newest first, with undo for the latest.</summary>
+        private void ShowChanges()
+        {
+            var w = Layout.Dialog(_w, "Bunny changes today");
+            var list = new ListBox { Height = 220, Width = 460 };
+            void Fill(int at)
+            {
+                list.Items.Clear();
+                foreach (var c in _changes.Where(c => c.When.Date == DateTime.Today).OrderByDescending(c => c.When))
+                    list.Items.Add(new ListBoxItem { Content = ChangeLines(S, new[] { c }, DateTime.Now, false).FirstOrDefault() ?? c.What, Tag = c });
+                if (list.Items.Count == 0) list.Items.Add(new ListBoxItem { Content = "Bunny has not changed anything today." });
+                TextViewer.Select(list, Math.Clamp(at, 0, list.Items.Count - 1));
+            }
+            var undo = Layout.Button("_Undo this change");
+            undo.Click += (_, _) =>
+            {
+                if ((list.SelectedItem as ListBoxItem)?.Tag is not BunnyChange c) { Speech.Say(w, "There is no change to undo.", true); list.Focus(); return; }
+                int at = list.SelectedIndex;
+                string said = UndoChange(c);
+                Fill(at);
+                Speech.Say(w, said, true);
+            };
+            var panel = new StackPanel { Margin = new Thickness(14) };
+            panel.Children.Add(Layout.Row("_Changes, newest first", list, 460));
+            var buttons = new StackPanel { Orientation = Orientation.Horizontal };
+            buttons.Children.Add(undo);
+            buttons.Children.Add(Layout.Button("Close", isCancel: true));
+            panel.Children.Add(buttons);
+            w.Content = panel;
+            w.Loaded += (_, _) => Fill(0);
+            w.ShowDialog();
+        }
+
+        /// <summary>find_tasks: only tasks Bunny may see.</summary>
+        public static string FindTasks(Store S, IReadOnlyDictionary<string, JsonElement> a, DateTime now)
+        {
                     string which = Get(a, "which") ?? "open";
                     string text = (Get(a, "text") ?? "").Trim();
                     string list = (Get(a, "list") ?? "").Trim();
@@ -806,7 +1253,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         "all" => S.Data.Tasks,
                         _ => S.Data.Tasks.Where(t => t.Status != Status.Done).OrderBy(t => t.Status).ThenBy(t => t.Due ?? DateTime.MaxValue),
                     };
-                    q = q.Where(Seen);
+                    q = q.Where(t => Seen(S, t));
                     if (list.Length > 0) q = q.Where(t => t.List.Equals(list, StringComparison.OrdinalIgnoreCase));
                     if (text.Length > 0)
                     {
@@ -819,20 +1266,52 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     }
                     var all = q.ToList();
                     if (all.Count == 0) return "No tasks found.";
-                    var lines = all.Take(limit).Select(t => Describe(t, now)).ToList();
+                    var lines = all.Take(limit).Select(t => Describe(S, t, now)).ToList();
                     if (all.Count > limit) lines.Add("And " + (all.Count - limit) + " more.");
                     return all.Count + (all.Count == 1 ? " task:" : " tasks:") + "\n" + string.Join("\n", lines);
+        }
+
+        private void Changed(string what, IEnumerable<TaskItem>? tasks = null, params string[] lists)
+        {
+            _change = what;
+            if (tasks != null) _changeTasks.AddRange(tasks.Select(t => t.Id));
+            _changeLists.AddRange(lists);
+        }
+
+        private async Task<string> RunTool(string name, IReadOnlyDictionary<string, JsonElement> a)
+        {
+            var now = DateTime.Now;
+            switch (name)
+            {
+                case "get_overview":
+                    return OverviewFor(S, Cfg, _w.TabNames, now);
+
+                case "find_tasks":
+                    return FindTasks(S, a, now);
+
+                case "bunny_changes_today":
+                {
+                    var lines = ChangeLines(S, _changes, now, forClaude: true);
+                    return lines.Count == 0 ? "You have not changed anything today." : "Your changes today, newest first:\n" + string.Join("\n", lines);
                 }
 
                 case "add_task":
                 {
-                    string listName = Get(a, "list") ?? (_w.OpenListName is string ol && S.Data.Lists.Any(l => l.Name == ol && !l.PrivateFromBunny) ? ol : null) ?? S.ActiveLists.FirstOrDefault(l => !l.PrivateFromBunny)?.Name ?? "Homework";
+                    string listName = Get(a, "list") ?? (_w.OpenListName is string ol && VisibleLists(S).Any(l => l.Name == ol && !l.Archived) ? ol : null)
+                        ?? VisibleLists(S).FirstOrDefault(l => !l.Archived)?.Name ?? "Homework";
                     var list = ListNamed(listName);
                     var t = new TaskItem { List = list.Name, Status = list.DefaultStatus, StatusSince = now };
+                    string label = "Bunny adding " + (Get(a, "name") ?? "a task").Trim();
+                    Begin(label);
                     ApplyFields(S, t, a, now);
                     foreach (var step in GetList(a, "subtasks")) t.Subtasks.Add(new Subtask { Name = step.Trim() });
                     if (t.Status == Status.Today && t.DoDate > now.Date) t.Status = t.DoDate <= Store.WeekEnd(now) ? Status.ThisWeek : Status.NextWeek;
-                    _w.AddTask(t, announce: false);
+                    // Added as done: it goes on as Today, then through the usual Done path, so points, bets and quests count.
+                    bool finish = t.Status == Status.Done;
+                    if (finish) { t.Status = Status.Today; t.DoneAt = null; t.StatusSince = now; }
+                    _w.AddTask(t, announce: false, remember: false);
+                    if (finish) { _steps++; _w.SetTaskStatus(t, Status.Done); }
+                    Changed("Added " + t.Name + " to " + t.List, new[] { t }, t.List);
                     return "Added: " + Describe(t, now);
                 }
 
@@ -845,11 +1324,12 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     changes.Remove("status");
                     if (changes.Count > 0)
                     {
-                        S.Remember("Bunny changing " + Names(tasks));
+                        Begin("Bunny changing " + Names(tasks));
                         foreach (var t in tasks) ApplyFields(S, t, changes, now);
                         _w.SaveAndRefresh();
                     }
-                    if (status is Status s) foreach (var t in tasks.Where(t => t.Status != s)) _w.SetTaskStatus(t, s);
+                    if (status is Status s) foreach (var t in tasks.Where(t => t.Status != s)) { _steps++; _w.SetTaskStatus(t, s); }
+                    Changed("Changed " + Names(tasks), tasks, tasks.Select(t => t.List).ToArray());
                     return "Changed:\n" + string.Join("\n", tasks.Select(t => Describe(t, now)));
                 }
 
@@ -857,31 +1337,35 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 {
                     var tasks = Find(S, GetList(a, "ids"));
                     var s = StatusOf(Get(a, "status") ?? "");
-                    foreach (var t in tasks.Where(t => t.Status != s)) _w.SetTaskStatus(t, s);
-                    var (done, total, _, _) = S.Progress(now);
-                    return Names(tasks) + " now " + Words.Of(s) + ". " + done + " of " + total + " done today." +
+                    var moving = tasks.Where(t => t.Status != s).ToList();
+                    foreach (var t in moving) { _steps++; _w.SetTaskStatus(t, s); }
+                    if (moving.Count > 0) Changed((s == Status.Done ? "Marked " + Names(moving) + " done" : "Set " + Names(moving) + " to " + Words.Of(s)), moving, moving.Select(t => t.List).ToArray());
+                    // The summary as Bunny may see it: private tasks do not count.
+                    return Names(tasks) + " now " + Words.Of(s) + ". " + BunnySummary(S, now) +
                         (s == Status.Done && tasks.Any(t => t.Repeat.Length > 0) ? " The next copy of the repeating ones was added." : "");
                 }
 
                 case "delete_tasks":
                 {
                     var tasks = Find(S, GetList(a, "ids"));
-                    if (Cfg.BunnyAskBeforeDelete)
+                    // Always asks for more than one task, whatever the setting, and Bunny cannot turn the setting off.
+                    if (Cfg.BunnyAskBeforeDelete || tasks.Count > 1)
                     {
                         string what = tasks.Count == 1 ? tasks[0].Name : tasks.Count + " tasks: " + Names(tasks);
-                        if (MessageBox.Show(_w, "Bunny wants to delete " + what + ". Delete " + (tasks.Count == 1 ? "it" : "them") + "?", "Bunny asks", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No) != MessageBoxResult.Yes)
+                        if (WhileSheAnswers(() => MessageBox.Show(_w, "Bunny wants to delete " + what + ". Delete " + (tasks.Count == 1 ? "it" : "them") + "?", "Bunny asks", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No)) != MessageBoxResult.Yes)
                             return "She said no, so nothing was deleted.";
                     }
-                    S.Remember("Bunny deleting " + Names(tasks));
+                    Begin("Bunny deleting " + Names(tasks));
                     foreach (var t in tasks) S.Data.Tasks.Remove(t);
                     _w.SaveAndRefresh();
+                    Changed("Deleted " + Names(tasks), tasks, tasks.Select(t => t.List).ToArray());
                     return "Deleted " + Names(tasks) + ". Control Z brings them back.";
                 }
 
                 case "subtasks":
                 {
                     var t = Find(S, new[] { Get(a, "id") ?? "" })[0];
-                    S.Remember("Bunny changing the subtasks of " + t.Name);
+                    Begin("Bunny changing the subtasks of " + t.Name);
                     Subtask Sub(string n) => t.Subtasks.FirstOrDefault(s => s.Name.Equals(n.Trim(), StringComparison.OrdinalIgnoreCase))
                         ?? t.Subtasks.FirstOrDefault(s => s.Name.Contains(n.Trim(), StringComparison.OrdinalIgnoreCase))
                         ?? throw new Exception(t.Name + " has no subtask called " + n + ". It has: " + string.Join("; ", t.Subtasks.Select(s => s.Name)));
@@ -891,16 +1375,20 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     foreach (var n in GetList(a, "remove")) t.Subtasks.Remove(Sub(n));
                     t.TouchedAt = now;
                     _w.SaveAndRefresh();
+                    Changed("Changed the steps of " + t.Name, new[] { t }, t.List);
                     return Describe(t, now) + (t.Subtasks.Count > 0 && t.Subtasks.All(s => s.Done) && t.Status != Status.Done ? " Every step is done; the task itself is still open." : "");
                 }
 
                 case "add_comment":
                 {
                     var t = Find(S, new[] { Get(a, "id") ?? "" })[0];
-                    S.Remember("Bunny commenting on " + t.Name);
-                    t.Comments.Add(new Comment { When = now, Text = (Get(a, "text") ?? "").Trim() });
+                    string comment = (Get(a, "text") ?? "").Trim();
+                    if (comment.Length == 0) throw new Exception("No comment given.");
+                    Begin("Bunny commenting on " + t.Name);
+                    t.Comments.Add(new Comment { When = now, Text = comment });
                     t.TouchedAt = now;
                     _w.SaveAndRefresh();
+                    Changed("Commented on " + t.Name, new[] { t }, t.List);
                     return "Comment added to " + t.Name + ".";
                 }
 
@@ -912,16 +1400,28 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
 
                 case "set_day":
                 {
-                    var date = Get(a, "date") is string ds && ParseWhen(ds, now) is (DateTime dd, _) ? dd.Date : now.Date;
-                    S.Remember("Bunny setting up " + Words.Day(date, now));
+                    string? ds = Get(a, "date");
+                    DateTime date = ds is null || ds.Trim().Length == 0 ? now.Date
+                        : ParseWhen(ds, now) is (DateTime dd, _) ? dd.Date : throw new Exception("Could not read the date " + ds + ". Use YYYY-MM-DD.");
+                    // Every word is checked before anything changes: an unknown mode must never quietly end a vacation.
+                    DayMode? mode = Get(a, "mode") is string m ? ModeOf(m) : null;
+                    string? kind = Get(a, "kind_of_day") is string k ? (k.Trim().Equals("auto", StringComparison.OrdinalIgnoreCase) ? "" : Kinds.FirstOrDefault(x => x.Equals(k.Trim(), StringComparison.OrdinalIgnoreCase))
+                        ?? throw new Exception("No kind of day called " + k + ". Use auto, " + string.Join(", ", Kinds) + ".")) : null;
+                    int? hours = GetInt(a, "hours");
+                    if (mode == null && kind == null && hours == null) throw new Exception("Nothing to set: give mode, hours or kind_of_day.");
+                    Begin("Bunny setting up " + Words.Day(date, now));
                     var day = S.Data.Day(date);
-                    if (Get(a, "mode") is string mode)
-                        day.Mode = mode switch { "vacation" => DayMode.Vacation, "rough_day" => DayMode.RoughDay, _ => DayMode.Normal };
-                    if (GetInt(a, "hours") is int h) day.Hours = Math.Clamp(h, 0, 16);
-                    if (Get(a, "kind_of_day") is string kind) day.DayType = kind == "auto" ? "" : kind;
+                    bool wasRough = day.Mode == DayMode.RoughDay;
+                    if (mode is DayMode md) day.Mode = md;
+                    if (hours is int h) day.Hours = Math.Clamp(h, 0, 16);
+                    if (kind != null) day.DayType = kind;
+                    // A rough day from Bunny does what Fun, Rough day does: today's non-urgent tasks move along.
+                    bool pushed = day.Mode == DayMode.RoughDay && !wasRough && date == now.Date && DayFlow.Push(S, now) > 0;
                     _w.SaveAndRefresh();
-                    return Words.Day(date, now) + " is " + (day.Mode == DayMode.Normal ? "a normal day" : day.Mode == DayMode.Vacation ? "a vacation day" : "a rough day") +
-                        (day.Hours > 0 ? ", " + day.Hours + " hours" : "") + ". Kind of day: " + S.DayType(date) + ".";
+                    string said = Words.Day(date, now) + " is " + (day.Mode == DayMode.Normal ? "a normal day" : day.Mode == DayMode.Vacation ? "a vacation day" : "a rough day") +
+                        (day.Hours > 0 ? ", " + day.Hours + " hours" : "");
+                    Changed("Set " + said);
+                    return said + "." + (pushed ? " Her non-urgent tasks for today moved along." : "") + " Kind of day: " + KindOfDay(S, date) + ".";
                 }
 
                 case "ask_user":
@@ -931,20 +1431,24 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 {
                     string note = (Get(a, "note") ?? "").Trim();
                     if (note.Length == 0) throw new Exception("No note given.");
-                    S.Remember("Bunny keeping a note");
+                    Begin("Bunny keeping a note");
                     S.Data.BunnyNotes.Add(Short(note, 300));
                     while (S.Data.BunnyNotes.Count > 40) S.Data.BunnyNotes.RemoveAt(0);
                     _w.SaveAndRefresh();
+                    Changed("Kept a note: " + Short(note, 80));
                     return "Noted. " + S.Data.BunnyNotes.Count + " notes.";
                 }
 
                 case "forget":
                 {
-                    S.Remember("Bunny forgetting a note");
-                    if (GetBool(a, "all") == true) S.Data.BunnyNotes.Clear();
-                    else if (GetInt(a, "number") is int n && n >= 1 && n <= S.Data.BunnyNotes.Count) S.Data.BunnyNotes.RemoveAt(n - 1);
-                    else throw new Exception("Give a note number from 1 to " + S.Data.BunnyNotes.Count + ", or all.");
+                    bool all = GetBool(a, "all") == true;
+                    int n = GetInt(a, "number") ?? 0;
+                    if (!all && (n < 1 || n > S.Data.BunnyNotes.Count)) throw new Exception("Give a note number from 1 to " + S.Data.BunnyNotes.Count + ", or all.");
+                    Begin("Bunny forgetting a note");
+                    if (all) S.Data.BunnyNotes.Clear();
+                    else S.Data.BunnyNotes.RemoveAt(n - 1);
                     _w.SaveAndRefresh();
+                    Changed(all ? "Forgot every note" : "Forgot a note");
                     return S.Data.BunnyNotes.Count + " notes left.";
                 }
 
@@ -952,7 +1456,12 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 {
                     string tab = (Get(a, "name") ?? "").Trim();
                     if (tab.Equals("overdue", StringComparison.OrdinalIgnoreCase)) tab = "Today";
-                    return _w.OpenTab(tab) ? "Opened the " + tab + " tab." : "There is no tab called " + tab + ". Tabs: " + string.Join(", ", _w.TabNames) + ".";
+                    // Only tabs Bunny may see: a private list's tab cannot be opened or named.
+                    var tabs = VisibleTabs(S, _w.TabNames);
+                    string? pick = tab.Length == 0 ? null : tabs.FirstOrDefault(x => x.Equals(tab, StringComparison.OrdinalIgnoreCase))
+                        ?? VisibleLists(S).Where(l => l.Name.Equals(tab, StringComparison.OrdinalIgnoreCase)).Select(l => l.TabName).FirstOrDefault(tabs.Contains)
+                        ?? tabs.FirstOrDefault(x => x.StartsWith(tab, StringComparison.OrdinalIgnoreCase));
+                    return pick != null && _w.OpenTab(pick) ? "Opened the " + pick + " tab." : "There is no tab called " + tab + ". Tabs: " + string.Join(", ", tabs) + ".";
                 }
 
                 case "open_feature_request":
@@ -966,14 +1475,25 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             throw new Exception("No tool called " + name + ".");
         }
 
+        private static DayMode ModeOf(string m) => m.Trim().ToLowerInvariant().Replace(' ', '_').Replace('-', '_') switch
+        {
+            "normal" or "normal_day" => DayMode.Normal,
+            "vacation" or "vacation_day" => DayMode.Vacation,
+            "rough_day" or "rough" => DayMode.RoughDay,
+            _ => throw new Exception("No day mode called " + m + ". Use normal, vacation or rough_day."),
+        };
+
         private static string Names(List<TaskItem> tasks) => tasks.Count <= 4 ? string.Join(", ", tasks.Select(t => t.Name)) : string.Join(", ", tasks.Take(3).Select(t => t.Name)) + " and " + (tasks.Count - 3) + " more";
 
         private TaskList ListNamed(string name) => ListNamed(S, name);
         private static TaskList ListNamed(Store store, string name) =>
-            store.Data.Lists.FirstOrDefault(l => !l.PrivateFromBunny && l.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))
-            ?? throw new Exception("No list called " + name + " that you can see. Lists: " + string.Join(", ", store.Data.Lists.Where(l => !l.Archived && !l.PrivateFromBunny).Select(l => l.Name)) + ".");
+            VisibleLists(store).FirstOrDefault(l => l.Name.Equals(name.Trim(), StringComparison.OrdinalIgnoreCase))
+            ?? throw new Exception("No list called " + name + " that you can see. Lists: " + string.Join(", ", VisibleLists(store).Where(l => !l.Archived).Select(l => l.Name)) + ".");
 
-        /// <summary>Puts the fields Claude gave onto a task. Throws, saying what is wrong, before changing anything it cannot.</summary>
+        /// <summary>
+        /// Puts the fields Claude gave onto a task. It can throw partway, saying what is wrong: callers take an
+        /// undo step first (Begin), and a failed tool is rolled back, so no half change stays.
+        /// </summary>
         public static void ApplyFields(Store store, TaskItem t, IReadOnlyDictionary<string, JsonElement> a, DateTime now)
         {
             if (Get(a, "list") is string ln && ln.Trim().Length > 0)
@@ -1017,11 +1537,14 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 else throw new Exception("Could not read the do date " + doDate + ". Use YYYY-MM-DD.");
             }
             if (Get(a, "size") is string size)
-                t.Size = size.ToLowerInvariant() switch { "small" => Size.Small, "large" => Size.Large, "multi_day" or "multi-day" or "multiday" => Size.MultiDay, _ => Size.Medium };
+                t.Size = size.Trim().ToLowerInvariant() switch { "small" => Size.Small, "medium" => Size.Medium, "large" => Size.Large, "multi_day" or "multi-day" or "multiday" or "multi day" => Size.MultiDay,
+                    _ => throw new Exception("Unknown size " + size + ". Use small, medium, large or multi_day.") };
             if (Get(a, "type") is string type)
-                t.Type = type.ToLowerInvariant() switch { "assignment" => TaskType.Assignment, "test" => TaskType.Test, "meeting" => TaskType.Meeting, "event" => TaskType.Event, "personal_goal" => TaskType.PersonalGoal, _ => TaskType.General };
+                t.Type = type.Trim().ToLowerInvariant() switch { "general" => TaskType.General, "assignment" => TaskType.Assignment, "test" => TaskType.Test, "meeting" => TaskType.Meeting, "event" => TaskType.Event, "personal_goal" or "personal goal" => TaskType.PersonalGoal,
+                    _ => throw new Exception("Unknown type " + type + ". Use general, assignment, test, meeting, event or personal_goal.") };
             if (Get(a, "energy") is string energy)
-                t.Energy = energy.ToLowerInvariant() switch { "easy" => Energy.Easy, "brain_heavy" or "brain-heavy" => Energy.BrainHeavy, _ => Energy.Unset };
+                t.Energy = energy.Trim().ToLowerInvariant() switch { "unset" or "none" or "" => Energy.Unset, "easy" => Energy.Easy, "brain_heavy" or "brain-heavy" or "brain heavy" => Energy.BrainHeavy,
+                    _ => throw new Exception("Unknown energy " + energy + ". Use unset, easy or brain_heavy.") };
             if (Get(a, "repeat") is string repeat)
             {
                 if (repeat.Trim().Length == 0 || repeat.Trim().Equals("none", StringComparison.OrdinalIgnoreCase)) t.Repeat = "";
@@ -1038,19 +1561,18 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
         {
             string name = (Get(a, "list") ?? "").Trim();
             if (name.Length == 0) throw new Exception("No list name given.");
-            var l = S.Data.Lists.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (l != null && l.PrivateFromBunny) throw new Exception("That list is private from you. Only she can change it, in Settings.");
-            S.Remember("Bunny changing the list " + name);
+            var l = CheckListName(S, name, GetBool(a, "create") == true);
+            Begin("Bunny changing the list " + name);
+            bool made = l == null;
             if (l == null)
             {
-                if (GetBool(a, "create") != true) throw new Exception("No list called " + name + ". Set create to true to make it. Lists: " + string.Join(", ", S.Data.Lists.Where(x => !x.PrivateFromBunny).Select(x => x.Name)) + ".");
                 l = new TaskList { Name = name };
                 S.Data.Lists.Add(l);
             }
             if (Get(a, "new_name") is string nn && nn.Trim().Length > 0 && nn.Trim() != l.Name)
             {
                 string fresh = nn.Trim();
-                if (S.Data.Lists.Any(x => x != l && x.Name.Equals(fresh, StringComparison.OrdinalIgnoreCase))) throw new Exception("That name is taken. Pick another.");
+                if (S.Data.Lists.Any(x => x != l && x.Name.Equals(fresh, StringComparison.OrdinalIgnoreCase))) throw new Exception("That name cannot be used. Pick another.");
                 foreach (var t in S.Data.Tasks.Where(t => t.List == l.Name)) t.List = fresh;
                 foreach (var sub in S.Data.Lists.Where(x => x.Parent == l.Name)) sub.Parent = fresh;
                 l.Name = fresh;
@@ -1088,54 +1610,119 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 foreach (var t in S.Data.Tasks.Where(t => t.List == l.Name && t.Section == sec)) t.Section = "";
             }
             _w.SaveAndRefresh();
+            Changed((made ? "Made the list " : "Changed the list ") + l.Name, null, l.Name);
             return "List " + l.Name + ": scale " + (l.Scale.Length == 0 ? "none" : l.ScaleName + " (" + string.Join(", ", l.Scale) + ")") +
                 ", categories " + (l.Sections.Count == 0 ? "none" : string.Join(", ", l.Sections)) + ", new tasks start as " + Words.Of(l.DefaultStatus) +
                 (l.InToday ? "" : ", kept out of Today") + (l.Archived ? ", archived" : "") + ".";
         }
 
-        private string ChangeSettings(IReadOnlyDictionary<string, JsonElement> a)
+        /// <summary>
+        /// The list manage_list works on, or null for a new one. A private list (or one inside it) gets the same
+        /// answer as a missing one, so Bunny never learns it is there.
+        /// </summary>
+        public static TaskList? CheckListName(Store s, string name, bool create)
+        {
+            var l = s.Data.Lists.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            bool hidden = l != null && ListPrivate(s, l);
+            // Making a list: any name already there, visible or private, gets the same answer.
+            if (create && l != null) throw new Exception("A list called " + name + " already exists or cannot be used. Pick another name, or leave out create to change a list you can see.");
+            if (l != null && !hidden) return l;
+            if (!create) throw new Exception("No list called " + name + ". Set create to true to make it. Lists: " + string.Join(", ", VisibleLists(s).Select(x => x.Name)) + ".");
+            return null;
+        }
+
+        /// <summary>The check-in gaps the Settings page offers; Bunny's choice snaps to the nearest, so the page and Bunny agree.</summary>
+        public static readonly int[] CheckHours = { 0, 1, 2, 3, 4, 6, 8 };
+        public static int NearestCheckHours(int n) => CheckHours.OrderBy(h => Math.Abs(h - n)).ThenBy(h => h).First();
+
+        private static readonly string[] OnOffSettings =
+            { "sounds_on", "music_on", "short_mode", "low_energy_mode", "shuffle_mode", "emojis_on", "finals_mode", "morning_check_in", "keep_in_tray", "check_for_updates", "bunny_daily_briefing" };
+
+        /// <summary>Reads one setting Bunny wants to change into its new value, or throws. Nothing changes here.</summary>
+        public static object ReadSetting(IReadOnlyDictionary<string, JsonElement> a, string key, bool undoing = false)
+        {
+            bool? b = GetBool(a, key);
+            int? n = GetInt(a, key);
+            double? d = a.TryGetValue(key, out var raw) && raw.ValueKind == JsonValueKind.Number && raw.TryGetDouble(out double dv) ? dv : n;
+            object? v = key switch
+            {
+                _ when OnOffSettings.Contains(key) => b,
+                "sound_volume" => n is int x ? Math.Clamp(x, 10, 100) : null,
+                "music_volume" => n is int x ? Math.Clamp(x, 1, 50) : null,
+                "roast_level" => n is int x ? Math.Clamp(x, 0, 4) : null,
+                "warn_when_urgent_more_than" => n is int x ? Math.Clamp(x, 0, 15) : null,
+                "hours_available" => d is double h ? Math.Clamp(h, 1, 14) : null,
+                "follow_up_days" => n is int x ? Math.Clamp(x, 1, 30) : null,
+                "bunny_check_in_hours" => n is int x ? NearestCheckHours(Math.Max(0, x)) : null,
+                "bunny_check_in_from" => n is int x ? Math.Clamp(x, 0, 23) : null,
+                "bunny_check_in_until" => n is int x ? Math.Clamp(x, 1, 24) : null,
+                // Undo puts back the exact choice (0 read aloud, 1 say Bunny answered, 2 say nothing).
+                "bunny_reads_answers_out_loud" => undoing && n is int voice ? Math.Clamp(voice, 0, 2) : b is bool loud ? (loud ? 0 : 1) : null,
+                "bunny_personality" => Personalities.FirstOrDefault(p => p.Name.Equals((Get(a, key) ?? "").Trim(), StringComparison.OrdinalIgnoreCase)).Name
+                    ?? throw new Exception("No personality called " + Get(a, key) + ". Pick one of: " + string.Join(", ", Personalities.Select(p => p.Name)) + "."),
+                "bunny_asks_before_deleting" => throw new Exception("Only she can change whether you ask before deleting, in Options, Smarter Bunny. Tell her where it is if she wants it changed."),
+                _ => throw new Exception("Cannot change " + key + ". Settings that can change: " + string.Join(", ", SettingValues(new Settings(), new Store()).Keys) + "."),
+            };
+            return v ?? throw new Exception("Could not read the value for " + key + ".");
+        }
+
+        private void SetSetting(string key, object v)
         {
             var c = Cfg;
-            var done = new List<string>();
             var focus = Features.Get<FocusTools>();
-            foreach (var key in a.Keys)
+            switch (key)
             {
-                bool? b = GetBool(a, key);
-                int? n = GetInt(a, key);
-                switch (key)
-                {
-                    case "sounds_on" when b != null: c.SoundsOn = b.Value; break;
-                    case "sound_volume" when n != null: c.SoundVolume = Math.Clamp(n.Value, 10, 100); break;
-                    case "music_on" when b != null: c.MusicOn = b.Value; break;
-                    case "music_volume" when n != null: c.MusicVolume = Math.Clamp(n.Value, 1, 50); break;
-                    case "short_mode" when b != null: c.ShortMode = b.Value; break;
-                    case "low_energy_mode" when b != null: if (focus != null) focus.SetLow(b.Value, false); else c.LowEnergy = b.Value; break;
-                    case "shuffle_mode" when b != null: if (focus != null) focus.SetShuffle(b.Value); else c.ShuffleMode = b.Value; break;
-                    case "roast_level" when n != null: c.RoastLevel = Math.Clamp(n.Value, 0, 4); break;
-                    case "emojis_on" when b != null: c.EmojisOn = b.Value; break;
-                    case "finals_mode" when b != null: c.FinalsMode = b.Value; break;
-                    case "morning_check_in" when b != null: c.MorningCheckIn = b.Value; break;
-                    case "warn_when_urgent_more_than" when n != null: c.UrgentWarnAbove = Math.Clamp(n.Value, 0, 15); break;
-                    case "hours_available" when n != null: S.Remember("Bunny changing your usual hours"); S.Data.HoursAvailable = Math.Clamp(n.Value, 1, 14); break;
-                    case "keep_in_tray" when b != null: c.KeepInTray = b.Value; break;
-                    case "follow_up_days" when n != null: c.FollowUpDays = Math.Clamp(n.Value, 1, 30); break;
-                    case "check_for_updates" when b != null: c.CheckForUpdatesAtStart = b.Value; break;
-                    case "bunny_check_in_hours" when n != null: c.BunnyCheckHours = Math.Clamp(n.Value, 0, 24); break;
-                    case "bunny_asks_before_deleting" when b != null: c.BunnyAskBeforeDelete = b.Value; break;
-                    case "bunny_personality":
-                        string want = Get(a, key) ?? "";
-                        c.BunnyPersonality = Personalities.FirstOrDefault(p => p.Name.Equals(want.Trim(), StringComparison.OrdinalIgnoreCase)).Name
-                            ?? throw new Exception("No personality called " + want + ". Pick one of: " + string.Join(", ", Personalities.Select(p => p.Name)) + ".");
-                        break;
-                    case "bunny_reads_answers_out_loud" when b != null: c.BunnyVoice = b.Value ? 0 : 1; break;
-                    case "bunny_daily_briefing" when b != null: c.BunnyBriefing = b.Value; break;
-                    default: throw new Exception("Cannot change " + key + ". Settings that can change: " + string.Join(", ", SettingValues().Keys) + ".");
-                }
-                done.Add(key + " " + SettingValues()[key]);
+                case "sounds_on": c.SoundsOn = (bool)v; break;
+                case "sound_volume": c.SoundVolume = (int)v; break;
+                case "music_on": c.MusicOn = (bool)v; break;
+                case "music_volume": c.MusicVolume = (int)v; break;
+                case "short_mode": c.ShortMode = (bool)v; break;
+                case "low_energy_mode": if (focus != null) focus.SetLow((bool)v, false); else c.LowEnergy = (bool)v; break;
+                case "shuffle_mode": if (focus != null) focus.SetShuffle((bool)v); else c.ShuffleMode = (bool)v; break;
+                case "roast_level": c.RoastLevel = (int)v; break;
+                case "emojis_on": c.EmojisOn = (bool)v; break;
+                case "finals_mode": c.FinalsMode = (bool)v; break;
+                case "morning_check_in": c.MorningCheckIn = (bool)v; break;
+                case "warn_when_urgent_more_than": c.UrgentWarnAbove = (int)v; break;
+                case "hours_available": S.Data.HoursAvailable = (double)v; break;
+                case "keep_in_tray": c.KeepInTray = (bool)v; break;
+                case "follow_up_days": c.FollowUpDays = (int)v; break;
+                case "check_for_updates": c.CheckForUpdatesAtStart = (bool)v; break;
+                case "bunny_check_in_hours": c.BunnyCheckHours = (int)v; break;
+                case "bunny_check_in_from": c.BunnyCheckFrom = (int)v; break;
+                case "bunny_check_in_until": c.BunnyCheckUntil = (int)v; break;
+                case "bunny_personality": c.BunnyPersonality = (string)v; break;
+                case "bunny_reads_answers_out_loud": c.BunnyVoice = (int)v; break;
+                case "bunny_daily_briefing": c.BunnyBriefing = (bool)v; break;
             }
-            if (done.Count == 0) throw new Exception("No settings given.");
+        }
+
+        /// <summary>The settings as saved, for undo: the voice as its exact choice.</summary>
+        private Dictionary<string, JsonElement> RawSettings(IEnumerable<string> keys)
+        {
+            var all = SettingValues();
+            return keys.ToDictionary(k => k, k => JsonSerializer.SerializeToElement(k == "bunny_reads_answers_out_loud" ? Cfg.BunnyVoice : all[k]));
+        }
+
+        /// <summary>
+        /// change_settings: every key is checked first, so a bad one changes nothing. Settings live outside the
+        /// task data, so Control Z cannot reach them; Bunny changes today keeps the old values to undo it.
+        /// </summary>
+        private string ChangeSettings(IReadOnlyDictionary<string, JsonElement> a)
+        {
+            var wanted = a.Keys.ToDictionary(k => k, k => ReadSetting(a, k));
+            if (wanted.Count == 0) throw new Exception("No settings given.");
+            int from = wanted.TryGetValue("bunny_check_in_from", out var f) ? (int)f : Cfg.BunnyCheckFrom;
+            int until = wanted.TryGetValue("bunny_check_in_until", out var u) ? (int)u : Cfg.BunnyCheckUntil;
+            if (from >= until) throw new Exception("Check-ins must start before they stop, like from 9 until 21.");
+            _settingsBefore = RawSettings(wanted.Keys);
+            foreach (var (key, v) in wanted) SetSetting(key, v);
             _w.SettingsChanged();
-            return "Changed: " + string.Join(", ", done) + ".";
+            _settingsAfter = RawSettings(wanted.Keys);
+            var now = SettingValues();
+            string done = string.Join(", ", wanted.Keys.Select(k => k + " " + now[k]));
+            Changed("Changed settings: " + done.Replace('_', ' '));
+            return "Changed: " + done + ". Control Z does not undo settings. She can undo this from File, Bunny changes today, while it is still your latest change.";
         }
 
         /// <summary>Bunny asks her something in a small window: the question, a button per choice, and a box for her own answer.</summary>
@@ -1185,7 +1772,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     text.CaretIndex = 0;
                     Speech.Say(w, question + (choices.Count > 0 ? " Tab to the answers." : ""), true);
                 };
-                w.ShowDialog();
+                WhileSheAnswers(() => w.ShowDialog());
                 return answer == null ? "She closed the window without answering." : "She answered: " + answer;
             }
             finally { Speech.Muted = wasMuted; }
@@ -1201,7 +1788,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             private readonly Settings _cfg;
             private readonly PasswordBox _key = new();
             private readonly TextBlock _keyState = new() { TextWrapping = TextWrapping.Wrap, Width = 440, Margin = new Thickness(0, 6, 0, 0) };
-            private readonly ComboBox _check = new(), _voice = new(), _who = new();
+            private readonly ComboBox _check = new(), _voice = new(), _who = new(), _from = new(), _until = new();
             private readonly CheckBox _askDelete, _dates, _briefing;
             private bool _forgetProfile;
             private readonly List<(TaskList List, CheckBox Box)> _private = new();
@@ -1210,7 +1797,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             private bool _notesChanged;
             private readonly StackPanel _panel = new();
             private readonly ScrollViewer _scroll;
-            private static readonly int[] Hours = { 0, 1, 2, 3, 4, 6, 8 };
+            private static readonly int[] Hours = CheckHours;
+            private static string HourWords(int h) => h == 0 || h == 24 ? "midnight" : h == 12 ? "noon" : Words.Time(DateTime.Today.AddHours(h));
 
             public string Name => PageName;
             public FrameworkElement Content => _scroll;
@@ -1224,7 +1812,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 {
                     IsReadOnly = true, IsReadOnlyCaretVisible = true, TextWrapping = TextWrapping.Wrap, BorderThickness = new Thickness(0), Width = 440,
                     Text = "Smarter Bunny lets you talk to Bunny in the Talk to Bunny box on the main screen. Bunny can add and change tasks, plan your week, check on you, and change settings for you. " +
-                           "It uses Claude, by Anthropic, with your own Claude API key. The API is pay as you go and separate from a Claude plan: get a key at console.anthropic.com, under API keys. " +
+                           "It uses Claude, by Anthropic, with your own Claude API key: get one at platform.claude.com, under API keys. The API is pay as you go. Claude Max and Ultra plans include monthly API credits, and unused credit expires at the end of each billing cycle. " +
                            "The key is kept encrypted on this computer, for your Windows account only. Your tasks are sent to Claude when you talk to Bunny or it checks on you, except the lists you keep private below.",
                 };
                 AutomationProperties.SetName(about, "About Smarter Bunny");
@@ -1246,9 +1834,9 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 var get = Layout.Button("_Get a key");
                 get.Click += (_, _) =>
                 {
-                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://console.anthropic.com/settings/keys") { UseShellExecute = true })?.Dispose(); }
+                    try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://platform.claude.com/settings/keys") { UseShellExecute = true })?.Dispose(); }
                     catch { }
-                    Speech.Say(_panel, "Opening the Claude Console in your browser. Make a key, copy it, and paste it in the API key box.", true);
+                    Speech.Say(_panel, "Opening the Claude Console at platform.claude.com in your browser. Make a key, copy it, and paste it in the API key box.", true);
                 };
                 var forget = Layout.Button("_Forget the key");
                 forget.Click += (_, _) => { _key.Clear(); Speech.Say(_panel, "Key cleared. Press OK to save that.", true); _key.Focus(); };
@@ -1265,9 +1853,15 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _panel.Children.Add(Layout.Row("Bunny's _personality", _who, 440));
 
                 _check.ItemsSource = Hours.Select(h => h == 0 ? "Never" : h == 1 ? "Every hour" : "Every " + h + " hours").ToList();
-                _check.SelectedIndex = Math.Max(0, Array.IndexOf(Hours, cfg.BunnyCheckHours) is int i && i >= 0 ? i : 3);
-                AutomationProperties.SetHelpText(_check, "Bunny checks on you in a small window, between 9 in the morning and 9 at night, when Busy Bunny is in front.");
+                _check.SelectedIndex = Math.Max(0, Array.IndexOf(Hours, NearestCheckHours(cfg.BunnyCheckHours)));
+                AutomationProperties.SetHelpText(_check, "Bunny checks on you in a small window when Busy Bunny is in front, only between the hours below, and never during a class, a sprint, a meeting, a vacation day or a rough day.");
                 _panel.Children.Add(Layout.Row("Bunny _checks on me", _check));
+                _from.ItemsSource = Enumerable.Range(0, 24).Select(HourWords).ToList();
+                _from.SelectedIndex = Math.Clamp(cfg.BunnyCheckFrom, 0, 23);
+                _until.ItemsSource = Enumerable.Range(1, 24).Select(HourWords).ToList();
+                _until.SelectedIndex = Math.Clamp(cfg.BunnyCheckUntil, 1, 24) - 1;
+                _panel.Children.Add(Layout.Row("Check-ins start at", _from));
+                _panel.Children.Add(Layout.Row("Check-ins stop at", _until));
                 _askDelete = new CheckBox { Content = "Ask me before Bunny _deletes a task", IsChecked = cfg.BunnyAskBeforeDelete, Margin = new Thickness(0, 6, 0, 4) };
                 _dates = new CheckBox { Content = "Bunny reads dates the task form does not under_stand", IsChecked = cfg.BunnyReadsDates, Margin = new Thickness(0, 4, 0, 4) };
                 _briefing = new CheckBox { Content = "A short _briefing from Bunny the first time I open Busy Bunny each day", IsChecked = cfg.BunnyBriefing, Margin = new Thickness(0, 4, 0, 4) };
@@ -1376,8 +1970,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 bool worked = false;
                 try
                 {
-                    var client = new AnthropicClient { ApiKey = key, Timeout = TimeSpan.FromSeconds(60) };
-                    if (Environment.GetEnvironmentVariable("BUSYBUNNY_CLAUDE_URL") is string url && url.Length > 0) client = new AnthropicClient { ApiKey = key, Timeout = TimeSpan.FromSeconds(60), BaseUrl = url };
+                    var client = MakeClient(key, TimeSpan.FromSeconds(30));
                     var r = await client.Messages.Create(new MessageCreateParams
                     {
                         Model = ModelId,
@@ -1393,8 +1986,15 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                     worked = true;
                     message = "The key works, and it is saved. Bunny says: " + hi;
                 }
-                catch (AnthropicUnauthorizedException) { message = "Claude did not accept that key. Copy it again from console.anthropic.com, under API keys, and paste it in the API key box."; }
-                catch (Exception e) { message = "That key did not work. " + Problem(e); }
+                catch (Exception e)
+                {
+                    Note(e);
+                    // Only a 401 or 403 means the key is wrong. Offline, busy or overloaded says nothing about the key.
+                    bool badKey = StatusCode(e) is 401 or 403 || e is AnthropicUnauthorizedException or AnthropicForbiddenException;
+                    message = badKey
+                        ? "Claude did not accept that key. Copy it again from platform.claude.com, under API keys, and paste it in the API key box."
+                        : "The key could not be checked just now. " + Problem(e) + " The key is still in the box: press OK to keep it, and test it again later.";
+                }
                 finally
                 {
                     test.Content = "_Test the key";
@@ -1408,6 +2008,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             {
                 string key = _key.Password.Trim();
                 if (key.Length > 0 && !key.StartsWith("sk-ant-")) { _key.Focus(); return "That does not look like a Claude API key. They start with sk-ant."; }
+                if (_until.SelectedIndex + 1 <= _from.SelectedIndex) { _until.Focus(); return "Check-ins need to stop later than they start."; }
                 return null;
             }
 
@@ -1422,13 +2023,19 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 _cfg.BunnyVoice = Math.Max(0, _voice.SelectedIndex);
                 _cfg.BunnyPersonality = Personalities[Math.Max(0, _who.SelectedIndex)].Name;
                 _cfg.BunnyCheckHours = Hours[Math.Max(0, _check.SelectedIndex)];
+                _cfg.BunnyCheckFrom = Math.Max(0, _from.SelectedIndex);
+                _cfg.BunnyCheckUntil = Math.Max(0, _until.SelectedIndex) + 1;
                 _cfg.BunnyAskBeforeDelete = _askDelete.IsChecked == true;
                 _cfg.BunnyReadsDates = _dates.IsChecked == true;
                 _cfg.BunnyBriefing = _briefing.IsChecked == true;
                 if (_forgetProfile) { _store.Data.BunnyProfile = ""; _store.Data.BunnyLearned = DateTime.Now; }
                 bool newKey = key.Length > 0 && _store.Data.BunnyLearned == default;
                 if (newKey) _me?.Soon();
+                var hiddenBefore = _store.Data.Lists.Where(l => ListPrivate(_store, l)).Select(l => l.Name).ToHashSet();
                 foreach (var (list, box) in _private) list.PrivateFromBunny = box.IsChecked == true;
+                var hiddenNow = _store.Data.Lists.Where(l => ListPrivate(_store, l)).Select(l => l.Name).ToHashSet();
+                // What Bunny was told before may hold the tasks of a list that is private now: the talk starts over.
+                if (!hiddenNow.SetEquals(hiddenBefore)) _me?.PrivacyChanged(madePrivate: !hiddenNow.IsSubsetOf(hiddenBefore));
                 if (_notesChanged) _store.Data.BunnyNotes = _notes.ToList();
                 _cfg.Save();
             }
@@ -1439,7 +2046,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
         public void SelfTest(Store store)
         {
             void Check(bool ok, string what) { if (!ok) throw new Exception("Smarter Bunny: " + what); }
-            Check(ToolList().Count == 16, "tool list");
+            Check(ToolList().Count == 17, "tool list");
             Check(Clean("**Hi** there # friend\n- one\n- two") == "Hi there  friend\none\ntwo", "clean gave " + Clean("**Hi** there # friend\n- one\n- two"));
             Check(ParseWhen("2026-11-03 14:30") == (new DateTime(2026, 11, 3, 14, 30, 0), true), "time");
             Check(ParseWhen("2026-11-03") == (new DateTime(2026, 11, 3), false), "date");
@@ -1479,6 +2086,132 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
             string habits = Habits(st, now);
             Check(habits.Contains("finished in the last 120 days: 1") && habits.Contains("evening 1"), "habits gave " + habits);
             Check(StatusOf("this week") == Status.ThisWeek && StatusOf("done_not_submitted") == Status.DoneNotSubmitted, "status words");
+            PrivacyTest(now);
+            OtherFixesTest(now);
+        }
+
+        /// <summary>
+        /// A private list (and a list inside it) holding a test, a meeting and an overdue task named ZZSECRET:
+        /// everything Bunny can send is built, and none of it may name them, their list, or their tag.
+        /// </summary>
+        private static void PrivacyTest(DateTime now)
+        {
+            void Check(bool ok, string what) { if (!ok) throw new Exception("Smarter Bunny privacy: " + what); }
+            var s = new Store { PathOverride = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "busybunny-bunny-privacy-" + Guid.NewGuid().ToString("N") + ".json") };
+            s.Data.Lists = Sample.Lists();
+            s.Data.Lists.Add(new TaskList { Name = "ZZHIDDENLIST", PrivateFromBunny = true });
+            s.Data.Lists.Add(new TaskList { Name = "ZZINNERLIST", Parent = "ZZHIDDENLIST" });
+            string visible = s.Data.Lists[0].Name;
+            var exam = new TaskItem { Name = "ZZSECRET exam", List = "ZZHIDDENLIST", Type = TaskType.Test, Tag = "ZZTAG", Due = now.Date.AddDays(2), Status = Status.ThisWeek };
+            var meeting = new TaskItem { Name = "ZZSECRET therapy", List = "ZZHIDDENLIST", Type = TaskType.Meeting, IsMeeting = true, Due = now.AddHours(1), DueHasTime = true, Status = Status.Today };
+            var late = new TaskItem { Name = "ZZSECRET overdue", List = "ZZINNERLIST", Tag = "ZZTAG", Due = now.Date.AddDays(-3), Status = Status.Today };
+            var study = new TaskItem { Name = "ZZSECRET study", List = "ZZHIDDENLIST", Tag = "PSY", Due = now.Date.AddDays(1), Status = Status.ThisWeek };
+            var mine = new TaskItem { Name = "visible reading", List = visible, Tag = "PSY", Status = Status.Today };
+            s.Data.Tasks.AddRange(new[] { exam, meeting, late, study, mine });
+            s.Data.Tags.Add(new TagInfo { Name = "ZZTAG", Description = "ZZSECRET class" });
+            s.Data.Tags.Add(new TagInfo { Name = "PSY", Description = "Psychology" });
+            s.Data.Log.Add(new LogEntry { When = now.AddDays(-1), Kind = "Done", List = "ZZHIDDENLIST", Tag = "ZZTAG", Text = "ZZSECRET" });
+            s.Data.Log.Add(new LogEntry { When = now.AddDays(-1), Kind = "Done", List = "ZZOLDNAME", Tag = "ZZTAG", Text = "ZZSECRET" });
+            s.Data.Log.Add(new LogEntry { When = now.AddDays(-1), Kind = "Done", List = visible, Tag = "PSY", Text = "reading" });
+            s.Data.Classes.Add(new ClassTime { Tag = "PSY", Days = { now.DayOfWeek }, Start = now.TimeOfDay.Add(TimeSpan.FromHours(2)), End = now.TimeOfDay.Add(TimeSpan.FromHours(3)) });
+            // The summary pieces School adds, as in the app.
+            s.SummaryParts.Add((n, sm) => School.NextClassPart(s.Data, n, sm, s.Counts));
+            s.SummaryParts.Add((n, sm) => School.ExamPart(s.Data, n, sm, s.Counts));
+            var cfg = new Settings();
+            var tabs = new List<string> { "Today", "Focus", "Upcoming" }.Concat(s.Data.Lists.Select(l => l.TabName)).ToList();
+            string[] secrets = { "ZZSECRET", "ZZHIDDENLIST", "ZZINNERLIST", "ZZTAG", "ZZOLDNAME" };
+            void Clean(string what, string text)
+            {
+                foreach (var bad in secrets) Check(!text.Contains(bad, StringComparison.OrdinalIgnoreCase), what + " holds " + bad + ": " + text);
+            }
+            JsonElement J(string json) => JsonDocument.Parse(json).RootElement.Clone();
+            Dictionary<string, JsonElement> Args(string json) => J(json).EnumerateObject().ToDictionary(p => p.Name, p => p.Value.Clone());
+            string Error(Action a) { try { a(); return ""; } catch (Exception e) { return e.Message; } }
+
+            Clean("the system prompt", SystemPrompt + LearnPrompt + BriefingPrompt + CheckInPrompt);
+            string context = ContextFor(s, cfg, now, "ZZHIDDENLIST", exam);
+            Clean("the context line", context);
+            Clean("the context line on a sublist", ContextFor(s, cfg, now, "ZZINNERLIST", late));
+            Check(context.Contains("next class PSY"), "a private meeting hid the next class: " + context);
+            Check(context.Contains("0 of 1 done today") && !context.Contains("overdue"), "private tasks were counted: " + context);
+            Clean("the overview", OverviewFor(s, cfg, tabs, now));
+            Check(OverviewFor(s, cfg, tabs, now).Contains("PSY (Psychology)"), "a tag in use on a visible task went missing");
+            string habits = Habits(s, now);
+            Clean("habits", habits);
+            Check(habits.Contains("finished in the last 120 days: 1."), "habits counted private or old lists: " + habits);
+            Clean("open tasks for learning", OpenTaskLines(s, now));
+            foreach (var which in new[] { "open", "today", "overdue", "this_week", "next_week", "waiting", "done_recently", "all" })
+                Clean("find_tasks " + which, FindTasks(s, Args("{\"which\":\"" + which + "\"}"), now));
+            Clean("find_tasks by words", FindTasks(s, Args("{\"which\":\"all\",\"text\":\"ZZSECRET\"}"), now));
+            Clean("find_tasks by list", FindTasks(s, Args("{\"which\":\"all\",\"list\":\"ZZHIDDENLIST\"}"), now));
+            Clean("the tab list", string.Join(", ", VisibleTabs(s, tabs)));
+            // Errors may echo the name Bunny itself gave, but must name nothing else that is private.
+            Clean("a bad list name", Error(() => ListNamed(s, "ZZHIDDENLIST")).Replace("ZZHIDDENLIST", ""));
+            Clean("a sublist name", Error(() => ListNamed(s, "ZZINNERLIST")).Replace("ZZINNERLIST", ""));
+            Clean("manage_list on a private list", Error(() => CheckListName(s, "ZZHIDDENLIST", false)).Replace("ZZHIDDENLIST", ""));
+            Check(Error(() => CheckListName(s, "ZZHIDDENLIST", false)) == Error(() => CheckListName(s, "nothing like it", false)).Replace("nothing like it", "ZZHIDDENLIST"),
+                "manage_list told a private list from a missing one");
+            Check(Error(() => CheckListName(s, "ZZHIDDENLIST", true)) == Error(() => CheckListName(s, visible, true)).Replace(visible, "ZZHIDDENLIST"),
+                "making a list told a private name from a visible one");
+            Clean("a private task id", Error(() => Find(s, new[] { exam.Id.ToString("N")[..8] })));
+            Check(Error(() => Find(s, new[] { exam.Id.ToString("N")[..8] })).Length > 0 && Error(() => Find(s, new[] { late.Id.ToString("N")[..8] })).Length > 0, "a private task was found");
+            Check(!MayShare(s, exam) && !MayShare(s, late) && MayShare(s, mine), "MayShare");
+            var changes = new List<BunnyChange>
+            {
+                new() { When = now, What = "Added ZZSECRET exam", Tasks = { exam.Id } },
+                new() { When = now.AddMinutes(1), What = "Changed the list ZZHIDDENLIST", Lists = { "ZZHIDDENLIST" } },
+                new() { When = now.AddMinutes(2), What = "Added visible reading", Tasks = { mine.Id } },
+            };
+            var told = ChangeLines(s, changes, now, forClaude: true);
+            Clean("bunny_changes_today", string.Join("\n", told));
+            Check(told.Count == 1 && ChangeLines(s, changes, now, forClaude: false).Count == 3, "changes today filtered wrong");
+            System.IO.File.Delete(s.PathOverride!);
+        }
+
+        private static void OtherFixesTest(DateTime now)
+        {
+            void Check(bool ok, string what) { if (!ok) throw new Exception("Smarter Bunny: " + what); }
+            JsonElement J(string json) => JsonDocument.Parse(json).RootElement.Clone();
+            bool Throws(Action a) { try { a(); return false; } catch { return true; } }
+            // Bunny cannot turn off its own delete check, and its check-in gap matches the Settings page.
+            Check(Throws(() => ReadSetting(new Dictionary<string, JsonElement> { ["bunny_asks_before_deleting"] = J("false") }, "bunny_asks_before_deleting")), "Bunny could turn off asking before deleting");
+            Check(!SettingValues(new Settings(), new Store()).ContainsKey("bunny_asks_before_deleting"), "Bunny sees the delete setting as one it can change");
+            Check((int)ReadSetting(new Dictionary<string, JsonElement> { ["bunny_check_in_hours"] = J("5") }, "bunny_check_in_hours") == 4, "check-in hours did not snap");
+            Check(Throws(() => ReadSetting(new Dictionary<string, JsonElement> { ["nope"] = J("1") }, "nope")), "an unknown setting was taken");
+            Check(Throws(() => ModeOf("off")) && ModeOf("rough day") == DayMode.RoughDay, "day modes");
+            // Errors: short and plain, with the right website.
+            Check(ProblemFor(404, "").Contains("not available") && ProblemFor(413, "").Contains("too long") && ProblemFor(529, "").Contains("overloaded")
+                && ProblemFor(400, "Your credit balance is too low").Contains("platform.claude.com") && ProblemFor(503, "").Contains("moment") && ProblemFor(418, "") == NoAnswer, "error lines");
+            Check(Problem(new System.Net.Http.HttpRequestException("no route")) == Offline && Problem(new Stopped()).Contains("stopped"), "offline and stop lines");
+            Check(!SystemPrompt.Contains("console.anthropic"), "old website");
+            // Check-ins: hours, classes, rough days, sprints and meetings.
+            var s = new Store();
+            var cfg = new Settings { BunnyCheckFrom = 9, BunnyCheckUntil = 21 };
+            var monday = new DateTime(2026, 11, 2, 10, 0, 0);
+            Check(CheckInBlocked(s, cfg, monday, false) == null, "a free hour was blocked");
+            Check(CheckInBlocked(s, cfg, monday.AddHours(-2), false) != null, "too early");
+            cfg.BunnyCheckFrom = 7;
+            Check(CheckInBlocked(s, cfg, monday.AddHours(-2), false) == null, "the start hour is not used");
+            Check(CheckInBlocked(s, cfg, monday, true) == "a sprint", "a sprint");
+            s.Data.Classes.Add(new ClassTime { Tag = "PSY", Days = { DayOfWeek.Monday }, Start = new TimeSpan(10, 5, 0), End = new TimeSpan(11, 0, 0) });
+            Check(CheckInBlocked(s, cfg, monday, false) == "class", "class time");
+            Check(CheckInBlocked(s, cfg, monday.AddHours(2), false) == null, "after class");
+            s.Data.Tasks.Add(new TaskItem { Name = "advisor", IsMeeting = true, Type = TaskType.Meeting, Due = monday.AddHours(2).AddMinutes(20), DueHasTime = true });
+            Check(CheckInBlocked(s, cfg, monday.AddHours(2), false) == "a meeting", "a meeting");
+            s.Data.Day(monday).Mode = DayMode.RoughDay;
+            Check(CheckInBlocked(s, cfg, monday.AddHours(5), false) != null, "a rough day");
+            Check(Review.UndoWords(2).Contains("2 times"), "review undo words");
+            // ApplyFields refuses words it cannot read instead of quietly picking something.
+            var task = new TaskItem { Type = TaskType.Test, Size = Size.Large };
+            Check(Throws(() => ApplyFields(s, task, new Dictionary<string, JsonElement> { ["type"] = J("\"exam\"") }, now)) && task.Type == TaskType.Test, "an unknown type was taken");
+            Check(Throws(() => ApplyFields(s, task, new Dictionary<string, JsonElement> { ["size"] = J("\"huge\"") }, now)) && task.Size == Size.Large, "an unknown size was taken");
+            Check(Throws(() => ApplyFields(s, task, new Dictionary<string, JsonElement> { ["energy"] = J("\"sleepy\"") }, now)), "an unknown energy was taken");
+            // The data fingerprint ignores the game's diary, which the game writes a moment after a change.
+            string hash = DataHash(s);
+            Game.Note(s, "a line for What happened today");
+            Check(DataHash(s) == hash, "the game's diary changed the fingerprint");
+            s.Data.Tasks.Add(new TaskItem { Name = "more" });
+            Check(DataHash(s) != hash, "a new task did not change the fingerprint");
         }
     }
 }

@@ -1,3 +1,46 @@
+0.12.0
+This version is the big bug hunt Morgan asked for in issue 18: every file was read line by line, about 100 problems were fixed, and every fix was checked again by a second reviewer.
+Bug fixed: tasks on private lists could still reach Bunny through the summary line, like the name of a test or the time of a meeting, and through the narrator, list names, tags and old talk history. Now nothing from a private list is ever sent, lists inside a private list are private too, and a test checks it every release.
+Bug fixed: if your tasks file was damaged, locked by another program, or missing, Busy Bunny could start over with the sample tasks and save them over your real ones. Now it waits for a locked file, brings back your newest good backup and tells you, and never puts sample tasks over real ones.
+Bug fixed: if saving failed, for example with a full disk, you got a box that did not help and your change could be lost. Now Busy Bunny tells you once, keeps trying every few seconds, says when your tasks are saved again, saves when Windows signs out or shuts down, and asks before closing if it still could not save.
+New feature: keep a second copy of your daily backup in a folder you pick, like your Google Drive folder, so a lost laptop never means lost tasks. It is in Options, Settings, Backups, which also says where your tasks and backups are kept.
+New feature: Help, Report a problem copies the version, Windows details and the last lines of the error log to the clipboard, with no task names or notes, so you can paste it to whoever helps you. Help, Where my tasks are saved tells you the folders.
+New feature: the first time Busy Bunny opens on a new computer, it reminds you that tasks stay on each computer for now, and how to move them with Export a backup and Restore from a backup.
+New feature: File, Bunny changes today lists everything Bunny changed today, newest first, and can undo the one you pick.
+New feature: stop Bunny while it is thinking with Escape in the Talk to Bunny box, or File, Stop Bunny. If Bunny takes a while, it says it is still thinking.
+Bug fixed: some Bunny errors, like being offline, Claude being busy, or running out of credit, gave long technical messages, and Test the key could call a good key wrong when you were offline. Now each one gets a short plain sentence, and the website named is platform.claude.com.
+Changed: Options, Smarter Bunny now says that the Claude Max and Ultra plans include some API credit each month.
+Changed: Bunny's check-ins never come during class, a sprint, a meeting, vacation or a rough day, and you can pick the hours in Options, Smarter Bunny.
+Bug fixed: Bunny could turn off Ask before deleting by itself. Now only you can change that.
+Bug fixed: if a Bunny change failed halfway, part of it could stay. Now a failed change is undone completely.
+Bug fixed: if you marked a task Done in the task form with F2, or Bunny did, you got no points, its next repeat was not made, and a bet on it could be lost. Now it works the same as Control 6.
+Bug fixed: after choosing Done in the Status menu, pressing Enter again or tabbing away could mark the next task done too. Now the menu only changes the task you chose.
+Bug fixed: un-finishing a task kept some of the points it paid, like bonuses, challenge rewards, bet winnings and the day's goal. Now all of it goes back, and finishing it again pays once.
+Bug fixed: setting one task back and forth could finish the daily challenge. Now each task counts once.
+Bug fixed: a bet on a task you finished in time could still be lost, and a bet on a deleted task could never be won. Now a task done in time wins, and a deleted or archived task gives your points back.
+Bug fixed: finishing one task could set off a stream of announcements. Now you hear the points and the single most exciting thing, and the rest waits in Fun, What happened today.
+Bug fixed: Vex could trash-talk with trash talk off, and several lines could pile up after the laptop woke. Now Vex follows your settings and the quiet hours, and says one line at most.
+Bug fixed: if you did something just after midnight, the new day's work, like the end-of-day reset and the daily challenge, could be skipped. Now it always runs.
+Bug fixed: renaming two lists or two tags at once, like swapping names, could merge their tasks. Now each keeps its own. Renaming a tag also moves its class accessibility requests.
+Bug fixed: arrowing past Add a new list in Settings made a new list, and the Tags page could make a tag called TAG1 by itself. Now they only happen when you press the button.
+Bug fixed: many menus and windows had two items with the same Alt letter, so pressing that letter did not pick either one. Every menu and window now has its own letters. Alt U opens the Fun menu again, and the Status menu is Alt A.
+Bug fixed: if your Homework list was renamed, Control N could save a task to a list that did not exist, and archived lists showed up in Move to. Now tasks only go to real lists.
+Bug fixed: Add several tasks needed one Control Z for each task, and finishing a repeating task needed two. Now one Control Z undoes each of them.
+Bug fixed: with a filter on, tasks in a category showed twice on their list's tab.
+Bug fixed: with lots of tasks, every change was slow because every tab was rebuilt. Now only the tabs you can see are rebuilt, and NVDA no longer reads the same task again after each change.
+Bug fixed: NVDA could get a flood of announcements one after another. Now lines that come together are said together, and lines you did not ask for are spaced out.
+Bug fixed: the update window could pop up while you were typing, and focus did not come back to where you were after it or after Settings.
+Bug fixed: monthly repeats on the 31st drifted to the 28th for good, every 2 weeks reminders came every week, and February 29 dates were moved to the 28th. Now they stay on the right day.
+Bug fixed: typing end of the week or this weekend on a Saturday or Sunday picked the wrong week.
+Bug fixed: a reminder could be lost if saving failed at that moment, and Control Z could bring a reminder back after it went off.
+Bug fixed: a meeting with no time was read as at 12 am.
+Bug fixed: if an update could not swap the files, Busy Bunny could be left with no program to start. Now the old version is put back, and if a new version crashes on start, the old one comes back by itself.
+Bug fixed: a sound driver that stopped answering could freeze Busy Bunny. Sounds now run on their own, and Windows' own player takes over if the driver hangs.
+Bug fixed: a sprint across the clock change counted an extra hour, and a sprint across sleep counted the sleep.
+Bug fixed: burrow room sounds played with sounds off, and building a room lost keyboard focus.
+Changed: Help, Keyboard shortcuts now lists every shortcut, including Control Alt Shift A and R, and the keys inside the task form.
+Changed: the setup guide now has a Smarter Bunny step for your key, private lists and check-in hours.
+New feature: BUGS.txt lists every bug found in this round, how it was fixed, and what could not be tested.
 0.11.0
 New feature: Bunny gets to know you. The first time Busy Bunny opens with your Claude key, Bunny studies your lists, class times, tasks and habits, like when you get things done and what tends to slip, then tells you what it noticed. It keeps learning every week and uses all of it whenever you talk to it. File, Bunny, get to know me again asks it to look again.
 New feature: a daily briefing. The first time you open Busy Bunny each day, Bunny tells you the shape of your day and the two or three things that matter most, planned around your habits. Turn it off in Options, Smarter Bunny.

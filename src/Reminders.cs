@@ -88,7 +88,8 @@ namespace BusyBunny
 
         private void OnClosing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (Quitting || _tray == null || _w == null || !_w.AppSettings.KeepInTray) return;
+            // Already kept open (Close anyway? No): stay as it is, do not hide to the tray.
+            if (e.Cancel || Quitting || _tray == null || _w == null || !_w.AppSettings.KeepInTray) return;
             e.Cancel = true;
             _w.Hide();
             if (!_w.AppSettings.TrayHintShown)
@@ -113,19 +114,24 @@ namespace BusyBunny
                 if (t.Status != Status.Done) shout.Add(t);
                 Advance(t, now);
             }
-            _w.Store.Save();
-            if (shout.Count == 0) return;
-            string text = shout.Count == 1 ? "Reminder: " + shout[0].Name + "." : shout.Count + " reminders: " + string.Join("; ", shout.Take(4).Select(t => t.Name)) + (shout.Count > 4 ? "; and more." : ".");
-            Notify("Busy Bunny reminder", text);
-            if (_w.IsActive) _w.Say(text, false);
+            // The reminder first, then the save: a save that fails (a locked file) must never swallow it.
+            if (shout.Count > 0)
+            {
+                string text = shout.Count == 1 ? "Reminder: " + shout[0].Name + "." : shout.Count + " reminders: " + string.Join("; ", shout.Take(4).Select(t => t.Name)) + (shout.Count > 4 ? "; and more." : ".");
+                Notify("Busy Bunny reminder", text);
+                if (_w.IsActive) _w.Say(text, false);
+            }
+            _w.Store.TrySave();
         }
 
         /// <summary>Moves a reminder to its next time by RemindRepeat, or clears it when there is no repeat.</summary>
         public static void Advance(TaskItem t, DateTime now)
         {
             if (t.RemindAt is not DateTime at) return;
-            var next = Next(t.RemindRepeat, at, now);
+            int keep = RepeatRule.Parse(t.RemindRepeat)?.DayToKeep(at, t.RemindDay) ?? 0;
+            var next = Next(t.RemindRepeat, at, now, keep);
             t.RemindAt = next;
+            t.RemindDay = keep;
             if (next == null) t.RemindRepeat = "";
         }
 
@@ -135,9 +141,12 @@ namespace BusyBunny
         /// every 3 days, every other week, every Monday, every Tuesday and Thursday. Null when there is
         /// no rule or it is not understood.
         /// </summary>
-        public static DateTime? Next(string rule, DateTime at, DateTime now)
+        public static DateTime? Next(string rule, DateTime at, DateTime now, int keepDay = 0)
         {
-            var step = Step(rule);
+            // The task form stores the rule in RepeatRule's words (every 2 weeks on Tuesday), so read it
+            // the same way; the older loose reading is only for words RepeatRule does not know.
+            var parsed = RepeatRule.Parse(rule);
+            Func<DateTime, DateTime>? step = parsed != null ? d => parsed.Next(d, keepDay) : Step(rule ?? "");
             if (step == null) return null;
             var d = at;
             for (int i = 0; i < 5000 && d <= now; i++)
@@ -196,6 +205,15 @@ namespace BusyBunny
             Want("every other week", mon, mon, mon.AddDays(14));
             Want("every 3 days", mon, mon, mon.AddDays(3));
             Want("every month", mon, mon, mon.AddMonths(1));
+            // R1 9: every other Tuesday, as the task form stores it, is every 2 weeks, not every week.
+            Want("every 2 weeks on Tuesday", mon.AddDays(1), mon.AddDays(1), mon.AddDays(15));
+            Want("every 2 weeks on Monday and Thursday", mon.AddDays(3), mon.AddDays(3), mon.AddDays(14));
+            // R1 10: a reminder on the 31st comes back to the 31st after February.
+            var rent = new TaskItem { RemindAt = new DateTime(2027, 1, 31, 9, 0, 0), RemindRepeat = "every month" };
+            Advance(rent, new DateTime(2027, 1, 31, 9, 1, 0));
+            if (rent.RemindAt != new DateTime(2027, 2, 28, 9, 0, 0)) throw new Exception("monthly reminder from January 31 gave " + rent.RemindAt);
+            Advance(rent, new DateTime(2027, 2, 28, 9, 1, 0));
+            if (rent.RemindAt != new DateTime(2027, 3, 31, 9, 0, 0)) throw new Exception("monthly reminder drifted to " + rent.RemindAt);
             Want("", mon, mon, null);
             Want("whenever", mon, mon, null);
             var t = new TaskItem { RemindAt = mon, RemindRepeat = "every day" };

@@ -23,6 +23,7 @@ namespace BusyBunny
             ("Fun", "Fun: how hard Busy Bunny roasts you, and emoji at big moments."),
             ("Bunny and goals", "Bunny and goals: your bunny's name and your daily and weekly goals."),
             ("Reminders", "Reminders: staying in the notification area so reminders still come."),
+            (SmartBunny.PageName, "Smarter Bunny: talk to Bunny with your own Claude API key. Before you add a key, tick the lists Bunny should never see, and pick the hours it may check on you."),
             ("General", "General: sounds, short mode and the hours you have on a typical day."),
         };
 

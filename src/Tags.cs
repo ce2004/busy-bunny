@@ -12,14 +12,40 @@ namespace BusyBunny
     {
         private static bool Same(string a, string b) => a.Equals(b, StringComparison.OrdinalIgnoreCase);
 
-        /// <summary>Renames a tag on every task, template and class time.</summary>
+        /// <summary>
+        /// Renames a tag on every task, template and class time, and on the class's accessibility requests, their
+        /// reminders and the log (so Time per class and Wrapped keep the class together). An empty to just takes the
+        /// tag off tasks, templates and class times: the requests and the history keep the old name.
+        /// </summary>
         public static void RenameTag(Data d, string from, string to)
         {
             foreach (var t in d.Tasks.Concat(d.Templates).Where(t => Same(t.Tag, from))) t.Tag = to;
             foreach (var c in d.Classes.Where(c => Same(c.Tag, from))) c.Tag = to;
+            if (to.Length == 0) return;
+            foreach (var r in d.AccessRequests.Where(r => Same(r.Tag, from))) r.Tag = to;
+            for (int i = 0; i < d.AccessNudges.Count; i++)
+            {
+                string n = d.AccessNudges[i];
+                int bar = n.IndexOf('|');
+                if (bar > 0 && Same(n[..bar], from)) d.AccessNudges[i] = to + n[bar..];
+            }
+            foreach (var e in d.Log.Where(e => Same(e.Tag, from))) e.Tag = to;
         }
 
-        /// <summary>Deletes a tag: its tasks move to another tag, or lose the tag when moveTo is empty.</summary>
+        /// <summary>
+        /// Renames many tags at once without merging any: in a chain (PSY to STAT, STAT to STAT2) or a swap, each
+        /// tag first moves to a placeholder no tag can have, then to its new name.
+        /// </summary>
+        public static void RenameTags(Data d, IList<(string From, string To)> renames)
+        {
+            var moves = renames.Where(r => r.From != r.To && r.From.Length > 0 && r.To.Length > 0).ToList();
+            for (int i = 0; i < moves.Count; i++) RenameTag(d, moves[i].From, Placeholder(i));
+            for (int i = 0; i < moves.Count; i++) RenameTag(d, Placeholder(i), moves[i].To);
+        }
+
+        private static string Placeholder(int i) => "\u0001rename " + i + "\u0001";
+
+        /// <summary>Deletes a tag: its tasks move to another tag, or lose the tag when moveTo is empty (its accessibility requests stay).</summary>
         public static void RemoveTag(Data d, string tag, string moveTo)
         {
             RenameTag(d, tag, moveTo);
@@ -55,18 +81,20 @@ namespace BusyBunny
             var src = d.Lists.FirstOrDefault(l => l.Name == name);
             if (src == null) return;
             if (moveTo.Length > 0) MoveTasks(d, name, moveTo);
-            else d.Tasks.RemoveAll(t => t.List == name);
+            else { d.Tasks.RemoveAll(t => t.List == name); d.Templates.RemoveAll(t => t.List == name); }
             DropList(d, src);
         }
 
         private static void MoveTasks(Data d, string from, string to)
         {
             var dst = d.Lists.FirstOrDefault(l => l.Name == to);
-            foreach (var t in d.Tasks.Where(t => t.List == from))
+            // Repeat templates move too, or the next repeat would land on a list that is gone.
+            foreach (var t in d.Tasks.Concat(d.Templates).Where(t => t.List == from))
             {
                 t.List = to;
                 if (dst != null && t.Priority > dst.Scale.Length) t.Priority = dst.Scale.Length;
-                if (t.Section.Length > 0 && dst != null && !dst.Sections.Contains(t.Section)) t.Section = "";
+                if (t.Section.Length > 0 && dst != null)
+                    t.Section = dst.Sections.FirstOrDefault(x => Same(x, t.Section)) ?? "";
             }
         }
 
@@ -113,6 +141,31 @@ namespace BusyBunny
             Check(d.Lists.Count == 2 && t1.List == "B" && t1.Priority == 1 && t1.Section == "S1", "merge moves tasks, clamps priority, keeps a carried section");
             ListTools.DeleteList(d, "B", "");
             Check(d.Tasks.Count == 0 && d.Lists.Single().Parent == "", "delete removes tasks and promotes sub-lists");
+
+            // Renames in a chain or a swap never merge, and accessibility requests and the log follow the class.
+            var e = new Data();
+            e.Tasks.Add(new TaskItem { Name = "a", Tag = "PSY" });
+            e.Tasks.Add(new TaskItem { Name = "b", Tag = "STAT" });
+            e.Tasks.Add(new TaskItem { Name = "c", Tag = "BIO" });
+            e.AccessRequests.Add(new AccessRequest { Tag = "PSY", Item = "extended time" });
+            e.AccessNudges.Add("PSY|Fall 2026");
+            e.Log.Add(new LogEntry { Kind = "Sprint", Tag = "psy", Minutes = 5 });
+            ListTools.RenameTags(e, new List<(string, string)> { ("PSY", "STAT"), ("STAT", "STAT2") });
+            Check(e.Tasks.Single(t => t.Name == "a").Tag == "STAT" && e.Tasks.Single(t => t.Name == "b").Tag == "STAT2", "a chain of renames does not merge");
+            ListTools.RenameTags(e, new List<(string, string)> { ("STAT", "BIO"), ("BIO", "STAT") });
+            Check(e.Tasks.Single(t => t.Name == "a").Tag == "BIO" && e.Tasks.Single(t => t.Name == "c").Tag == "STAT", "a swap of names does not merge");
+            Check(e.AccessRequests[0].Tag == "BIO" && e.AccessNudges[0] == "BIO|Fall 2026" && e.Log[0].Tag == "BIO", "requests, reminders and the log follow a renamed class");
+            ListTools.RemoveTag(e, "BIO", "");
+            Check(e.AccessRequests[0].Tag == "BIO", "deleting a tag keeps its accessibility requests");
+
+            // Merging carries repeat templates and matches sections whatever their case.
+            var m = new Data();
+            m.Lists.Add(new TaskList { Name = "Lab" });
+            m.Lists.Add(new TaskList { Name = "Homework", Sections = new() { "PSY" } });
+            m.Tasks.Add(new TaskItem { Name = "x", List = "Lab", Section = "psy" });
+            m.Templates.Add(new TaskItem { Name = "weekly", List = "Lab" });
+            ListTools.DeleteList(m, "Lab", "Homework");
+            Check(m.Templates[0].List == "Homework" && m.Tasks[0].Section == "PSY", "templates move with the tasks and sections keep their place");
         }
 
         private static void Check(bool ok, string what) { if (!ok) throw new Exception("Tags: " + what); }
@@ -121,7 +174,6 @@ namespace BusyBunny
         {
             private sealed class Pending { public string? Original; public string Name = ""; public string Description = ""; }
 
-            private const string AddName = "Add a new tag";
             private readonly Store _store;
             private readonly List<Pending> _tags = new();
             private readonly List<(Pending Gone, Pending? MoveTo)> _deleted = new();
@@ -129,7 +181,9 @@ namespace BusyBunny
             private readonly ComboBox _pick = new();
             private readonly TextBox _name = new();
             private readonly TextBox _description = new();
-            private readonly Button _delete = Layout.Button("_Delete this tag...");
+            private readonly Button _delete = Layout.Button("De_lete this tag...");
+            // A tag is made only on purpose, with this button: arrowing through the Tag box never makes one.
+            private readonly Button _add = Layout.Button("_Add a tag");
             private Pending? _current;
             private bool _loading;
 
@@ -145,11 +199,13 @@ namespace BusyBunny
                     if (!_tags.Any(p => p.Name.Equals(tag, StringComparison.OrdinalIgnoreCase))) _tags.Add(new Pending { Original = tag, Name = tag });
 
                 AutomationProperties.SetHelpText(_description, "For a class, its full name, like Intro to Psychology.");
-                _delete.HorizontalAlignment = HorizontalAlignment.Left;
+                var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Left };
+                buttons.Children.Add(_add);
+                buttons.Children.Add(_delete);
                 _panel.Children.Add(Layout.Row("_Tag", _pick, 420));
                 _panel.Children.Add(Layout.Row("Tag _name", _name));
                 _panel.Children.Add(Layout.Row("_Description", _description, 420));
-                _panel.Children.Add(_delete);
+                _panel.Children.Add(buttons);
 
                 _pick.SelectionChanged += (_, _) => { if (!_loading) Choose(); };
                 _name.TextChanged += (_, _) => { if (!_loading && _current != null) _current.Name = _name.Text.Trim(); };
@@ -157,42 +213,46 @@ namespace BusyBunny
                 _name.LostKeyboardFocus += (_, _) => { if (_current != null) Fill(_tags.IndexOf(_current)); };
                 _description.TextChanged += (_, _) => { if (!_loading && _current != null) _current.Description = _description.Text.Trim(); };
                 _delete.Click += (_, _) => Delete();
-                Fill(_tags.Count > 0 ? 0 : _tags.Count);
+                _add.Click += (_, _) => Add();
+                Fill(_tags.Count > 0 ? 0 : -1);
                 Choose();
             }
 
             private void Fill(int select)
             {
                 _loading = true;
-                _pick.ItemsSource = _tags.Select(t => t.Name.Length > 0 ? t.Name : "(no name)").Append(AddName).ToList();
+                _pick.ItemsSource = _tags.Select(t => t.Name.Length > 0 ? t.Name : "(no name)").ToList();
                 _pick.SelectedIndex = select;
                 _loading = false;
+                bool any = _tags.Count > 0;
+                _pick.IsEnabled = _name.IsEnabled = _description.IsEnabled = _delete.IsEnabled = any;
             }
 
             private void Choose()
             {
                 int i = _pick.SelectedIndex;
-                if (i < 0) return;
-                if (i >= _tags.Count)
-                {
-                    int n = 1;
-                    while (_tags.Any(t => t.Name.Equals("TAG" + n, StringComparison.OrdinalIgnoreCase))) n++;
-                    _tags.Add(new Pending { Name = "TAG" + n });
-                    Fill(_tags.Count - 1);
-                    Load(_tags[^1]);
-                    Speech.Say(_panel, "Added " + _tags[^1].Name + ". Type its name and description. It is made when you press OK.", true);
-                    _panel.Dispatcher.BeginInvoke(() => { _name.Focus(); _name.SelectAll(); }, System.Windows.Threading.DispatcherPriority.Input);
-                    return;
-                }
+                if (i < 0 || i >= _tags.Count) { _current = null; Load(null); return; }
                 Load(_tags[i]);
             }
 
-            private void Load(Pending p)
+            private void Add()
+            {
+                int n = 1;
+                while (_tags.Any(t => t.Name.Equals("TAG" + n, StringComparison.OrdinalIgnoreCase))) n++;
+                _tags.Add(new Pending { Name = "TAG" + n });
+                Fill(_tags.Count - 1);
+                Load(_tags[^1]);
+                _name.Focus();
+                _name.SelectAll();
+                Speech.Say(_panel, "Added " + _tags[^1].Name + ". Type its name and description. It is made when you press OK.");
+            }
+
+            private void Load(Pending? p)
             {
                 _loading = true;
                 _current = p;
-                _name.Text = p.Name;
-                _description.Text = p.Description;
+                _name.Text = p?.Name ?? "";
+                _description.Text = p?.Description ?? "";
                 _loading = false;
             }
 
@@ -212,7 +272,7 @@ namespace BusyBunny
                     var choice = new ComboBox { ItemsSource = new[] { "Remove the tag from them" }.Concat(others.Select(o => "Move them to " + o.Name)).ToList(), SelectedIndex = 0 };
                     var panel = new StackPanel { Margin = new Thickness(14), Width = 420 };
                     panel.Children.Add(new TextBlock { Text = gone.Name + " is on " + used + (used == 1 ? " task." : " tasks.") + " What should happen to them?", TextWrapping = TextWrapping.Wrap });
-                    panel.Children.Add(Layout.Row("What to _do", choice, 400));
+                    panel.Children.Add(Layout.Row("_What to do", choice, 400));
                     var ok = Layout.Button("_Delete tag", isDefault: true);
                     var cancel = Layout.Button("Cancel", isCancel: true);
                     var row = new StackPanel { Orientation = Orientation.Horizontal };
@@ -230,10 +290,10 @@ namespace BusyBunny
                 if (gone.Original != null) _deleted.Add((gone, moveTo));
                 // Anything that was to move onto the deleted tag follows it on to where it went.
                 for (int i = 0; i < _deleted.Count; i++) if (_deleted[i].MoveTo == gone) _deleted[i] = (_deleted[i].Gone, moveTo);
-                Fill(Math.Min(at, _tags.Count));
+                Fill(_tags.Count == 0 ? -1 : Math.Min(at, _tags.Count - 1));
                 Choose();
-                Speech.Say(_panel, "Deleted " + gone.Name + ". It goes when you press OK.", true);
-                _pick.Focus();
+                Speech.Say(_panel, "Deleted " + gone.Name + ". It goes when you press OK." + (_tags.Count == 0 ? " There are no tags now. Add a tag makes one." : ""), true);
+                if (_tags.Count > 0) _pick.Focus(); else _add.Focus();
             }
 
             public string? Validate()
@@ -257,8 +317,8 @@ namespace BusyBunny
                 var d = _store.Data;
                 foreach (var (gone, moveTo) in _deleted)
                     ListTools.RenameTag(d, gone.Original!, moveTo == null ? "" : moveTo.Original ?? moveTo.Name);
-                foreach (var p in _tags)
-                    if (p.Original != null && p.Original != p.Name) ListTools.RenameTag(d, p.Original, p.Name);
+                // All at once, so a chain or a swap of names never merges two tags.
+                ListTools.RenameTags(d, _tags.Where(p => p.Original != null && p.Original != p.Name).Select(p => (p.Original!, p.Name)).ToList());
                 d.Tags = _tags.Select(p => new TagInfo { Name = p.Name, Description = p.Description }).ToList();
             }
         }

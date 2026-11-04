@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
@@ -16,70 +17,159 @@ namespace BusyBunny
     /// sound output (sleep, headphones or Bluetooth coming and going, the audio service restarting),
     /// the mixer used to stay dead until Busy Bunny restarted. Now it notices, by the output stopping
     /// or by its position not moving, and starts a fresh one; a check every few seconds brings the music back too.
+    ///
+    /// Every call into the sound driver (open, play, position, close) happens on one background
+    /// thread of its own, never while holding a lock the window's thread takes, so a hung driver can
+    /// only make the sounds go quiet, never freeze the app.
     /// </summary>
     public static class Mixer
     {
-        private static WaveOutEvent? _out;
-        private static MixingSampleProvider? _mix;
+        private static volatile MixingSampleProvider? _mix;
         private static ISampleProvider? _preview;
+        // Short: only the list of waiting sounds and the preview. Never held around a driver call.
         private static readonly object Gate = new();
+        private static readonly List<ISampleProvider> Waiting = new();
         public static readonly MusicLoop Music = new();
-        private static System.Threading.Timer? _check;
-        private static long _lastPos = -1;
-        private static DateTime _lastMoved = DateTime.UtcNow;
+        private static readonly AutoResetEvent Kick = new(false);
+        private static Thread? _thread;
+        // Bumped when a hung sound thread is given up on; the old thread notices when (if ever) the driver lets go, and quits.
+        private static volatile int _generation;
+        private static long _driverSince; // UTC ticks when the sound thread went into the driver, 0 when out
+        private static volatile bool _noDevice;
+        private static volatile object? _stopped;
+        private static long _lastSound = DateTime.UtcNow.Ticks;
 
-        private static MixingSampleProvider? Mix()
+        private static void Touch() => Interlocked.Exchange(ref _lastSound, DateTime.UtcNow.Ticks);
+
+        /// <summary>Whether the sound thread has been inside the driver for more than five seconds.</summary>
+        private static bool Hung
+        {
+            get { long t = Interlocked.Read(ref _driverSince); return t != 0 && DateTime.UtcNow.Ticks - t > TimeSpan.TicksPerSecond * 5; }
+        }
+
+        private static void EnsureThread()
         {
             lock (Gate)
             {
-                if (_mix != null && !Stuck()) return _mix;
-                Drop();
-                try
+                long since = Interlocked.Read(ref _driverSince);
+                // A driver call stuck for 15 seconds is not coming back soon: leave that thread behind and start a fresh
+                // one, so the sounds and the music return without a restart.
+                if (_thread != null && since != 0 && DateTime.UtcNow.Ticks - since > TimeSpan.TicksPerSecond * 15)
                 {
-                    var mix = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(Sounds.SampleRate, 2)) { ReadFully = true };
-                    mix.AddMixerInput(Music);
-                    var o = new WaveOutEvent { DesiredLatency = 150, NumberOfBuffers = 3 };
-                    o.PlaybackStopped += (s, _) => { lock (Gate) if (ReferenceEquals(s, _out)) Drop(); };
-                    o.Init(mix);
-                    o.Play();
-                    _out = o;
-                    _mix = mix;
-                    _lastPos = -1;
-                    _lastMoved = DateTime.UtcNow;
+                    _generation++;
+                    _thread = null;
+                    try { _mix?.RemoveMixerInput(Music); } catch { }
+                    _mix = null;
+                    _preview = null;
+                    Interlocked.Exchange(ref _driverSince, 0);
                 }
-                catch { Drop(); }
-                return _mix;
+                if (_thread != null) return;
+                int gen = _generation;
+                _thread = new Thread(() => Run(gen)) { IsBackground = true, Name = "Busy Bunny sound output" };
+                _thread.Start();
             }
         }
 
-        /// <summary>Whether the output says it plays but has not moved for two seconds (the music keeps it always moving).</summary>
-        private static bool Stuck()
+        private static void Run(int gen)
         {
-            if (_out == null) return true;
-            if (_out.PlaybackState != PlaybackState.Playing) return true;
-            long pos;
-            try { pos = _out.GetPosition(); } catch { return true; }
-            var now = DateTime.UtcNow;
-            if (pos != _lastPos) { _lastPos = pos; _lastMoved = now; return false; }
-            return (now - _lastMoved).TotalSeconds > 2;
+            WaveOutEvent? output = null;
+            MixingSampleProvider? mix = null;
+            long lastPos = -1;
+            var lastMoved = DateTime.UtcNow;
+            while (gen == _generation)
+            {
+                Kick.WaitOne(5000);
+                if (gen != _generation) break;
+                try
+                {
+                    bool busy;
+                    lock (Gate) busy = Waiting.Count > 0;
+                    busy |= Music.Audible || DateTime.UtcNow.Ticks - Interlocked.Read(ref _lastSound) < TimeSpan.TicksPerSecond * 20
+                        || (mix != null && mix.MixerInputs.Skip(1).Any());
+                    // Issue 14, battery: close the output once nothing has played for 20 seconds.
+                    if (!busy) { Close(ref output, ref mix); continue; }
+
+                    bool stuck = output == null || ReferenceEquals(_stopped, output) || output.PlaybackState != PlaybackState.Playing;
+                    if (!stuck && output != null)
+                    {
+                        long pos;
+                        Interlocked.Exchange(ref _driverSince, DateTime.UtcNow.Ticks);
+                        try { pos = output.GetPosition(); } catch { pos = -2; }
+                        finally { if (gen == _generation) Interlocked.Exchange(ref _driverSince, 0); }
+                        if (gen != _generation) break;
+                        var now = DateTime.UtcNow;
+                        if (pos == -2) stuck = true;
+                        else if (pos != lastPos) { lastPos = pos; lastMoved = now; }
+                        else stuck = (now - lastMoved).TotalSeconds > 2;
+                    }
+                    if (stuck)
+                    {
+                        Close(ref output, ref mix);
+                        var m = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(Sounds.SampleRate, 2)) { ReadFully = true };
+                        m.AddMixerInput(Music);
+                        // Made on this thread, which has no dispatcher, so PlaybackStopped never runs on the window's thread.
+                        var o = new WaveOutEvent { DesiredLatency = 150, NumberOfBuffers = 3 };
+                        o.PlaybackStopped += (s, _) => { _stopped = s; Kick.Set(); };
+                        Interlocked.Exchange(ref _driverSince, DateTime.UtcNow.Ticks);
+                        bool opened;
+                        try { o.Init(m); o.Play(); opened = true; }
+                        catch { opened = false; }
+                        finally { if (gen == _generation) Interlocked.Exchange(ref _driverSince, 0); }
+                        if (gen != _generation)
+                        {
+                            // Given up on while it hung: let this output go without ever reading the music.
+                            try { m.RemoveMixerInput(Music); } catch { }
+                            DisposeLater(o);
+                            break;
+                        }
+                        if (!opened)
+                        {
+                            m.RemoveMixerInput(Music);
+                            DisposeLater(o);
+                            _noDevice = true;
+                            lock (Gate) Waiting.Clear();
+                            continue;
+                        }
+                        _noDevice = false;
+                        output = o;
+                        mix = m;
+                        lastPos = -1;
+                        lastMoved = DateTime.UtcNow;
+                        lock (Gate) { _mix = m; _preview = null; }
+                    }
+                    lock (Gate)
+                    {
+                        if (mix != null) foreach (var w in Waiting) mix.AddMixerInput(w);
+                        Waiting.Clear();
+                    }
+                }
+                catch { Close(ref output, ref mix); }
+            }
+            // Replaced by a fresh thread: the music leaves this mix, so the two outputs never both read it.
+            Close(ref output, ref mix);
         }
 
-        /// <summary>Lets go of the output, closing it in the background in case the sound driver is the stuck part.</summary>
-        private static void Drop()
+        /// <summary>Lets go of the output: the music leaves the old mix first, so two outputs never read it at once, and the close happens in the background.</summary>
+        private static void Close(ref WaveOutEvent? output, ref MixingSampleProvider? mix)
         {
-            var old = _out;
-            _out = null;
-            _mix = null;
-            _preview = null;
-            if (old != null) System.Threading.ThreadPool.QueueUserWorkItem(_ => { try { old.Dispose(); } catch { } });
+            if (mix != null)
+            {
+                lock (Gate) { if (ReferenceEquals(_mix, mix)) { _mix = null; _preview = null; } }
+                try { mix.RemoveMixerInput(Music); } catch { }
+            }
+            if (output != null) DisposeLater(output);
+            output = null;
+            mix = null;
         }
 
-        /// <summary>Plays a WAV. exclusive: stops the previous exclusive one first (previews in the Sounds window).</summary>
+        private static void DisposeLater(WaveOutEvent o) => ThreadPool.QueueUserWorkItem(_ => { try { o.Dispose(); } catch { } });
+
+        /// <summary>Plays a WAV. exclusive: stops the previous exclusive one first (previews in the Sounds window). False when there is no output to use.</summary>
         public static bool Play(byte[] wav, bool exclusive)
         {
-            _lastSound = DateTime.UtcNow;
-            var mix = Mix();
-            if (mix == null) return false;
+            Touch();
+            EnsureThread();
+            if (Hung || _noDevice && _mix == null) { Kick.Set(); return false; }
             try
             {
                 ISampleProvider sp = new WaveFileReader(new MemoryStream(wav)).ToSampleProvider();
@@ -87,47 +177,38 @@ namespace BusyBunny
                 if (sp.WaveFormat.SampleRate != Sounds.SampleRate) sp = new WdlResamplingSampleProvider(sp, Sounds.SampleRate);
                 lock (Gate)
                 {
+                    var mix = _mix;
                     if (exclusive)
                     {
-                        if (_preview != null) mix.RemoveMixerInput(_preview);
+                        if (_preview != null) { mix?.RemoveMixerInput(_preview); Waiting.Remove(_preview); }
                         _preview = sp;
                     }
-                    mix.AddMixerInput(sp);
+                    if (mix != null) { mix.AddMixerInput(sp); }
+                    else
+                    {
+                        if (Waiting.Count >= 8) Waiting.RemoveAt(0);
+                        Waiting.Add(sp);
+                    }
                 }
+                Kick.Set();
                 return true;
             }
             catch { return false; }
         }
 
-        /// <summary>Starts the mixer early, so the music can begin and the first sound has no delay.</summary>
+        /// <summary>Starts the mixer early, so the music can begin and the first sound has no delay. Never waits for the driver.</summary>
         public static void Start()
         {
-            Mix();
-            _check ??= new System.Threading.Timer(_ => { try { Tick(); } catch { } }, null, 5000, 5000);
+            EnsureThread();
+            Kick.Set();
         }
 
-        private static DateTime _lastSound = DateTime.UtcNow;
-
-        /// <summary>
-        /// Morgan's issue 14, battery: the output used to play silence all day, even in the tray, which
-        /// keeps the sound hardware and the processor awake. Now it closes once nothing has played for
-        /// 20 seconds and the music is off or faded out, and opens again for the next sound or the music.
-        /// </summary>
-        private static void Tick()
-        {
-            lock (Gate)
-            {
-                bool busy = Music.Audible || DateTime.UtcNow - _lastSound < TimeSpan.FromSeconds(20) || (_mix != null && _mix.MixerInputs.Skip(1).Any());
-                if (!busy) { if (_out != null) Drop(); return; }
-            }
-            Mix();
-        }
-
-        /// <summary>Opens the output again when the music is wanted (Busy Bunny came to the front).</summary>
+        /// <summary>Opens the output again when the music is wanted (Busy Bunny came to the front). Only asks the sound thread; never waits.</summary>
         public static void Wake()
         {
-            _lastSound = DateTime.UtcNow;
-            try { Mix(); } catch { }
+            Touch();
+            EnsureThread();
+            Kick.Set();
         }
     }
 

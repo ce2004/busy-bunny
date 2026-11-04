@@ -19,7 +19,7 @@ namespace BusyBunny
         public void Attach(MainWindow w)
         {
             _w = w;
-            w.AddMenuItem("Task", "Push back a _day", PushBackChosen, "Ctrl+Shift+P");
+            w.AddMenuItem("Task", "_Push back a day", PushBackChosen, "Ctrl+Shift+P");
             w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.P, PushBackChosen, "Push the chosen task back a day: Control Shift P");
             w.Started += () => w.Dispatcher.BeginInvoke(Nudge, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             w.NewDay += _ => Nudge();
@@ -57,7 +57,8 @@ namespace BusyBunny
             bool changed = false;
             foreach (var k in dates.Where(kv => kv.Value != today).Select(kv => kv.Key).ToList()) { dates.Remove(k); changed = true; }
 
-            var tasks = _w.Store.Data.Tasks;
+            // Archived lists show nowhere, so they get no nudges either.
+            var tasks = _w.Store.Data.Tasks.Where(t => !_w.Store.ListOf(t).Archived).ToList();
             var late = DoneNotSubmittedLate(tasks, now);
             if (late.Count > 0 && !dates.ContainsKey("done"))
             {

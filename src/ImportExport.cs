@@ -253,7 +253,7 @@ namespace BusyBunny
                 var (when, _) = Dates.Parse(bit, now);
                 if (when == null) continue;
                 // Dates.Parse rolls old dates into next year; in a syllabus a date months ahead is really last term's.
-                if (!Regex.IsMatch(bit, @"\d{4}") && when.Value > now.AddMonths(6)) when = when.Value.AddYears(-1);
+                if (!Regex.IsMatch(bit, @"\d{4}") && when.Value > now.AddMonths(6) && !(when.Value.Month == 2 && when.Value.Day == 29)) when = when.Value.AddYears(-1);
                 string name = (line[..m.Index] + " " + line[(m.Index + m.Length)..]);
                 name = Regex.Replace(name, @"\b(?:due|on|by)\s*[:\-]?\s*$", "", RegexOptions.IgnoreCase);
                 name = Regex.Replace(name, @"^\s*(?:due|on|by)\b\s*[:\-]?", "", RegexOptions.IgnoreCase);
@@ -269,7 +269,8 @@ namespace BusyBunny
                     Type = test ? TaskType.Test : TaskType.Assignment,
                     Size = test ? Size.Large : Size.Medium,
                     StatusSince = now,
-                    Status = (when.Value.Date - now.Date).Days <= 6 ? Status.ThisWeek : Status.NextWeek,
+                    // Weeks start on Monday, as everywhere else: due by this Sunday is this week.
+                    Status = when.Value.Date <= Store.WeekEnd(now) ? Status.ThisWeek : Status.NextWeek,
                 };
                 var f = new Found { Task = t };
                 if (when.Value.Date < now.Date) { f.Notes.Add("that date has passed"); f.Keep = false; }
@@ -508,8 +509,9 @@ namespace BusyBunny
             if (d.ShowDialog(_w) != true) return;
             try
             {
-                _w.Store.Save();
-                File.Copy(Store.FilePath, d.FileName, true);
+                // Written from what is on screen, so it works even while saving to the usual file is failing.
+                _w.Store.WriteCopy(d.FileName);
+                _w.Store.TrySave();
                 _w.Say("Saved a backup to " + Path.GetFileName(d.FileName) + ".");
             }
             catch (Exception e) { _w.Say("Could not save the backup: " + e.Message); }
@@ -566,7 +568,7 @@ namespace BusyBunny
                 File.WriteAllText(file, "{ nope");
                 Need(Store.ReadFile(file) == null, "a bad file is refused");
             }
-            finally { try { File.Delete(file); } catch { } }
+            finally { App.DeleteTestFiles(file); }
         }
     }
 }

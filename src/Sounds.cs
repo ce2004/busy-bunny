@@ -38,7 +38,7 @@ namespace BusyBunny
             Event.BossDefeated => "_Boss defeated",
             Event.SprintFinished => "Sprint _finished",
             Event.SurpriseReward => "Surprise _reward",
-            Event.TaskAdded => "Task a_dded",
+            Event.TaskAdded => "Task _added",
             Event.TaskSaved => "Task sa_ved after editing",
             Event.MenuOpened => "Menu opens",
             Event.SubmenuOpened => "Submenu opens",

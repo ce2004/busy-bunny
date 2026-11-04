@@ -22,6 +22,7 @@ namespace BusyBunny
         private readonly TextBox _box = new() { Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
         private readonly ComboBox _scope = new() { Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
         private ListBox _results = null!;
+        private bool _dirty;
 
         public void Attach(MainWindow w)
         {
@@ -29,7 +30,7 @@ namespace BusyBunny
             _results = w.NewTaskList("search");
             AutomationProperties.SetHelpText(_box, "Type words from a task, then press Enter.");
             var panel = new StackPanel { Margin = new Thickness(6) };
-            panel.Children.Add(Layout.Row("_Search for", _box));
+            panel.Children.Add(Layout.Row("S_earch for", _box)); // Alt S is Bunny's answers
             panel.Children.Add(Layout.Row("Search _in", _scope));
             panel.Children.Add(new Label { Content = "_Results", Target = _results, Padding = new Thickness(0, 8, 0, 2) });
             panel.Children.Add(_results);
@@ -44,9 +45,11 @@ namespace BusyBunny
             // Escape in the results goes back to the box for another search.
             _results.PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && Keyboard.Modifiers == ModifierKeys.None) { e.Handled = true; FocusBox(); } };
 
-            w.AddMenuItem("View", "_Search tasks...", Open, "Ctrl+F");
+            w.AddMenuItem("View", "S_earch tasks...", Open, "Ctrl+F"); // Alt S is Short mode
             w.AddKey(ModifierKeys.Control, Key.F, Open, "Ctrl+F: Search tasks, in the list you are on or every list. Escape in the results goes back to the search box");
-            w.Refreshed += () => { FillScope(Scope); Refill(); };
+            // Kept up to date while open; otherwise filled again as the tab opens (spec 9.9).
+            w.Refreshed += () => { if (_tab.IsSelected) { FillScope(Scope); Refill(); } else _dirty = true; };
+            w.TabOpened += tab => { if (tab == _tab && _dirty) { FillScope(Scope); Refill(); } };
             Refill();
         }
 
@@ -75,6 +78,7 @@ namespace BusyBunny
 
         private void Refill()
         {
+            _dirty = false;
             string words = _box.Text.Trim();
             string where = Scope == EveryList ? "every list" : Scope;
             if (words.Length == 0) { _w.FillTasks(_results, Array.Empty<TaskItem>(), "Results", "Type words to search for, then press Enter."); return; }
@@ -82,8 +86,11 @@ namespace BusyBunny
             _w.FillTasks(_results, found, "Results for " + words + " in " + where, "No tasks match " + words + " in " + where + ".");
             // Searching every list: say which list each task is on.
             if (Scope == EveryList)
+            {
+                var byId = found.ToDictionary(t => t.Id);
                 foreach (ListBoxItem item in _results.Items)
-                    if (item.Tag is Guid id && found.FirstOrDefault(t => t.Id == id) is TaskItem t) item.Content += ", on " + t.List;
+                    if (item.Tag is Guid id && byId.TryGetValue(id, out var t) && item.Content is string line && !line.EndsWith(", on " + t.List)) item.Content = line + ", on " + t.List;
+            }
         }
 
         private void Go()
@@ -109,7 +116,9 @@ namespace BusyBunny
                 || (t.Notes ?? "").Contains(w, StringComparison.CurrentCultureIgnoreCase)
                 || t.Subtasks.Any(s => s.Name.Contains(w, StringComparison.CurrentCultureIgnoreCase))
                 || t.Comments.Any(c => c.Text.Contains(w, StringComparison.CurrentCultureIgnoreCase));
-            var open = store.Data.Tasks.Where(t => t.Status != Status.Done && (list == null || t.List == list) && words.All(w => Has(t, w)));
+            // A parent list's tab shows its sub-lists too, so searching it searches them as well.
+            var inScope = list == null ? null : store.Data.Lists.Where(l => l.Name == list || l.Parent == list).Select(l => l.Name).Append(list).ToHashSet();
+            var open = store.Data.Tasks.Where(t => t.Status != Status.Done && (inScope == null || inScope.Contains(t.List)) && words.All(w => Has(t, w)));
             return Views.Apply(open, new ViewState(), store.Rank);
         }
 
@@ -128,6 +137,11 @@ namespace BusyBunny
             if (Names(Find(st, "lab", "Homework")) != "lab 3 report") throw new Exception("search one list found " + Names(Find(st, "lab", "Homework")));
             if (Names(Find(st, "psy  exam", null)) != "chapter 9 reading") throw new Exception("search misses notes");
             if (Find(st, "lab report 2", null).Count != 0) throw new Exception("search found a finished task");
+            st.Data.Lists.Add(new TaskList { Name = "Lab", Parent = "Homework" });
+            var sub = T("lab safety quiz", "Lab");
+            st.Data.Tasks.Add(sub);
+            if (!Find(st, "quiz", "Homework").Contains(sub)) throw new Exception("searching a list misses its sub-lists");
+            if (Find(st, "lab", "Errands").Contains(sub)) throw new Exception("searching a list found another list's sub-list");
         }
     }
 }

@@ -75,7 +75,8 @@ namespace BusyBunny
             var w = Layout.Dialog(owner, "Sounds");
             int keyBefore = Sounds.Key, volumeBefore = Sounds.Volume;
             bool ready = false, saved = false;
-            var on = new CheckBox { Content = "_Play sounds", IsChecked = settings.SoundsOn, Margin = new Thickness(0, 0, 0, 8) };
+            // Access keys here stay clear of the sound rows' letters (Sounds.Label): y e k m i c w.
+            var on = new CheckBox { Content = "Pla_y sounds", IsChecked = settings.SoundsOn, Margin = new Thickness(0, 0, 0, 8) };
             var volume = new ComboBox { ItemsSource = Enumerable.Range(1, 10).Select(i => (110 - i * 10) + " percent").ToList() };
             volume.SelectedIndex = Math.Clamp((100 - settings.SoundVolume) / 10, 0, 9);
             var key = new ComboBox { ItemsSource = Sounds.Keys, SelectedIndex = Math.Clamp(settings.SoundKey, 0, 11) };
@@ -84,18 +85,18 @@ namespace BusyBunny
 
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(on);
-            panel.Children.Add(Layout.Row("_Volume", volume));
+            panel.Children.Add(Layout.Row("Volum_e", volume));
             panel.Children.Add(Layout.Row("_Key", key));
             var music = new CheckBox { Content = "Background _music while Busy Bunny is in front", IsChecked = settings.MusicOn, Margin = new Thickness(0, 6, 0, 4) };
             var musicVolume = new ComboBox { ItemsSource = new[] { 3, 5, 10, 15, 20, 30 }.Select(v => v + " percent").ToList() };
             musicVolume.SelectedIndex = Math.Max(0, Array.IndexOf(new[] { 3, 5, 10, 15, 20, 30 }, settings.MusicVolume) is int mi && mi >= 0 ? mi : 2);
             panel.Children.Add(music);
-            panel.Children.Add(Layout.Row("Music v_olume", musicVolume));
+            panel.Children.Add(Layout.Row("Mus_ic volume", musicVolume));
             var packs = Sounds.PackNames.Where(p => Sounds.PackOpen(p) || p == settings.SoundPack).ToList();
             var pack = new ComboBox { ItemsSource = packs };
             pack.SelectedIndex = Math.Max(0, packs.IndexOf(settings.SoundPack));
-            panel.Children.Add(Layout.Row("Sound pac_k (sets every sound below)", pack));
-            var add = Layout.Button("Add my own sound _file...");
+            panel.Children.Add(Layout.Row("Sound pa_ck (sets every sound below)", pack));
+            var add = Layout.Button("Add my o_wn sound file...");
             add.HorizontalAlignment = HorizontalAlignment.Left;
             panel.Children.Add(add);
             var lists = new Dictionary<Sounds.Event, ComboBox>();
