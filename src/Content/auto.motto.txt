@@ -1,0 +1,41 @@
+Your motto, in case you need it today: {motto}
+
+A little reminder from you, to you: {motto}
+
+Bunny found your motto in a pocket: {motto}
+
+Words to carry today: {motto}
+
+Your own words, read back: {motto}
+
+Just a reminder: {motto}
+
+From the motto shelf: {motto}
+
+In your words: {motto}
+
+Today's reminder, written by you: {motto}
+
+Your motto still stands: {motto}
+
+Bunny has been thinking about your motto: {motto}
+
+Something you believe: {motto}
+
+A note you left yourself: {motto}
+
+Your motto, now and then: {motto}
+
+Remember this one? {motto}
+
+Bunny likes your motto, so here it is: {motto}
+
+Hold onto this today: {motto}
+
+Your motto for the road: {motto}
+
+Weekly reminder from the burrow: {motto}
+
+You said it best: {motto}
+
+Motto time: {motto}
