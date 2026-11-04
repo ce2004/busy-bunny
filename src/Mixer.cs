@@ -278,7 +278,10 @@ namespace BusyBunny
                 _gain = 0;
                 return count;
             }
-            if (_events == null || _key != Sounds.Key || _mood != Mood) { _mood = Mood; _events = Compose(Sounds.Key, _mood); _key = Sounds.Key; _nextEvent = 0; _voices.Clear(); FindNext(); }
+            if (_events == null || _key != Sounds.Key) { _mood = Mood; _events = Compose(Sounds.Key, _mood); _key = Sounds.Key; _nextEvent = 0; _voices.Clear(); FindNext(); }
+            // A new mood (sunset, rain, the season) glides in: notes already ringing finish on their own, and the new
+            // arrangement picks up at its next note, so nothing is cut off mid-sound.
+            else if (_mood != Mood) { _mood = Mood; _events = Compose(_key, _mood); FindNext(); }
             // About two seconds to fade in or out.
             double step = 1.0 / (Rate * 2.0) * Math.Max(Level, 0.02);
             for (int n = 0; n < count; n += 2)

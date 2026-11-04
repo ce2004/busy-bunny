@@ -21,6 +21,8 @@ namespace BusyBunny
         public bool FeelEveryTask { get; set; }
         /// <summary>Let Bunny write first steps (uses Bunny's daily limit). Off by default.</summary>
         public bool BunnyFirstSteps { get; set; }
+        /// <summary>True once saved in the kept bookkeeping.</summary>
+        public bool Kept { get; set; }
     }
 
     /// <summary>
@@ -30,7 +32,14 @@ namespace BusyBunny
     public static class PlanKit
     {
         public const string PrefsId = "plan.prefs";
-        public static PlanPrefs Prefs(Store s) => s.World.Get<PlanPrefs>(PrefsId);
+        // Her settings, not hers to undo: kept, so Control Z of a task change never brings old ones back.
+        // Before they were kept, they lived in an undoable bag: read that once until the first save.
+        public static PlanPrefs Prefs(Store s)
+        {
+            var p = s.World.GetKept<PlanPrefs>(PrefsId);
+            return p.Kept ? p : s.World.Get<PlanPrefs>(PrefsId);
+        }
+        public static void SetPrefs(Store s, PlanPrefs p) { p.Kept = true; s.World.SetKept(PrefsId, p); s.World.Save(); }
 
         // ---- Dialogs (standard controls, named, Escape closes, focus goes back) ----
 
@@ -125,6 +134,15 @@ namespace BusyBunny
         /// <summary>Several picks from a list: Space picks or unpicks a line. Null when cancelled.</summary>
         public static List<int>? PickMany(MainWindow w, string title, string label, IList<string> lines, IEnumerable<int> picked, string? intro = null, int max = 0)
         {
+            var list = ManyList(lines, picked);
+            var row = Layout.Row(label, list, 560);
+            if (!Form(w, title, intro, new[] { row }, validate: () => max > 0 && list.SelectedItems.Count > max ? "Pick " + max + " at most." : null)) return null;
+            return Picked(list);
+        }
+
+        /// <summary>The list for PickMany: named lines, her earlier picks picked, and the cursor on the first of them (or the top) without picking anything.</summary>
+        public static ListBox ManyList(IList<string> lines, IEnumerable<int> picked)
+        {
             var list = new ListBox { SelectionMode = SelectionMode.Multiple, Height = 260 };
             foreach (var l in lines)
             {
@@ -132,12 +150,25 @@ namespace BusyBunny
                 AutomationProperties.SetName(item, l);
                 list.Items.Add(item);
             }
-            foreach (int i in picked) if (i >= 0 && i < list.Items.Count) ((ListBoxItem)list.Items[i]).IsSelected = true;
+            var pre = picked.Where(i => i >= 0 && i < list.Items.Count).ToList();
+            foreach (int i in pre) ((ListBoxItem)list.Items[i]).IsSelected = true;
             AutomationProperties.SetHelpText(list, "Space picks or unpicks the line you are on.");
-            list.Loaded += (_, _) => TextViewer.Select(list, Math.Max(0, picked.DefaultIfEmpty(0).First()));
-            var row = Layout.Row(label, list, 560);
-            if (!Form(w, title, intro, new[] { row }, validate: () => max > 0 && list.SelectedItems.Count > max ? "Pick " + max + " at most." : null)) return null;
-            return Enumerable.Range(0, list.Items.Count).Where(i => ((ListBoxItem)list.Items[i]).IsSelected).ToList();
+            // Only the cursor moves: setting SelectedIndex on a multiple-pick list would wipe her picks and pick a line for her.
+            list.Loaded += (_, _) => FocusLine(list, pre.DefaultIfEmpty(0).First());
+            return list;
+        }
+
+        public static List<int> Picked(ListBox list) => Enumerable.Range(0, list.Items.Count).Where(i => ((ListBoxItem)list.Items[i]).IsSelected).ToList();
+
+        /// <summary>Puts keyboard focus on a line of a list without changing which lines are picked.</summary>
+        public static void FocusLine(ListBox list, int at)
+        {
+            if (list.Items.Count == 0) { list.Focus(); return; }
+            at = Math.Clamp(at, 0, list.Items.Count - 1);
+            list.UpdateLayout();
+            list.ScrollIntoView(list.Items[at]);
+            var it = list.Items[at] as ListBoxItem ?? list.ItemContainerGenerator.ContainerFromIndex(at) as ListBoxItem;
+            if (it == null || !it.Focus()) list.Focus();
         }
 
         /// <summary>Lines to read in the text viewer, focus back after.</summary>
@@ -224,8 +255,11 @@ namespace BusyBunny
             _morning.Add((toolId, part));
         }
 
-        public sealed class MorningNote { public string Day { get; set; } = ""; public string Text { get; set; } = ""; public bool Pending { get; set; } }
-        public const string MorningId = "plan.morning";
+        /// <summary>Today's morning line. Pending: due but not built yet. Built: the parts ran (and used themselves up) and Text is what they said.</summary>
+        public sealed class MorningNote { public string Day { get; set; } = ""; public string Text { get; set; } = ""; public bool Pending { get; set; } public bool Built { get; set; } public DateTime Since { get; set; } }
+        public const string MorningId = "plan.morning", MorningTool = "plan.morningnote";
+        /// <summary>How long the morning line waits for Bunny's daily briefing before it comes anyway.</summary>
+        public static readonly TimeSpan BriefingWait = TimeSpan.FromMinutes(10);
 
         /// <summary>Builds today's morning line from every part that has news. Parts may change their own bags.</summary>
         public static string BuildMorning(Store s, DateTime now)
@@ -240,25 +274,52 @@ namespace BusyBunny
             return string.Join(" ", parts);
         }
 
-        /// <summary>Says the waiting morning line once the main window is free and the calm rules allow; otherwise keeps it.</summary>
+        /// <summary>Marks today's morning line as due (nothing is built yet). Does nothing while This morning's notes is off.</summary>
+        public static void MarkMorningDue(Store s, DateTime now)
+        {
+            if (!Tools.IsOn(MorningTool)) return;
+            var m = s.World.GetKept<MorningNote>(MorningId);
+            if (m.Day == s.Key(now) && (m.Pending || m.Built)) return;
+            s.World.SetKept(MorningId, new MorningNote { Day = s.Key(now), Pending = true, Since = now });
+            s.World.Save();
+        }
+
+        /// <summary>
+        /// Whether the waiting morning line may be built and said now: the tool is on, the main window is free (every startup
+        /// window, like the morning check-in and the setup guide, has closed), Bunny's briefing is not under way or due, and an
+        /// unprompted line may be spoken. Until then nothing runs, so no part uses itself up.
+        /// </summary>
+        public static bool MorningMayCome(Store s, Settings? cfg, DateTime now, MorningNote m, bool windowFree, bool briefingDue) =>
+            m.Pending && !m.Built && m.Day == s.Key(now) && Tools.IsOn(MorningTool) && windowFree && !briefingDue && !Speech.Muted && Calm.CanSpeakUnprompted(s, cfg, now);
+
+        /// <summary>Builds and says the waiting morning line once it may come; otherwise keeps waiting (and lets go of it on a new day or with the tool off).</summary>
         public static void TrySayMorning(MainWindow w, DateTime now)
         {
             var s = w.Store;
             var m = s.World.GetKept<MorningNote>(MorningId);
             if (!m.Pending) return;
-            if (m.Day != s.Key(now) || m.Text.Length == 0) { m.Pending = false; s.World.SetKept(MorningId, m); s.World.Save(); return; }
-            string? hush = Calm.Hush(s, w.AppSettings, now);
-            bool waitable = hush is "quiet hours" or "class" or "a sprint";
-            if (waitable && now.Hour < 21) return;
-            if (hush == null && !WindowFree(w)) return;
+            if (m.Day != s.Key(now) || !Tools.IsOn(MorningTool)) { m.Pending = false; s.World.SetKept(MorningId, m); s.World.Save(); return; }
+            if (!MorningMayCome(s, w.AppSettings, now, m, WindowFree(w), BriefingDue(w, now, m))) return;
+            BuildAndKeep(s, now, m);
+            if (m.Text.Length > 0) Calm.SayUnprompted(w, m.Text);
+        }
+
+        /// <summary>Runs every part once (they use themselves up here) and keeps the line as built.</summary>
+        public static void BuildAndKeep(Store s, DateTime now, MorningNote m)
+        {
+            m.Text = BuildMorning(s, now);
             m.Pending = false;
+            m.Built = true;
             s.World.SetKept(MorningId, m);
-            s.World.Save();
-            Calm.SayUnprompted(w, m.Text);
+            SaveAll(s);
         }
 
         private static bool WindowFree(MainWindow w) =>
-            w.IsActive && !Application.Current.Windows.OfType<Window>().Any(x => x != w && x.IsVisible && x.Owner == w);
+            w.IsVisible && w.IsActive && w.OwnedWindows.Count == 0 && !Application.Current.Windows.OfType<Window>().Any(x => x != w && x.IsVisible && x.Owner == w);
+
+        // Bunny's daily briefing comes first on the first open of a day; the morning line waits for it, but not forever.
+        private static bool BriefingDue(MainWindow w, DateTime now, MorningNote m) =>
+            SmartBunny.Ready && w.AppSettings.BunnyBriefing && w.AppSettings.BunnyBriefedDay != w.Store.Key(now) && now.Hour >= 5 && now.Hour < 22 && now - m.Since < BriefingWait;
     }
 
     /// <summary>Ties the shared Stage 5 helpers to the app: the morning line, the tone ladder sounds and the settings page.</summary>
@@ -270,14 +331,12 @@ namespace BusyBunny
         {
             _w = w;
             for (int i = 0; i < PlanKit.Ladder.Length; i++) SoundBank.Register(PlanKit.RungId(i), PlanKit.Ladder[i]);
-            Tools.Register(new BunnyTool("plan.morningnote", "This morning's notes", Drawers.Plan, "Hear again what the Plan and Notes tools said this morning.", Hear) { Since = "0.14.0" });
+            Tools.Register(new BunnyTool(PlanKit.MorningTool, "This morning's notes", Drawers.Plan, "Hear again what the Plan and Notes tools said this morning.", Hear) { Since = "0.14.0" });
+            // DayStarted can come from inside the morning check-in (its own Control Z step): only mark the line as due here.
+            // It is built and said later, once every startup window has closed.
             GameEvents.DayStarted += day =>
             {
-                var now = DateTime.Now;
-                var s = w.Store;
-                string text = PlanKit.BuildMorning(s, now);
-                s.World.SetKept(PlanKit.MorningId, new PlanKit.MorningNote { Day = s.Key(now), Text = text, Pending = text.Length > 0 && Tools.IsOn("plan.morningnote") });
-                PlanKit.SaveAll(s);
+                PlanKit.MarkMorningDue(w.Store, DateTime.Now);
                 w.Dispatcher.BeginInvoke(() => PlanKit.TrySayMorning(w, DateTime.Now), DispatcherPriority.ApplicationIdle);
             };
             Ticker.Every("plan.morning", _ => true, now => PlanKit.TrySayMorning(w, now));
@@ -285,8 +344,12 @@ namespace BusyBunny
 
         private void Hear()
         {
-            var m = _w.Store.World.GetKept<PlanKit.MorningNote>(PlanKit.MorningId);
-            _w.Say(m.Day == _w.Store.Key(DateTime.Now) && m.Text.Length > 0 ? m.Text : "No morning notes today. The Plan and Notes tools had nothing new to say.", true);
+            var s = _w.Store;
+            var now = DateTime.Now;
+            var m = s.World.GetKept<PlanKit.MorningNote>(PlanKit.MorningId);
+            // She asked: a line still waiting for a quiet moment is built now and said to her.
+            if (m.Pending && !m.Built && m.Day == s.Key(now)) PlanKit.BuildAndKeep(s, now, m);
+            _w.Say(m.Day == s.Key(now) && m.Text.Length > 0 ? m.Text : "No morning notes today. The Plan and Notes tools had nothing new to say.", true);
         }
 
         public IEnumerable<ISettingsPage> SettingsPages(Store store, Settings settings) { yield return new PrefsPage(store); }
@@ -328,8 +391,7 @@ namespace BusyBunny
                 p.GraceDays = Math.Max(0, _grace.SelectedIndex);
                 p.FeelEveryTask = _feel.SelectedIndex == 1;
                 p.BunnyFirstSteps = _bunny.IsChecked == true;
-                _store.World.Set(PlanKit.PrefsId, p);
-                _store.World.Save();
+                PlanKit.SetPrefs(_store, p);
             }
         }
 
@@ -352,9 +414,42 @@ namespace BusyBunny
             var p = PlanKit.Prefs(store);
             Need(p.Motto == "" && p.YourName == "" && p.GraceDays == 1 && !p.BunnyFirstSteps, "the defaults changed");
             p.Motto = "test";
-            store.World.Set(PlanKit.PrefsId, p);
+            PlanKit.SetPrefs(store, p);
             Need(PlanKit.Prefs(store).Motto == "test", "prefs were not kept");
-            store.World.Set(PlanKit.PrefsId, new PlanPrefs());
+            // Her settings are not undone by Control Z of an earlier step.
+            store.Remember("a step before the prefs");
+            PlanKit.SetPrefs(store, new PlanPrefs { Motto = "newer", BunnyFirstSteps = false });
+            store.Undo();
+            Need(PlanKit.Prefs(store).Motto == "newer", "Control Z brought old settings back");
+            PlanKit.SetPrefs(store, new PlanPrefs());
+
+            // Picking several: the cursor never picks a line, and her earlier picks all stay.
+            var many = PlanKit.ManyList(new[] { "a", "b", "c", "d" }, new[] { 1, 3 });
+            PlanKit.FocusLine(many, 1);
+            Need(PlanKit.Picked(many).SequenceEqual(new[] { 1, 3 }), "putting the cursor on a line changed her picks");
+            var none = PlanKit.ManyList(new[] { "a", "b" }, Array.Empty<int>());
+            PlanKit.FocusLine(none, 0);
+            Need(PlanKit.Picked(none).Count == 0, "a line was picked she never chose");
+            PlanKit.FocusLine(PlanKit.ManyList(Array.Empty<string>(), new[] { 2 }), 0);
+
+            // The morning line: marked due only with its tool on, built only once it may come, and never while a window is open.
+            var day = DateTime.Now;
+            store.World.SetKept(PlanKit.MorningId, new PlanKit.MorningNote());
+            PlanKit.MarkMorningDue(store, day);
+            var m = store.World.GetKept<PlanKit.MorningNote>(PlanKit.MorningId);
+            if (Tools.IsOn(PlanKit.MorningTool))
+            {
+                Need(m.Pending && !m.Built && m.Text == "", "the morning line was built when the day started");
+                Need(!PlanKit.MorningMayCome(store, null, day, m, windowFree: false, briefingDue: false), "the morning line came while a startup window was open");
+                Need(!PlanKit.MorningMayCome(store, null, day, m, windowFree: true, briefingDue: true), "the morning line came before Bunny's briefing");
+                Need(!PlanKit.MorningMayCome(store, new Settings { CalmMode = true }, day, m, windowFree: true, briefingDue: false), "the morning line was used up in Calm mode");
+                PlanKit.MarkMorningDue(store, day);
+                PlanKit.BuildAndKeep(store, day, m);
+                PlanKit.MarkMorningDue(store, day);
+                Need(store.World.GetKept<PlanKit.MorningNote>(PlanKit.MorningId).Built, "the morning line was marked due twice in one day");
+            }
+            else Need(!m.Pending, "the morning line was due with its tool off");
+            store.World.SetKept(PlanKit.MorningId, new PlanKit.MorningNote());
             Need(Tools.Find("plan.morningnote") != null, "morning notes are not in the toolbox");
         }
     }

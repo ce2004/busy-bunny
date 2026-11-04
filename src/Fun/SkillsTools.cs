@@ -36,6 +36,7 @@ namespace BusyBunny
         private MainWindow _w = null!;
         private Store S => _w.Store;
         private readonly Dictionary<Guid, DateTime> _finished = new();
+        private readonly Dictionary<Guid, Status> _was = new(), _keep = new();
         private bool _urgeAsked;
 
         public void Attach(MainWindow w)
@@ -56,18 +57,16 @@ namespace BusyBunny
                 () => _w.Say("Bunny is never disappointed in you and never goes cold. However long you are away, it is glad you are back, and there is nothing to make up for.", true)) { Since = since });
 
             GameEvents.TaskDone += t => _finished[t.Id] = DateTime.Now;
+            // The status a finished task had, for the lock: StatusChanged comes just before TaskUndone.
+            GameEvents.StatusChanged += (t, old) => { if (old is Status.Done or Status.DoneNotSubmitted) _was[t.Id] = old; };
             GameEvents.TaskUndone += t =>
             {
                 if (!Tools.IsOn(Done) || !LockOn(S) || !_finished.TryGetValue(t.Id, out var when) || !Holds(true, when, DateTime.Now)) return;
-                // Put it back once every handler has run, unless another change came in between.
-                int steps = S.UndoCount;
-                string name = t.Name;
-                _w.Dispatcher.BeginInvoke(() =>
-                {
-                    if (S.UndoCount != steps || S.Undo() == null) return;
-                    _w.Refresh();
-                    _w.Say("Done is done: " + name + " stays finished for today. If it was a real mistake, Done is done in the Skills drawer turns the lock off.", true);
-                }, System.Windows.Threading.DispatcherPriority.Background);
+                if (!_was.TryGetValue(t.Id, out var old)) return;
+                // Put only its status back, once every handler has run, through the normal status path: every other
+                // edit in the same step stays, the points come back through the game, and it is its own Control Z step.
+                _keep[t.Id] = old;
+                if (_keep.Count == 1) _w.Dispatcher.BeginInvoke(KeepFinished, System.Windows.Threading.DispatcherPriority.Background);
             };
             w.Started += () =>
             {
@@ -127,6 +126,7 @@ namespace BusyBunny
 
         private void BothThings()
         {
+            if (StuckTools.EnoughComfort(_w, DateTime.Now)) return;
             string? moment = FunKit.Ask(_w, "Both things are true", "_What happened?", "", "A few words is enough, like I snapped at my friend. It is not saved anywhere and never sent to Claude.");
             if (moment == null) return;
             var now = DateTime.Now;
@@ -151,6 +151,7 @@ namespace BusyBunny
         private void HowToday()
         {
             var now = DateTime.Now;
+            if (StuckTools.EnoughComfort(_w, now)) return;
             var right = WentRight(S, now);
             if (right.Count == 0) right.Add("you are here and looking, which is a start");
             int open = S.TodayAll(now).Count(FunKit.Open), late = S.Overdue(now).Count;
@@ -217,6 +218,27 @@ namespace BusyBunny
         /// <summary>Whether the lock keeps a task finished: on, and the task was finished today.</summary>
         public static bool Holds(bool on, DateTime finished, DateTime now) => on && finished.Date == now.Date;
 
+        /// <summary>
+        /// Sets each task the lock holds back to the finished status it had, if it is still there, still not finished and
+        /// the lock is still on. Never Store.Undo, so nothing else she changed is lost. Says one line naming only those kept.
+        /// </summary>
+        private void KeepFinished()
+        {
+            var todo = _keep.ToList();
+            _keep.Clear();
+            if (!Tools.IsOn(Done) || !LockOn(S)) return;
+            var kept = new List<string>();
+            foreach (var (id, old) in todo)
+            {
+                if (FunKit.Find(S, id) is not TaskItem t || t.Status is Status.Done or Status.DoneNotSubmitted) continue;
+                try { _w.SetTaskStatus(t, old); }
+                catch (Exception e) when (e is System.IO.IOException or UnauthorizedAccessException) { ErrorLog.Write("Done is done could not save: " + e.Message); continue; }
+                if (t.Status == old) kept.Add(t.Name);
+            }
+            if (kept.Count == 0) return;
+            _w.Say("Done is done: " + Join(kept) + (kept.Count == 1 ? " stays" : " stay") + " finished for today. If it was a real mistake, Done is done in the Skills drawer turns the lock off.", true);
+        }
+
         private void ToggleLock()
         {
             bool on = !LockOn(S);
@@ -247,7 +269,7 @@ namespace BusyBunny
                 int i = FunKit.Pick(_w, "Urge timer", "Ten minutes went by. Did the urge to redo or recheck pass?", new[] { "It passed, or it is quieter", "I still want to" });
                 if (i < 0) { _urgeAsked = true; return; }
                 if (i == 0) { FunKit.Win(_w, Urge, 3, "Let an urge pass", 3, Content.Pick(S, "skills.urge")); return; }
-                _w.Say("That is okay. Go ahead and do it once, then let it be. Waiting at all was practice.", true);
+                _w.Say("That is okay. Waiting at all was practice. If you can, try ten more minutes; if not, be kind to yourself either way.", true);
                 return;
             }
             if (FunTimer.Handle(_w, Urge)) return;

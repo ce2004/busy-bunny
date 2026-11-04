@@ -53,30 +53,65 @@ namespace BusyBunny
             T(TidyId, "Tidy list bonus", Drawers.Wins, "Automatic: finishing a backlog sweep pays 10 points, once a week.", () => "View, Backlog sweep is where it starts.");
 
             GameEvents.TaskDone += OnDone;
+            GameEvents.TaskUndone += _ => SteadyUndone(S, DateTime.Now);
             GameEvents.Snoozed += OnSnoozed;
             GameEvents.SprintDone += _ => { var m = S.World.GetKept<SprintMark>(BreakId); m.LastDone = DateTime.Now; S.World.SetKept(BreakId, m); S.World.Save(); };
-            GameEvents.SprintStarted += (_, _) =>
-            {
-                var m = S.World.GetKept<SprintMark>(BreakId);
-                if (OnTimeBreak(m.LastDone, DateTime.Now)) PayBreak();
-            };
+            GameEvents.SprintStarted += (_, _) => { if (BreakAtSprintStart(S, DateTime.Now)) PayBreak(); };
             GameEvents.BreakStarted += () => { var m = S.World.GetKept<SprintMark>(BreakId); m.BreakStart = DateTime.Now; S.World.SetKept(BreakId, m); S.World.Save(); };
-            GameEvents.BreakEnded += () =>
-            {
-                var m = S.World.GetKept<SprintMark>(BreakId);
-                if (m.BreakStart > DateTime.MinValue && DateTime.Now - m.BreakStart <= TimeSpan.FromMinutes(20)) PayBreak();
-            };
+            GameEvents.BreakEnded += () => { if (BreakAtBreakEnd(S, DateTime.Now)) PayBreak(); };
             w.Refreshed += OnRefreshed;
         }
 
         // ---- Rules, static for the self-test ----
 
-        /// <summary>Extra points for a multiplier on base points: running ledger multipliers apply, and base plus extra stays within 4 times.</summary>
+        /// <summary>
+        /// Extra points for this feature's own multiplier on base points (base times factor minus 1), within 4 times. Running
+        /// ledger multipliers like power hour are not counted here: their own features pay them. Pay it with Ledger.PayExtra,
+        /// which keeps every feature's extras for one task together inside the 4 times ceiling.
+        /// </summary>
         public static int Extra(Store s, int basePoints, double factor)
         {
             if (factor <= 1 || basePoints <= 0) return 0;
-            int extra = Ledger.Boost(s, (int)Math.Round(basePoints * (factor - 1)));
-            return Math.Min(extra, (int)Math.Round(basePoints * (Ledger.MaxBoost - 1)));
+            return Math.Min((int)Math.Round(basePoints * (factor - 1)), (int)Math.Round(basePoints * (Ledger.MaxBoost - 1)));
+        }
+
+        /// <summary>The consistency multiplier's part of a task's points: 10 percent of base, at least 1 when it is running.</summary>
+        public static int SteadyExtra(Store s, int basePoints, DateTime now) =>
+            basePoints > 0 && Ledger.Active(s, now).Any(m => m.Id == SteadyId) ? Math.Max(1, (int)Math.Round(basePoints * 0.1, MidpointRounding.AwayFromZero)) : 0;
+
+        /// <summary>A task went back: when this week no longer has 5 days of work, the consistency multiplier stops and can start again.</summary>
+        public static void SteadyUndone(Store s, DateTime now)
+        {
+            var m = s.World.GetKept<WeekMark>(SteadyId);
+            if (m.Week != s.Key(Engine.WeekStart(now)) || DaysWorked(s, now) >= 5) return;
+            Ledger.RemoveMultiplier(s, SteadyId);
+            s.World.SetKept(SteadyId, new WeekMark());
+            s.World.Save();
+        }
+
+        /// <summary>A sprint starts 3 to 20 minutes after the last one ended: a break on time. Uses the finished sprint up, so it pays once.</summary>
+        public static bool BreakAtSprintStart(Store s, DateTime now)
+        {
+            var m = s.World.GetKept<SprintMark>(BreakId);
+            if (!OnTimeBreak(m.LastDone, now)) return false;
+            m.LastDone = DateTime.MinValue;
+            m.BreakStart = DateTime.MinValue;
+            s.World.SetKept(BreakId, m);
+            s.World.Save();
+            return true;
+        }
+
+        /// <summary>A break of 3 to 20 minutes ended. Uses the break and the sprint before it up, so a sprint start after it does not pay again.</summary>
+        public static bool BreakAtBreakEnd(Store s, DateTime now)
+        {
+            var m = s.World.GetKept<SprintMark>(BreakId);
+            if (m.BreakStart == DateTime.MinValue) return false;
+            var took = now - m.BreakStart;
+            m.BreakStart = DateTime.MinValue;
+            m.LastDone = DateTime.MinValue;
+            s.World.SetKept(BreakId, m);
+            s.World.Save();
+            return took >= TimeSpan.FromMinutes(3) && took <= TimeSpan.FromMinutes(20);
         }
 
         public static bool LowEnergyDay(Store s, Settings? cfg, DateTime now) =>
@@ -144,24 +179,28 @@ namespace BusyBunny
         {
             var s = S;
             var now = DateTime.Now;
-            int basePts = Engine.PointsFor(t, s.ListOf(t), half: t.Status == Status.DoneNotSubmitted);
+            int basePts = Ledger.BaseOf(s, t);
             double factor = 1;
             var why = new List<string>();
             if (Tools.IsOn(FairId) && t.Size == Size.Small && LowEnergyDay(s, _w.AppSettings, now)) { factor *= 2; why.Add("a small task on a low-energy day"); }
             if (Tools.IsOn(HelpId) && IsHelp(t)) { factor *= 2; why.Add("asking for help"); }
             if (Tools.IsOn(CareId) && RoughDay(s, now) && IsSelfCare(t)) { factor *= 2; why.Add("self-care on a rough day"); }
             if (Tools.IsOn(WindId) && SecondWind(s, t, now) && Count(s, WindId, now, 2)) { factor *= 1.5; why.Add("your second wind"); }
+            // Every extra goes through the ledger's one ceiling per task, shared with power hour, the dice, golden tasks and the rest.
             int extra = Extra(s, basePts, factor);
-            if (extra > 0 && Ledger.Pay(s, extra, "Extra for " + string.Join(" and ", why), why.Count == 1 && why[0] == "your second wind" ? WindId : FairId, t.Id) is Outcome o)
+            if (extra > 0 && Ledger.PayExtra(s, t, basePts, extra, "Extra for " + string.Join(" and ", why), why.Count == 1 && why[0] == "your second wind" ? WindId : FairId) is Outcome o)
             {
-                o.Fun.Insert(0, (Game.Other, "Plus " + extra + " for " + string.Join(" and ", why) + "."));
+                o.Fun.Insert(0, (Game.Other, "Plus " + o.Gained + " for " + string.Join(" and ", why) + "."));
                 Game.Queue(_w, o);
             }
-            if (Tools.IsOn(EarlyId) && WellAhead(t, now) is int ahead and > 0 && Ledger.Pay(s, Ledger.Boost(s, ahead, t), "Well ahead: " + t.Name, EarlyId, t.Id) is Outcome e)
+            if (Tools.IsOn(EarlyId) && WellAhead(t, now) is int ahead and > 0 && Ledger.PayExtra(s, t, basePts, Ledger.Boost(s, ahead), "Well ahead: " + t.Name, EarlyId) is Outcome e)
             {
                 e.Fun.Insert(0, (Game.Other, "Plus " + e.Gained + " more for being well ahead."));
                 Game.Queue(_w, e);
             }
+            // The consistency multiplier's 10 percent on the task's own points (the app's Done points do not read ledger multipliers).
+            if (Tools.IsOn(SteadyId) && SteadyExtra(s, basePts, now) is int steady and > 0)
+                Ledger.PayExtra(s, t, basePts, steady, "Consistency, 10 percent extra", SteadyId);
             if (Tools.IsOn(SteadyId) && DaysWorked(s, now) >= 5)
             {
                 var m = s.World.GetKept<WeekMark>(SteadyId);
@@ -246,11 +285,35 @@ namespace BusyBunny
         {
             void Need(bool ok, string what) { if (!ok) throw new Exception("auto points: " + what); }
             var now = DateTime.Now;
-            // The cap: double of 10 is 10 extra; three doubles stop at 4 times in all; a running multiplier counts.
+            // The cap: double of 10 is 10 extra; three doubles stop at 4 times in all; a running multiplier is not counted again here.
             Need(Extra(s, 10, 2) == 10 && Extra(s, 10, 8) == 30 && Extra(s, 10, 1) == 0, "extra points");
             Ledger.AddMultiplier(s, "test.boost", 3, now.AddHours(1), "test");
-            Need(Extra(s, 10, 2) == 30, "a running multiplier did not apply, or broke the cap: " + Extra(s, 10, 2));
+            Need(Extra(s, 10, 2) == 10, "a running multiplier was counted a second time: " + Extra(s, 10, 2));
             Ledger.RemoveMultiplier(s, "test.boost");
+            Need(SteadyExtra(s, 10, now) == 0, "consistency paid while not running");
+            Ledger.AddMultiplier(s, SteadyId, 1.1, now.AddHours(1), "test");
+            Need(SteadyExtra(s, 10, now) == 1 && SteadyExtra(s, 5, now) == 1 && SteadyExtra(s, 30, now) == 3, "consistency 10 percent");
+            Ledger.RemoveMultiplier(s, SteadyId);
+
+            // Consistency: taken back when a set-back task leaves fewer than 5 worked days.
+            s.World.SetKept(SteadyId, new WeekMark { Week = s.Key(Engine.WeekStart(now)) });
+            Ledger.AddMultiplier(s, SteadyId, 1.1, now.AddHours(1), "test");
+            if (DaysWorked(s, now) < 5)
+            {
+                SteadyUndone(s, now);
+                Need(!Ledger.Active(s, now).Any(m => m.Id == SteadyId) && s.World.GetKept<WeekMark>(SteadyId).Week == "", "consistency stayed after its fifth day was undone");
+            }
+            Ledger.RemoveMultiplier(s, SteadyId);
+            s.World.SetKept(SteadyId, new WeekMark());
+
+            // Breaks on time pay once: cancelling and starting again, or the break end after a sprint start, pays nothing more.
+            s.World.SetKept(BreakId, new SprintMark { LastDone = now.AddMinutes(-5) });
+            Need(BreakAtSprintStart(s, now) && !BreakAtSprintStart(s, now.AddMinutes(1)), "a break on time paid twice");
+            s.World.SetKept(BreakId, new SprintMark { BreakStart = now });
+            Need(!BreakAtBreakEnd(s, now), "a zero-minute break paid");
+            s.World.SetKept(BreakId, new SprintMark { BreakStart = now.AddMinutes(-6), LastDone = now.AddMinutes(-7) });
+            Need(BreakAtBreakEnd(s, now) && !BreakAtSprintStart(s, now), "the same break paid at its end and at the next sprint");
+            s.World.SetKept(BreakId, new SprintMark());
 
             var t = new TaskItem { Name = "email professor about accessibility", List = s.Data.Lists[0].Name, Size = Size.Small };
             Need(IsHelp(t) && !IsSelfCare(t) && IsSelfCare(new TaskItem { Name = "eat lunch" }) && !IsSelfCare(new TaskItem { Name = "create slides" }) && !IsHelp(new TaskItem { Name = "finish task list" }), "help and self-care words");
@@ -269,6 +332,10 @@ namespace BusyBunny
             s.Data.Tasks.Add(t);
             t.Status = Status.Done;
             int before = Engine.Total(s.Data);
+            // One ceiling with other features: 20 already paid on base 10 leaves 10, however much help points ask for.
+            Ledger.PayExtra(s, t, 10, 20, "test power", "test.power");
+            Need(Ledger.PayExtra(s, t, 10, Extra(s, 10, 4), "test help", HelpId)?.Gained == 10 && Ledger.PayExtra(s, t, 10, 5, "test more", EarlyId) == null, "extras went past 4 times base");
+            Need(Engine.Total(s.Data) == before + 30, "the shared ceiling paid the wrong amount");
             Ledger.Pay(s, Extra(s, 5, 2), "test fair", FairId, t.Id);
             t.Status = Status.Today;
             Engine.Unfinish(s, t, now);

@@ -192,6 +192,7 @@ namespace BusyBunny
         private DateTime _endUtc, _lastUtc;
         private double _awake;
         private Action<FunTimer, int>? _done;
+        private Action? _stopped;
         private MainWindow _w = null!;
 
         public TimeSpan Left => _endUtc - DateTime.UtcNow;
@@ -215,17 +216,25 @@ namespace BusyBunny
             if (Current is not FunTimer t) return false;
             if (t.Id != id) { w.Say(t.Name + " is still running, " + t.LeftWords + " left. Open it again from the toolbox to stop it.", true); return true; }
             int i = FunKit.Pick(w, t.Name, t.Name + ": " + t.LeftWords + " left.", new[] { "Keep it going", "Stop it now" });
-            if (i == 1 && Current == t) { Stop(); w.Say(t.Name + " stopped. No harm done.", true); }
+            if (i == 1 && Current == t)
+            {
+                Stop();
+                try { t._stopped?.Invoke(); }
+                catch (Exception e) { ErrorLog.Write("The timer " + t.Id + " failed while stopping: " + e); }
+                w.Say(t.Name + " stopped. No harm done.", true);
+            }
             return true;
         }
 
-        public static FunTimer Start(MainWindow w, string id, string name, int minutes, TaskItem? task, bool sprint, Action<FunTimer, int> done)
+        /// <summary>Starts a timer. stopped runs when she stops it early with Stop it now (end a break, stop a sound), never at the normal end.</summary>
+        public static FunTimer Start(MainWindow w, string id, string name, int minutes, TaskItem? task, bool sprint, Action<FunTimer, int> done, Action? stopped = null)
         {
             Hook();
             Stop();
             var t = new FunTimer { Id = id, Name = name, Minutes = minutes, Task = task, Sprint = sprint };
             t._w = w;
             t._done = done;
+            t._stopped = stopped;
             t._endUtc = DateTime.UtcNow.AddMinutes(minutes);
             t._lastUtc = DateTime.UtcNow;
             Current = t;

@@ -20,7 +20,7 @@ Little update: Bunny changed in {count} this month. The toolbox, Notes to self, 
 
 Bunny grew this month, {count} worth. You can keep, undo or reset them in Bunny's monthly check-in.
 
-Bunny checked itself in the mirror: {count} different since last month. Bunny's monthly check-in has the details.
+Bunny gave itself a good sniff: {count} different since last month. Bunny's monthly check-in has the details.
 
 A new month, a slightly new Bunny: {count} changed. Look in Bunny's monthly check-in to keep or undo.
 

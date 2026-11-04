@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -115,7 +117,7 @@ namespace BusyBunny
                 w.DialogResult = true;
             };
             buttons.Children.Add(ok);
-            var all = Layout.Button("Check _all");
+            var all = Layout.Button("Check a_ll");
             all.Click += (_, _) => { foreach (var b in boxes) b.IsChecked = true; Speech.Say(w, "All checked.", true); };
             var none = Layout.Button("Check _none");
             none.Click += (_, _) => { foreach (var b in boxes) b.IsChecked = false; Speech.Say(w, "None checked.", true); };
@@ -135,6 +137,37 @@ namespace BusyBunny
             if (!result.Skipped) result.Chosen = Enumerable.Range(0, items.Count).Where(i => on[i]).ToList();
             return result;
         }
+
+        /// <summary>
+        /// A small window while Bunny works on something she is waiting for: it says what is happening, says "still
+        /// reading" every 30 seconds, and its Stop button (or Escape) cancels the work. It closes by itself when the work
+        /// ends. Returns the work's result, or throws what the work threw (OperationCanceledException when stopped).
+        /// </summary>
+        public static async Task<T> Waiting<T>(Window owner, string title, string line, string still, Func<CancellationToken, Task<T>> work)
+        {
+            using var cts = new CancellationTokenSource();
+            var w = Layout.Dialog(owner, title);
+            var panel = new StackPanel { Margin = new Thickness(14) };
+            panel.Children.Add(Intro(line, 420));
+            // A Cancel button: pressing it or Escape closes the window, and closing stops the work.
+            var stop = Layout.Button("_Stop", isCancel: true);
+            panel.Children.Add(stop);
+            w.Content = panel;
+            bool done = false;
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+            timer.Tick += (_, _) => Speech.Say(w, still);
+            w.Closing += (_, _) => { if (!done) { try { cts.Cancel(); } catch (ObjectDisposedException) { } Speech.Say(owner, "Stopping Bunny.", true); } };
+            w.Loaded += (_, _) => { stop.Focus(); Speech.Say(w, line, true); timer.Start(); };
+            var task = work(cts.Token);
+            _ = task.ContinueWith(_ => { done = true; if (w.IsVisible) w.Close(); else w.Loaded += (_, _) => w.Close(); }, TaskScheduler.FromCurrentSynchronizationContext());
+            if (!task.IsCompleted) w.ShowDialog();
+            timer.Stop();
+            try { return await task; }
+            catch (Exception e) when (cts.IsCancellationRequested && e is not StoppedByHand) { throw new StoppedByHand(); }
+        }
+
+        /// <summary>She pressed Stop (or Escape) while Bunny was working.</summary>
+        public sealed class StoppedByHand : Exception { public StoppedByHand() : base("Okay, Bunny stopped.") { } }
 
         /// <summary>One question with a pick list of answers. The index picked, or -1 when she closed it.</summary>
         public static int Choose(Window owner, string title, string question, IReadOnlyList<string> choices)

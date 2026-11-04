@@ -26,7 +26,7 @@ namespace BusyBunny
         public static readonly Dictionary<string, (double In, double Out, double CacheRead, double CacheWrite)> PricesPerMillion = new()
         {
             ["claude-sonnet-5-5"] = (2.00, 10.00, 0.20, 2.50),
-            ["claude-opus-5-5"] = (4.00, 20.00, 0.40, 5.00),
+            ["claude-opus-5-5"] = (4.00, 20.00, 0.20, 5.00),
             ["claude-haiku-5-5"] = (0.10, 0.50, 0.01, 0.125),
         };
 
@@ -47,10 +47,62 @@ namespace BusyBunny
         /// <summary>Bunny is over today's cap: every Bunny call stops, with this line.</summary>
         public sealed class CapHit : Exception
         {
-            public CapHit(double cap) : base("Bunny has used today's spending cap of " + SmartUi.Money(cap) + ", so it is resting until tomorrow. Options, Smarter Bunny changes the cap.") { }
+            public CapHit(double cap) : base("Bunny is at today's spending cap of " + SmartUi.Money(cap) + ", so it is resting until tomorrow. Options, Smarter Bunny changes the cap.") { }
         }
 
         public void Attach(MainWindow w) { }
+
+        // ---- Reserving before a call ----
+
+        // What calls under way may still cost: each call reserves its most before it starts and gives it back when it ends,
+        // so calls that run at the same time can never take the day past the cap together.
+        private static readonly object Gate = new();
+        private static double _reserved;
+
+        /// <summary>The most a call can cost: its input (about 4 characters a token) plus every output token it may write.</summary>
+        public static double Estimate(long inputChars, int maxTokens) => Cost(SmartBunny.ModelId, Math.Max(0, inputChars) / 4, Math.Max(0, maxTokens), 0, 0);
+
+        public static double Reserved { get { lock (Gate) return _reserved; } }
+
+        /// <summary>
+        /// A call's place under the cap. Record its answer's usage through it (asked says whether she is waiting on this
+        /// call), and dispose it when the call ends, in a finally, so the reservation is given back even when it failed.
+        /// </summary>
+        public sealed class Reservation : IDisposable
+        {
+            private double _dollars;
+            public bool Asked { get; }
+            internal Reservation(double dollars, bool asked) { _dollars = dollars; Asked = asked; }
+            public void Record(Anthropic.Models.Messages.Usage? u) => SmartSpend.Record(u, Asked);
+            public void Dispose()
+            {
+                lock (Gate) { _reserved = Math.Max(0, _reserved - _dollars); _dollars = 0; }
+            }
+        }
+
+        /// <summary>Reserves a call's estimate, or null when today's spending, the calls under way and this one would pass the cap.</summary>
+        public static Reservation? TryReserve(Store s, DateTime now, double estimate, bool asked = false)
+        {
+            var cap = CapOf(s);
+            lock (Gate)
+            {
+                if (cap.On && Today(s, now) + _reserved + estimate > cap.Dollars) return null;
+                if (!cap.On) return new Reservation(0, asked);
+                _reserved += estimate;
+                return new Reservation(estimate, asked);
+            }
+        }
+
+        /// <summary>For a call that can wait: null when it would pass the cap (or there is no store).</summary>
+        public static Reservation? TryReserve(double estimate, bool asked = false) =>
+            Engines.Store is Store s ? TryReserve(s, DateTime.Now, estimate, asked) : new Reservation(0, asked);
+
+        /// <summary>For a call she is waiting on: throws CapHit with the line to say when it would pass the cap.</summary>
+        public static Reservation Reserve(double estimate, bool asked = true)
+        {
+            if (Engines.Store is not Store s) return new Reservation(0, asked);
+            return TryReserve(s, DateTime.Now, estimate, asked) ?? throw new CapHit(CapOf(s).Dollars);
+        }
 
         // ---- Counting ----
 
@@ -60,37 +112,58 @@ namespace BusyBunny
             return (input * p.In + output * p.Out + cacheRead * p.CacheRead + cacheWrite * p.CacheWrite) / 1_000_000.0;
         }
 
-        /// <summary>Adds one answer's tokens, for SmartBunny after every request. Never throws.</summary>
-        public static void Record(Anthropic.Models.Messages.Usage? u)
+        /// <summary>Adds one answer's tokens, for SmartBunny after every request. asked: she is waiting on this call. Never throws.</summary>
+        public static void Record(Anthropic.Models.Messages.Usage? u, bool asked = false)
         {
             try
             {
                 if (u == null || Engines.Store is not Store s) return;
-                Add(s, DateTime.Now, Cost(SmartBunny.ModelId, u.InputTokens, u.OutputTokens, u.CacheReadInputTokens ?? 0, u.CacheCreationInputTokens ?? 0));
+                Add(s, DateTime.Now, Cost(SmartBunny.ModelId, u.InputTokens, u.OutputTokens, u.CacheReadInputTokens ?? 0, u.CacheCreationInputTokens ?? 0), asked);
             }
             catch (Exception e) { ErrorLog.Write("Counting Bunny's spending failed: " + e.GetType().Name); }
         }
 
-        public static void Add(Store s, DateTime now, double dollars)
+        /// <summary>A call that failed after Claude may already have billed it: counts its estimate, so a failed try is never free.</summary>
+        public static void RecordFailed(long inputChars, long outputTokens, bool asked = false)
+        {
+            try
+            {
+                if (Engines.Store is not Store s) return;
+                Add(s, DateTime.Now, Cost(SmartBunny.ModelId, Math.Max(0, inputChars) / 4, Math.Max(0, outputTokens), 0, 0), asked);
+            }
+            catch (Exception e) { ErrorLog.Write("Counting Bunny's spending failed: " + e.GetType().Name); }
+        }
+
+        /// <summary>The line said once when the day's spending reaches the cap.</summary>
+        public static string CapLine(double cap) => "Bunny just reached today's spending cap of " + SmartUi.Money(cap) + ". It rests until tomorrow; Options, Smarter Bunny changes the cap.";
+
+        public static void Add(Store s, DateTime now, double dollars, bool asked = false)
         {
             var sp = s.World.GetKept<Spend>(SpendKey);
-            string day = s.Key(now);
+            string day = DayKey(now);
             double before = sp.Dollars.GetValueOrDefault(day);
             sp.Dollars[day] = before + dollars;
             sp.Calls[day] = sp.Calls.GetValueOrDefault(day) + 1;
             // A little over a year is plenty for the monthly estimate.
-            foreach (var old in sp.Dollars.Keys.Where(k => string.CompareOrdinal(k, s.Key(now.AddDays(-400))) < 0).ToList()) { sp.Dollars.Remove(old); sp.Calls.Remove(old); }
+            foreach (var old in sp.Dollars.Keys.Where(k => string.CompareOrdinal(k, DayKey(now.AddDays(-400))) < 0).ToList()) { sp.Dollars.Remove(old); sp.Calls.Remove(old); }
             s.World.SetKept(SpendKey, sp);
             var cap = s.World.GetKept<Cap>(CapKey);
             bool crossed = cap.On && before < cap.Dollars && before + dollars >= cap.Dollars && cap.ToldDay != day;
             if (crossed) { cap.ToldDay = day; s.World.SetKept(CapKey, cap); }
             s.World.Save();
-            // Said once, the moment it happens: she needs to know why Bunny went quiet.
+            // Said once, the moment it happens: she needs to know why Bunny went quiet. Right away when she is waiting on
+            // that call; otherwise through the calm rules (kept in What happened today, said only when they allow).
             if (crossed && Engines.Window is MainWindow w && ReferenceEquals(w.Store, s))
-                w.Dispatcher.BeginInvoke(() => w.Say("Bunny just reached today's spending cap of " + SmartUi.Money(cap.Dollars) + ". It rests until tomorrow; Options, Smarter Bunny changes the cap."));
+            {
+                string line = CapLine(cap.Dollars);
+                w.Dispatcher.BeginInvoke(() => { if (asked) w.Say(line); else Calm.SayUnprompted(w, line); });
+            }
         }
 
-        public static double Today(Store s, DateTime now) => s.World.GetKept<Spend>(SpendKey).Dollars.GetValueOrDefault(s.Key(now));
+        /// <summary>The day's key, yyyy-MM-dd in the invariant calendar, so it always matches the month's yyyy-MM.</summary>
+        public static string DayKey(DateTime d) => d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+        public static double Today(Store s, DateTime now) => s.World.GetKept<Spend>(SpendKey).Dollars.GetValueOrDefault(DayKey(now));
 
         public static (double Dollars, int Calls) Month(Store s, DateTime now)
         {
@@ -109,14 +182,8 @@ namespace BusyBunny
             return cap.On && Today(s, now) >= cap.Dollars;
         }
 
-        /// <summary>For SmartBunny before a request that can wait: true when today's cap is used up.</summary>
+        /// <summary>A quick look before offering a Claude path: true when today's cap is used up. The call itself still reserves.</summary>
         public static bool CapReached() => Engines.Store is Store s && CapReached(s, DateTime.Now);
-
-        /// <summary>For SmartBunny before a request she is waiting on: throws CapHit with the line to say.</summary>
-        public static void Check()
-        {
-            if (Engines.Store is Store s && CapReached(s, DateTime.Now)) throw new CapHit(CapOf(s).Dollars);
-        }
 
         /// <summary>The credit check, as one paragraph.</summary>
         public static string CreditLine(Store s, DateTime now)
@@ -194,7 +261,7 @@ namespace BusyBunny
             store.World.SetKept(CapKey, new Cap { On = true, Dollars = 1.00 });
             Need(!CapReached(store, now), "under the cap");
             Add(store, now, 0.25);
-            Need(CapReached(store, now) && CapOf(store).ToldDay == store.Key(now), "over the cap, said once");
+            Need(CapReached(store, now) && CapOf(store).ToldDay == DayKey(now), "over the cap, said once");
             Need(!CapReached(store, now.AddDays(1)), "the cap starts over the next day");
             // Undo never gives spending back: it is kept bookkeeping.
             store.Remember("test");
@@ -204,6 +271,23 @@ namespace BusyBunny
             Need(Panel.ParseDollars("1.5") == 1.5 && Panel.ParseDollars("$2") == 2 && Panel.ParseDollars("0") == null && Panel.ParseDollars("lots") == null, "reading dollars");
             Need(!CreditLine(store, now).Contains((char)35) && CreditLine(store, now).Contains("estimate"), "the credit line");
             Need(new CapHit(1).Message.Contains("$1.00"), "the cap line");
+            Need(PricesPerMillion["claude-opus-5-5"].CacheRead == 0.20, "the Opus cache read price");
+            // Calls under way reserve their most, so two at once cannot pass the cap together.
+            var day2 = now.AddDays(3);
+            double reservedBefore = Reserved;
+            store.World.SetKept(CapKey, new Cap { On = true, Dollars = 1.00 });
+            Add(store, day2, 0.70);
+            var first = TryReserve(store, day2, 0.20);
+            Need(first != null, "a call under the cap was refused");
+            Need(TryReserve(store, day2, 0.20) == null, "a second call passed the cap with the first still under way");
+            first!.Dispose();
+            first.Dispose();
+            Need(Math.Abs(Reserved - reservedBefore) < 1e-9, "a finished call kept its reservation");
+            using (var again = TryReserve(store, day2, 0.20)) Need(again != null, "the reservation was not given back");
+            Need(Estimate(40_000, 32_000) > 0.3 && Estimate(0, 1000) > 0, "the estimate");
+            store.World.SetKept(CapKey, new Cap { On = false });
+            using (var off = TryReserve(store, day2, 1000)) Need(off != null && Math.Abs(Reserved - reservedBefore) < 1e-9, "with the cap off nothing is reserved");
+            Need(Math.Abs(Reserved - reservedBefore) < 1e-9, "reservations left behind");
         }
     }
 }

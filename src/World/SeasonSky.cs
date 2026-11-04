@@ -96,8 +96,9 @@ namespace BusyBunny
             var sp = seasons.Count == 0 ? null : seasons[now.DayOfYear % seasons.Count];
             string text = Sky == "mystery" ? RealWorld.Mystery + (cfg?.WeatherTown.Length > 0 ? "" : " Type your town in Settings, Fun and tools, and the window will follow the real weather.")
                 : "It is " + (Temp is int t ? t + " degrees and " : "") + Sky + " outside.";
-            if (pick != null) text += " " + pick.GetValueOrDefault("touch") + " " + pick.GetValueOrDefault("sound");
-            if (sp != null) text += " " + season + " in the burrow: " + sp.GetValueOrDefault("touch");
+            string bunny = SeasonCalendar.BunnyName(s);
+            if (pick != null) text += " " + (pick.GetValueOrDefault("touch") + " " + pick.GetValueOrDefault("sound")).Replace("{name}", bunny);
+            if (sp != null) text += " " + season + " in the burrow: " + (sp.GetValueOrDefault("touch") ?? "").Replace("{name}", bunny);
             if (Night(now, cfg)) text += " The sun has set, so the burrow is in night mode.";
             return text;
         }
@@ -147,7 +148,8 @@ namespace BusyBunny
                 {
                     case RainMood:
                         if (x.Bank is "organ" or "flute") continue;
-                        if (x.Bank == "bells") { e.Add(x with { Bank = "pizzicato", Gain = 0.10, Ring = 0.4, Release = 0.6 }); e.Add(x with { At = x.At + 0.7, Bank = "pizzicato", Midi = x.Midi + 5, Gain = 0.07, Ring = 0.3, Release = 0.5 }); continue; }
+                        // Pizzicato's highest recording is midi 74, so the bells come down an octave and stop there (no thin, chirpy notes).
+                        if (x.Bank == "bells") { e.Add(x with { Bank = "pizzicato", Midi = Math.Min(x.Midi - 12, 74), Gain = 0.10, Ring = 0.4, Release = 0.6 }); e.Add(x with { At = x.At + 0.7, Bank = "pizzicato", Midi = Math.Min(x.Midi - 7, 74), Gain = 0.07, Ring = 0.3, Release = 0.5 }); continue; }
                         e.Add(x.Bank == "piano" ? x with { Gain = x.Gain * 1.3 } : x.Bank == "strings" ? x with { Gain = x.Gain * 0.8 } : x);
                         break;
                     case WinterMood:
@@ -179,8 +181,8 @@ namespace BusyBunny
                 double t = c * span;
                 if (mood == SpringMood && c % 2 == 0)
                 {
-                    e.Add(new MusicLoop.Event(t + 2.2, "flute", home + 28, 0.035, 0.6, 0.18, 0.25, 0.02));
-                    e.Add(new MusicLoop.Event(t + 2.5, "flute", home + 31, 0.03, 0.6, 0.15, 0.25, 0.02));
+                    e.Add(new MusicLoop.Event(t + 2.2, "flute", home + 16, 0.035, 0.6, 0.18, 0.25, 0.02));
+                    e.Add(new MusicLoop.Event(t + 2.5, "flute", home + 19, 0.03, 0.6, 0.15, 0.25, 0.02));
                 }
                 if (mood == FallMood && c % 2 == 1) e.Add(new MusicLoop.Event(t + 4.0, "flute", home + 19, 0.04, -0.4, 2.6, 2.2, 1.0));
                 if (mood == SummerMood) e.Add(new MusicLoop.Event(t + 6.8, "pizzicato", home + 7, 0.08, -0.3, 0.4, 0.6, 0.01));

@@ -77,8 +77,14 @@ namespace BusyBunny
             store.World.SetKept(RecentKey, recent);
             store.World.Save();
             Last = (topic, all[pick]);
-            return all[pick].Replace("{name}", store.Data.Game.BunnyName);
+            string given = all[pick].Replace("{name}", store.Data.Game.BunnyName);
+            Recent.Add((topic, all[pick], given));
+            if (Recent.Count > 40) Recent.RemoveAt(0);
+            return given;
         }
+
+        /// <summary>The last 40 picks (topic, line as typed, line as given out), oldest first, so Rate a line can match what was really said.</summary>
+        public static readonly List<(string Topic, string Line, string Given)> Recent = new();
 
         /// <summary>The last entry Pick gave out, as typed (topic and line), for Rate a line. Null before the first pick.</summary>
         public static (string Topic, string Line)? Last { get; set; }

@@ -15,6 +15,8 @@ namespace BusyBunny
     {
         private const string Since = "0.14.0";
         private const string Green = "season.green", WindowPlace = "season.window", Hill = "season.hill", MusicTool = "season.music", ReportTool = "season.weather";
+        /// <summary>Dates are written in English, the way Dates.Parse reads them back, whatever language Windows uses.</summary>
+        private static readonly System.Globalization.CultureInfo English = System.Globalization.CultureInfo.GetCultureInfo("en-US");
         private MainWindow _w = null!;
         private Store S => _w.Store;
         private Settings Cfg => _w.AppSettings;
@@ -35,13 +37,13 @@ namespace BusyBunny
             Reg(ReportTool, "Bunny's weather report", Drawers.World, "Bunny tells you the real weather in its own silly way.", () => _ = Report());
             Reg(SeasonCalendar.Moon, "Full moon intentions", Drawers.Notes, "Set one private intention at the full moon; Bunny reads it back at the next one.", () => WorldWindow.Show(_w, Hill));
             Reg(MusicTool, "Seasonal soundtrack", Drawers.Rest, "The background music changes with the season, the weather and the night.", SayMusic);
-            Reg(SeasonCalendar.Winter, "Snowman and snow days", Drawers.World, "A snowman that grows over your winter streak, snow days and snowball fights.", SayWinter);
+            Reg(SeasonCalendar.Winter, "Snowman and snow days", Drawers.World, "A snowman that grows each day you meet your daily goal, snow days and snowball fights.", SayWinter);
             Reg(SeasonCalendar.Yearly, "Birthdays and big days", Drawers.World, "Your birthday, Bunny's birthday party, the village anniversary and moving day.", SayYearly);
             Reg(SeasonCalendar.Semester, "End of the semester", Drawers.World, "The lantern walk, the grand train ride and the butterfly garden when the semester ends.", SaySemester);
             BunnyTab.Register("Seasons and festivals", "what is on in the village today and coming up", () => WorldWindow.Show(_w, Green), SeasonCalendar.Tool);
             BunnyTab.Register("The weather window", "the real weather and the night sky from the burrow", () => WorldWindow.Show(_w, WindowPlace), SeasonCalendar.Weather);
 
-            World.Places.Register(new Place(Green, "The village green", s => GreenSummary(s, DateTime.Now), _ => Tools.IsOn(SeasonCalendar.Tool) || Tools.IsOn(SeasonCalendar.Village), s => GreenThings(s, DateTime.Now)));
+            World.Places.Register(new Place(Green, "The village green", s => GreenSummary(s, DateTime.Now), _ => Tools.IsOn(SeasonCalendar.Tool) || Tools.IsOn(SeasonCalendar.Village) || Tools.IsOn(SeasonCalendar.Winter) || Tools.IsOn(SeasonCalendar.Yearly) || Tools.IsOn(SeasonCalendar.Semester), s => GreenThings(s, DateTime.Now)));
             World.Places.Register(new Place(WindowPlace, "The round window", _ => "It is " + (SeasonSky.Sky == "mystery" ? "hard to say what the weather is" : SeasonSky.Sky) + (SeasonSky.Night(DateTime.Now, Engines.Settings) ? ", and night has fallen" : ""), _ => Tools.IsOn(SeasonCalendar.Weather), s => WindowThings(s, DateTime.Now)));
             World.Places.Register(new Place(Hill, "The moonlit hill", _ => "Tonight there is " + RealWorld.MoonPhase(DateTime.Today.AddHours(21)), _ => Tools.IsOn(SeasonCalendar.Moon) || Tools.IsOn(SeasonCalendar.Weather), s => HillThings(s, DateTime.Now)));
 
@@ -78,6 +80,8 @@ namespace BusyBunny
         private void Hourly(DateTime now)
         {
             if (now.DayOfWeek == DayOfWeek.Friday && SeasonCalendar.GoodWeek(S, now)) SeasonCalendar.RaiseOnce(S, "Bonfire and s'mores", S.Key(now));
+            // With her town cleared, the sky goes back to a mystery (no stale rain music or puddles).
+            if (Cfg.WeatherTown.Length == 0 && SeasonSky.Sky != "mystery") SeasonSky.Use("mystery", null, now);
             if (Cfg.WeatherTown.Length > 0 && (Tools.IsOn(SeasonCalendar.Weather) || Tools.IsOn(MusicTool) || Tools.IsOn(SeasonCalendar.Winter) || Tools.IsOn(SeasonCalendar.Tool)))
                 _ = CheckWeather();
         }
@@ -94,31 +98,33 @@ namespace BusyBunny
             var now = DateTime.Now;
             bool announce = Tools.IsOn(e.Group) && !Calm.FunPaused;
             if (!SeasonCalendar.Activate(S, e, now, announce)) return;
-            if (e.Id == "moving") Move(S, now);
-            if (e.Id == "semesterend") Butterflies(S, now);
+            // Kept world changes happen only with their tool on (a switched-off tool never changes anything by itself).
+            if (e.Id == "moving" && Tools.IsOn(e.Group)) Move(S, now);
+            if (e.Id == "semesterend" && Tools.IsOn(e.Group)) Butterflies(S, now);
             if (announce) Game.Note(S, SeasonCalendar.Announcement(e, SeasonCalendar.Where(e)));
         }
 
         private void OnDone(TaskItem t)
         {
-            if (Calm.FunPaused) return;
             var now = DateTime.Now;
+            // The prize is paid in Calm mode too; Calm.AfterTaskDone keeps the line quiet there.
             if (SeasonCalendar.Prize(S, t, now) is ({ } e, var o))
             {
                 if (o != null) Game.Queue(_w, o);
                 S.Save();
-                if (e.Id == "icecream") SoundBank.Play("Xylophone, sparkle");
+                if (e.Id == "icecream" && !Calm.FunPaused) SoundBank.Play("Xylophone, sparkle");
                 Calm.AfterTaskDone(_w, Game.Other, SeasonCalendar.PrizeLine(S, e));
                 return;
             }
             // In a real storm, the next few tasks keep the cocoa warm (three a day at most, so it never chatters).
-            if (SeasonCalendar.IsOn(S, now, "storm"))
+            if (!Calm.FunPaused && SeasonCalendar.IsOn(S, now, "storm"))
             {
                 var c = S.World.GetKept<Counter>("season.cocoa");
                 if (c.Day != S.Key(now)) c = new Counter { Day = S.Key(now) };
                 if (c.N >= 3) return;
                 c.N++;
                 S.World.SetKept("season.cocoa", c);
+                S.World.Save();
                 Calm.AfterTaskDone(_w, Game.Chatter, Content.Pick(S, "season.storm"));
             }
         }
@@ -128,18 +134,25 @@ namespace BusyBunny
             var now = DateTime.Now;
             if (Calm.FunPaused || RealWorld.Season(now) != "Winter" || !Tools.IsOn(SeasonCalendar.Winter)) return;
             int pieces = SnowmanPieces(S, now);
+            // Said only when a piece was really added: the count is kept for the whole winter and starts over the next one.
+            string winter = WinterOf(now);
             var said = S.World.GetKept<Counter>("season.snowman.said");
-            if (pieces > 0 && said.Day != S.Key(now) && pieces <= Content.Lines("season.snowman").Count)
+            if (said.Day != winter) said = new Counter { Day = winter };
+            if (pieces > said.N && pieces <= Content.Lines("season.snowman").Count)
             {
-                S.World.SetKept("season.snowman.said", new Counter { Day = S.Key(now), N = pieces });
-                Calm.AfterTaskDone(_w, Game.Chatter, "Another day of your streak, so the snowman grows. " + Content.Lines("season.snowman")[pieces - 1].Replace("{name}", S.Data.Game.BunnyName));
+                S.World.SetKept("season.snowman.said", new Counter { Day = winter, N = pieces });
+                S.World.Save();
+                Calm.AfterTaskDone(_w, Game.Chatter, "Another daily goal met, so the snowman grows. " + Content.Lines("season.snowman")[pieces - 1].Replace("{name}", SeasonCalendar.BunnyName(S)));
             }
             if (days >= 3) SeasonCalendar.RaiseOnce(S, "A snowball fight", S.Key(Engine.WeekStart(now)));
         }
 
         // ---- Logic the self-test checks ----
 
-        /// <summary>A snowman piece for every day of this winter she met her daily goal (her streak days), up to the whole snowman.</summary>
+        /// <summary>A snowman piece for every day of this winter she met her daily goal, up to the whole snowman.</summary>
+        /// <summary>Which winter a date is in, named by the year its December falls in.</summary>
+        public static string WinterOf(DateTime now) => "winter " + (now.Month == 12 ? now.Year : now.Year - 1);
+
         public static int SnowmanPieces(Store s, DateTime now)
         {
             if (RealWorld.Season(now) != "Winter") return 0;
@@ -187,12 +200,15 @@ namespace BusyBunny
             return fresh.Count;
         }
 
-        /// <summary>A ribbon once per occasion: through the Ledger as its own Control Z step.</summary>
-        public static bool Ribbon(Store s, string contest, string occasion, int points, string reason)
+        /// <summary>
+        /// A ribbon once per occasion: through the Ledger as its own Control Z step, or with remember false as part of the
+        /// step just taken (spring cleaning joins the backlog sweep's own step, so one Control Z takes both back).
+        /// </summary>
+        public static bool Ribbon(Store s, string contest, string occasion, int points, string reason, bool remember = true)
         {
             var r = s.World.Get<Ribbons>("season.ribbons");
             if (r.Won.TryGetValue(contest, out var was) && was == occasion) return false;
-            if (Ledger.Pay(s, points, reason, SeasonCalendar.Tool, remember: true) == null) return false;
+            if (Ledger.Pay(s, points, reason, SeasonCalendar.Tool, remember: remember) == null) return false;
             r.Won[contest] = occasion;
             s.World.Set("season.ribbons", r);
             s.World.Save();
@@ -203,7 +219,7 @@ namespace BusyBunny
         /// <summary>What Smart Bunny may be sent for her intention: nothing at all unless she turned it on.</summary>
         public static string? MoonPrompt(SeasonPrefs p, string intention, string how) =>
             !p.MoonToClaude || intention.Length == 0 ? null :
-            "At last month's full moon she set this intention: \"" + intention + "\". She says it " + how + ". Reply in one or two warm, short sentences as Bunny, with no advice and no judgment.";
+            "At last month's full moon she set this intention: \"" + intention + "\". She says " + how + ". Reply in one or two warm, short sentences as Bunny, with no advice and no judgment.";
 
         // ---- Places ----
 
@@ -286,7 +302,7 @@ namespace BusyBunny
                     string speed = done == 0 ? "A slow, wobbly run. Finish a task and the next one goes faster. " : done < 3 ? "A quick run, thanks to your tasks today. " : done < 6 ? "A fast run, you have been busy. " : "A rocket of a run. The neighbors duck. ";
                     Speech.Say(owner, speed + Content.Pick(s, "season.sled"), true);
                 }));
-                things.Add(new("Your snowman", "a piece for each day of your winter streak", owner => Speech.Say(owner, SnowmanWords(s, now), true)));
+                things.Add(new("Your snowman", "a piece for each day you meet your daily goal this winter", owner => Speech.Say(owner, SnowmanWords(s, now), true)));
                 if (On("snowday")) things.Add(Line("Play in the snow", "it is a snow day", s, "season.snowday"));
                 if (On("snowball")) things.Add(Line("Throw a snowball", "a friendly snowball fight", s, "season.snowball"));
             }
@@ -300,6 +316,8 @@ namespace BusyBunny
                     int done = s.Data.Tasks.Count(t => t.DoneAt != null);
                     Speech.Say(owner, years + (years == 1 ? " year" : " years") + " in the village, and " + done + " finished tasks still on record. " + Content.Pick(s, "season.anniversary"), true);
                 }));
+                // Moving day turned on after it began: the move happens now, once this year.
+                if (On("moving")) Move(s, now);
                 if (On("moving") || s.World.GetKept<Home>("season.home").MovedYear == now.Year && now.Month == 6 && now.Day <= 7)
                     things.Add(new("Tour the new burrow", "moving day: everything came along", owner =>
                         Speech.Say(owner, "Bunny now lives in " + Burrows[s.World.GetKept<Home>("season.home").Size] + ". Every room you built and every thing you collected came too. " + Content.Pick(s, "season.moving"), true)));
@@ -308,6 +326,8 @@ namespace BusyBunny
             {
                 if (SeasonCalendar.SemesterJustEnded(s, now))
                 {
+                    // The tool was off when the semester ended: the butterflies come out now (once a semester).
+                    Butterflies(s, now);
                     things.Add(Line("The lantern walk", "the semester is over", s, "season.lantern"));
                     things.Add(new("The grand train ride", "through a town for each class you worked on", owner =>
                     {
@@ -376,7 +396,7 @@ namespace BusyBunny
             if (p.SemesterEnd is DateTime end && end.Date >= now.Date)
             {
                 var growing = s.Data.Classes.Select(c => c.Tag).Where(t => t.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-                if (growing.Count > 0) text += "Caterpillars munching away: " + string.Join(", ", growing) + ". They open on " + end.ToString("MMMM d") + ".";
+                if (growing.Count > 0) text += "Caterpillars munching away: " + string.Join(", ", growing) + ". They open on " + end.ToString("MMMM d", English) + ".";
             }
             else if (p.SemesterEnd == null) text += "Set your semester dates in Settings, Seasons and festivals, and each class becomes a butterfly when it ends.";
             if (h.Butterflies.Count > 0 && SeasonCalendar.SemesterJustEnded(s, now)) text += " " + Content.Pick(s, "season.butterfly");
@@ -411,15 +431,15 @@ namespace BusyBunny
             int before = Stale().Count;
             if (before == 0) { Speech.Say(owner, "Nothing has sat untouched for three weeks, so the burrow is already spotless. Bunny dusts one shelf anyway.", true); return; }
             var review = Features.Get<Review>();
-            var sweep = typeof(Review).GetMethod("BacklogSweep", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            if (review == null || sweep == null) { Speech.Say(owner, "Spring cleaning uses the backlog sweep: View, Backlog sweep.", true); return; }
+            if (review == null) { Speech.Say(owner, "Spring cleaning uses the backlog sweep: View, Backlog sweep.", true); return; }
             Speech.Say(owner, "Spring cleaning: " + before + (before == 1 ? " old task to sort" : " old tasks to sort") + ". For each one you sort, Bunny sweeps out a room.", true);
-            sweep.Invoke(review, null);
-            int sorted = before - Stale().Count;
+            int sorted = review.Sweep(owner);
             if (sorted <= 0) return;
             string text = Content.Pick(s, "season.cleaning");
-            if (Ribbon(s, "cleaning", s.Key(now), 5, "spring cleaning the burrow")) text += " 5 points for the clean burrow. " + PlayTime.SpendLine(s.Data) + ".";
-            Speech.Say(owner, text, true);
+            // Part of the sweep's own Control Z step (the sweep remembers before its first change), so one Control Z undoes both.
+            if (Ribbon(s, "cleaning", s.Key(now), 5, "spring cleaning the burrow", remember: false)) text += " 5 points for the clean burrow. " + PlayTime.SpendLine(s.Data) + ".";
+            // Queued after the sweep's own summary, so that is not cut off.
+            Speech.Say(owner, text, false);
         }
 
         private void SetIntention(Window owner, Store s, int lunation)
@@ -433,12 +453,15 @@ namespace BusyBunny
         private void AnswerIntention(Window owner, Store s, MoonBag bag)
         {
             var hows = new List<string> { "It went well", "I am still working on it", "I am letting it go" };
-            Speech.Say(owner, "Last full moon you set this intention: " + bag.Text + ". " + Content.Pick(s, "season.moon.back"), true);
-            int i = SeasonAsk.Pick(owner, "How did it go?", "_How did it go", hows);
+            // What Smart Bunny is told, ready to drop into "She says ...".
+            var told = new[] { "it went well", "she is still working on it", "she is letting it go" };
+            // The intention is in the dialog's own label, so the focus announcement reads it and she can hear it again there.
+            string label = ("Last full moon you set this intention: " + bag.Text.TrimEnd('.') + ". " + Content.Pick(s, "season.moon.back")).Replace("_", " ") + " _How did it go";
+            int i = SeasonAsk.Pick(owner, "How did it go?", label, hows);
             if (i < 0) return;
             string intention = bag.Text;
             World.Change<MoonBag>(s, SeasonCalendar.Moon, "answering a full moon intention", b => { b.Text = ""; b.Lunation = -1; });
-            string? prompt = MoonPrompt(SeasonCalendar.Prefs(s), intention, hows[i].ToLowerInvariant().Replace("i am", "she is").Replace("it went", "went"));
+            string? prompt = MoonPrompt(SeasonCalendar.Prefs(s), intention, told[i]);
             if (prompt == null) { Speech.Say(owner, Content.Pick(s, "season.moon.answer") + " You can set a new one now.", true); return; }
             _ = Reply(owner, s, prompt);
         }
@@ -446,15 +469,17 @@ namespace BusyBunny
         private static async System.Threading.Tasks.Task Reply(Window owner, Store s, string prompt)
         {
             string line = await BunnyWrite.Short(s, SeasonCalendar.Moon, prompt, "season.moon.answer");
-            Speech.Say(owner, line + " You can set a new one now.", true);
+            UIElement from = owner.IsVisible || Engines.Window == null ? owner : Engines.Window;
+            Speech.Say(from, line + " You can set a new one now.", true);
         }
 
         // ---- Tools ----
 
         private async System.Threading.Tasks.Task Report(Window? owner = null)
         {
-            UIElement from = owner ?? (UIElement)_w;
             string words = await RealWorld.Weather(Cfg);
+            // The answer can take a few seconds: if she has left that window by then, it is said from the main window.
+            UIElement from = owner is Window o && o.IsVisible ? o : _w;
             var (sky, temp) = SeasonSky.Parse(words);
             if (sky != "mystery") SeasonSky.Use(sky, temp, DateTime.Now);
             string text = "Bunny's weather report. " + SeasonSky.Report(S, sky, temp);
@@ -480,7 +505,7 @@ namespace BusyBunny
         private void SayWinter()
         {
             var now = DateTime.Now;
-            if (RealWorld.Season(now) != "Winter") { _w.Say("Winter fun starts in December: skating, sledding, snow days, snowball fights, and a snowman that grows over your winter streak.", true); return; }
+            if (RealWorld.Season(now) != "Winter") { _w.Say("Winter fun starts in December: skating, sledding, snow days, snowball fights, and a snowman that grows each day you meet your daily goal.", true); return; }
             _w.Say(SnowmanWords(S, now) + (SeasonCalendar.IsOn(S, now, "snowday") ? " Today is a snow day." : ""), true);
         }
 
@@ -499,7 +524,7 @@ namespace BusyBunny
         {
             var p = SeasonCalendar.Prefs(S);
             if (p.SemesterEnd == null) { _w.Say("Your semester dates are not set, so the semester-end events stay quiet. Add them in Settings, Seasons and festivals.", true); return; }
-            _w.Say("The semester ends " + Words.Day(p.SemesterEnd.Value, DateTime.Today) + ", on " + p.SemesterEnd.Value.ToString("MMMM d") + ". Then come the lantern walk, the grand train ride and the butterflies. " + ButterflyWords(S, DateTime.Now), true);
+            _w.Say("The semester ends " + Words.Day(p.SemesterEnd.Value, DateTime.Today) + ", on " + p.SemesterEnd.Value.ToString("MMMM d", English) + ". Then come the lantern walk, the grand train ride and the butterflies. " + ButterflyWords(S, DateTime.Now), true);
         }
 
         // ---- Settings ----
@@ -520,9 +545,9 @@ namespace BusyBunny
                 var p = SeasonCalendar.Prefs(s);
                 _birth.Text = p.BirthMonth > 0 ? SeasonCalendar.MonthDay(p.BirthMonth, p.BirthDay) : "";
                 _bunny.Text = SeasonCalendar.MonthDay(p.BunnyMonth, p.BunnyDay);
-                _start.Text = p.SemesterStart?.ToString("MMMM d, yyyy") ?? "";
-                _end.Text = p.SemesterEnd?.ToString("MMMM d, yyyy") ?? "";
-                _moon = new CheckBox { Content = "Let Smart Bunny _read my full moon intention to answer it", IsChecked = p.MoonToClaude, Margin = new Thickness(0, 6, 0, 4) };
+                _start.Text = p.SemesterStart?.ToString("MMMM d, yyyy", English) ?? "";
+                _end.Text = p.SemesterEnd?.ToString("MMMM d, yyyy", English) ?? "";
+                _moon = new CheckBox { Content = "Let Smart Bunny read my full _moon intention to answer it", IsChecked = p.MoonToClaude, Margin = new Thickness(0, 6, 0, 4) };
                 var panel = new StackPanel();
                 panel.Children.Add(Layout.Row("Your _birthday, month and day, like March 3 (blank for none)", _birth, 420));
                 panel.Children.Add(Layout.Row("Bunny's bi_rthday", _bunny, 420));
@@ -602,7 +627,12 @@ namespace BusyBunny
                 Need(SeasonCalendar.ParseMonthDay("March 3") == (3, 3) && SeasonCalendar.ParseMonthDay("3/14") == (3, 14) && SeasonCalendar.ParseMonthDay("9 of Dec") == (12, 9) && SeasonCalendar.ParseMonthDay("Feb 30") == null, "month and day typing");
                 Need(SeasonCalendar.Prefs(store).BirthMonth == 2, "her dates were not kept");
                 // Full moon intentions never go to Claude unless she turned it on.
-                Need(MoonPrompt(new SeasonPrefs(), "run more", "went well") == null && MoonPrompt(new SeasonPrefs { MoonToClaude = true }, "run more", "went well")!.Contains("run more"), "the intention privacy switch");
+                Need(MoonPrompt(new SeasonPrefs(), "run more", "it went well") == null && MoonPrompt(new SeasonPrefs { MoonToClaude = true }, "run more", "it went well")!.Contains("run more"), "the intention privacy switch");
+                Need(MoonPrompt(new SeasonPrefs { MoonToClaude = true }, "run more", "she is still working on it")!.Contains("She says she is still working on it."), "the intention answer reads well");
+                // Her own birthday from About me, never someone else's, and a date anywhere after the words.
+                Need(SeasonCalendar.BirthdayIn("My mom's birthday is May 2.") == null && SeasonCalendar.BirthdayIn("Bunny's birthday is in spring, March 3.") == null, "someone else's birthday counted as hers");
+                Need(SeasonCalendar.BirthdayIn("My birthday is on the 5th of May.") == (5, 5), "the 5th of May birthday: " + SeasonCalendar.BirthdayIn("My birthday is on the 5th of May."));
+                Need(SeasonCalendar.BirthdayIn("I was born on 3/14 in Ohio.") == (3, 14) && SeasonCalendar.BirthdayIn("My dad's birthday is June 1 and my birthday is October 12th.") == (10, 12), "birthday phrasing");
             }
             finally { SeasonCalendar.SavePrefs(store, prefs0); store.Data.BunnyNotes.Clear(); store.Data.BunnyNotes.AddRange(notes0); }
 
@@ -673,6 +703,32 @@ namespace BusyBunny
 
             // Content: every event described, every repeating line type has 20, nothing forbidden.
             foreach (var ev in SeasonCalendar.Catalog) Need(SeasonCalendar.Info(ev.Id).ContainsKey("touch"), "no description for " + ev.Id);
+            // Her bunny's name is filled in everywhere: no brace is ever spoken.
+            foreach (var ev in SeasonCalendar.Catalog)
+            {
+                string words = SeasonCalendar.Announcement(ev, SeasonCalendar.Where(ev)) + " " + SeasonCalendar.Name(ev);
+                Need(!words.Contains('{') && !words.Contains('}'), "a brace in the words for " + ev.Id);
+            }
+            var (sky0, temp0, at0) = (SeasonSky.Sky, SeasonSky.Temp, SeasonSky.ReadAt);
+            try
+            {
+                foreach (var sky in Content.Items("season.sky").Select(i => i.GetValueOrDefault("sky") ?? "mystery").Distinct())
+                {
+                    SeasonSky.Use(sky, 60, now);
+                    for (int month = 1; month <= 12; month++)
+                        for (int day = 1; day <= 28; day += 3)
+                            for (int hour = 0; hour < 24; hour += 5)
+                                Need(!SeasonSky.Window(store, new DateTime(2027, month, day, hour, 0, 0), cfg).Contains('{'), "a brace at the window: " + sky + ", " + month + "/" + day);
+                }
+            }
+            finally { SeasonSky.Use(sky0, temp0, at0); }
+            // The arrangements stay in their recordings' range: rain's pizzicato tops out at midi 74, spring's flute at 84.
+            for (int home = 55; home <= 70; home++)
+            {
+                var piece = new List<MusicLoop.Event> { new(0, "bells", home + 33, 0.05, 0, 1, 1, 0.01) };
+                Need(SeasonSky.Arrange(piece, SeasonSky.RainMood, home).All(x => x.Bank != "pizzicato" || x.Midi <= 74), "rain notes too high");
+                Need(SeasonSky.Arrange(new List<MusicLoop.Event>(), SeasonSky.SpringMood, home).All(x => x.Bank != "flute" || x.Midi <= home + 19), "spring calls too high");
+            }
             foreach (var topic in new[] { "season.report", "season.report.mystery", "season.clouds", "season.fog", "season.rainbow", "season.storm", "season.storm.enter", "season.night", "season.puddles", "season.picnic", "season.moon.set", "season.moon.back", "season.moon.answer",
                 "season.pumpkin", "season.haunted", "season.skating", "season.sled", "season.snowball", "season.snowday", "season.kite", "season.icecream", "season.bonfire", "season.campfire", "season.fireworks",
                 "season.market", "season.games", "season.fishing", "season.garden", "season.decorate", "season.festival", "season.prize", "season.cleaning", "season.holiday" })

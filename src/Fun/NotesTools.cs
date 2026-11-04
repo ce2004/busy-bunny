@@ -38,14 +38,11 @@ namespace BusyBunny
             T(WinId, "Win of the day", "Type one win from today; it goes in your proud moments.", WinOfTheDay);
             T(LeftId, "Where I left off", "A note on where you stopped a task, read back when you open it again.", LeftOff);
 
-            w.DetailNotes.Add(t => Tools.IsOn(LeftId) && S.World.Get<PlanDay.TaskTexts>(LeftId).Of.TryGetValue(t.Id, out var n) ? "Where you left off: " + n + "." : null);
-            GameEvents.TaskDone += t =>
-            {
-                var notes = S.World.Get<PlanDay.TaskTexts>(LeftId);
-                if (notes.Of.Remove(t.Id)) { S.World.Set(LeftId, notes); S.World.Save(); }
-            };
+            // Her note stays when the task is finished (set back, it is there again); it is only not read for a finished task.
+            w.DetailNotes.Add(t => LeftOffNote(S, t) is string n ? "Where you left off: " + n + "." : null);
 
-            Ticker.Every(WinId, now => now.Hour >= 19 && Tools.IsOn(WinId) && !Calm.FunPaused && S.World.GetKept<Marks>(MarksId).WinAsked != S.Key(now), AskWin);
+            // The evening question waits for a moment it may be spoken, and is not used up while hushed.
+            Ticker.Every(WinId, now => WinDue(S, w.AppSettings, now), AskWin);
             PlanKit.Morning(CapsuleId, (s, now) =>
             {
                 var m = s.World.GetKept<Marks>(MarksId);
@@ -72,6 +69,14 @@ namespace BusyBunny
         }
 
         // ---- For other tools ----
+
+        /// <summary>Her where I left off note for an open task, or null (tool off, no note, or the task is finished).</summary>
+        public static string? LeftOffNote(Store s, TaskItem t) =>
+            Tools.IsOn(LeftId) && !PlanKit.Finished(t) && s.World.Get<PlanDay.TaskTexts>(LeftId).Of.TryGetValue(t.Id, out var n) ? n : null;
+
+        /// <summary>Whether to ask for the win of the day now: from 7 pm, not asked yet today, and an unprompted line may be spoken (not in quiet hours, class, a sprint or Calm mode).</summary>
+        public static bool WinDue(Store s, Settings? cfg, DateTime now) =>
+            now.Hour >= 19 && Tools.IsOn(WinId) && !Calm.FunPaused && s.World.GetKept<Marks>(MarksId).WinAsked != s.Key(now) && Calm.CanSpeakUnprompted(s, cfg, now);
 
         public static string Semester(DateTime now) => FocusLogic.SemesterStart(now).ToString("yyyy-MM");
 
@@ -272,6 +277,24 @@ namespace BusyBunny
             Need(ProudMoments(s).Count == had + 1, "proud moment not kept");
             s.Undo();
             Need(ProudMoments(s).Count == had, "undo kept the proud moment");
+            // Where I left off: kept when the task is finished, read again once it is set back.
+            var t = new TaskItem { Name = "left off test", List = s.Data.Lists[0].Name, Status = Status.Done };
+            s.World.Set(LeftId, new PlanDay.TaskTexts { Of = { [t.Id] = "page 4" } });
+            if (Tools.IsOn(LeftId))
+            {
+                Need(LeftOffNote(s, t) == null, "a left off note read for a finished task");
+                t.Status = Status.Today;
+                Need(LeftOffNote(s, t) == "page 4", "the left off note was lost when the task was finished");
+            }
+            s.World.Set(LeftId, new PlanDay.TaskTexts());
+
+            // Win of the day waits while hushed (Calm mode, quiet hours) instead of being used up.
+            var evening = now.Date.AddHours(20);
+            s.World.SetKept(MarksId, new Marks());
+            Need(!WinDue(s, new Settings { CalmMode = true }, evening), "the win question came in Calm mode");
+            Need(!WinDue(s, new Settings { QuietStart = 19, QuietEnd = 8 }, evening), "the win question came in quiet hours");
+            Need(!WinDue(s, null, now.Date.AddHours(12)), "the win question came at noon");
+
             foreach (var topic in new[] { "notes.question", "notes.winask" }) Need(Content.Lines(topic).Count >= 20, topic + " has fewer than 20 lines");
             foreach (var id in new[] { CapsuleId, QuestionId, ProudId, LetterId, WinId, LeftId }) Need(Tools.Find(id) != null, id + " is not in the toolbox");
         }

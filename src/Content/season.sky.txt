@@ -94,6 +94,6 @@ sound: A sound that could be the wind, or could be the squirrel snoring.
 looks: The curtain is drawn, so the sky is a secret today.
 
 sky: mystery
-touch: Bunny presses her nose to the glass, leaves a smudge, and learns nothing.
+touch: Bunny presses their nose to the glass, leaves a smudge, and learns nothing.
 sound: Only the kettle humming and the burrow clock ticking.
 looks: The window is all steamed up from the cocoa.

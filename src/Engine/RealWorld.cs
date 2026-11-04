@@ -75,7 +75,8 @@ namespace BusyBunny
         /// </summary>
         public static DateTime? Sunset(DateTime day, double lat, double lon)
         {
-            double n = day.Date.ToUniversalTime().Subtract(new DateTime(2000, 1, 1, 12, 0, 0, DateTimeKind.Utc)).TotalDays;
+            // Noon UTC on the calendar day she means, so zones east of UTC never land on the day before.
+            double n = (new DateTime(day.Year, day.Month, day.Day, 12, 0, 0, DateTimeKind.Utc) - new DateTime(2000, 1, 1, 12, 0, 0, DateTimeKind.Utc)).TotalDays;
             n = Math.Round(n + 0.0008);
             double jStar = n - lon / 360.0;
             double m = (357.5291 + 0.98560028 * jStar) % 360;
@@ -161,6 +162,11 @@ namespace BusyBunny
             var set = Sunset(new DateTime(2026, 6, 21), 40.71, -74.01);
             Need(set is DateTime s && Math.Abs((s.ToUniversalTime() - new DateTime(2026, 6, 22, 0, 31, 0, DateTimeKind.Utc)).TotalMinutes) < 10, "sunset: " + set?.ToUniversalTime());
             Need(Sunset(new DateTime(2026, 6, 21), 80, 0) == null, "midnight sun");
+            // East of UTC: Berlin sets about 19:33 UTC and Tokyo about 10:00 UTC on June 21, never the day before.
+            var berlin = Sunset(new DateTime(2026, 6, 21), 52.52, 13.40);
+            Need(berlin is DateTime b && Math.Abs((b.ToUniversalTime() - new DateTime(2026, 6, 21, 19, 33, 0, DateTimeKind.Utc)).TotalMinutes) < 10, "sunset in Berlin: " + berlin?.ToUniversalTime());
+            var tokyo = Sunset(new DateTime(2026, 6, 21), 35.68, 139.69);
+            Need(tokyo is DateTime k && Math.Abs((k.ToUniversalTime() - new DateTime(2026, 6, 21, 10, 0, 0, DateTimeKind.Utc)).TotalMinutes) < 10, "sunset in Tokyo: " + tokyo?.ToUniversalTime());
             Need(Holiday(new DateTime(2026, 10, 31)) == "Halloween" && Holiday(new DateTime(2026, 11, 4)) == null, "holidays");
         }
     }

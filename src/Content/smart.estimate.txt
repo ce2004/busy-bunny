@@ -2,7 +2,7 @@ Bunny noticed: your {what} take about {real} of sprint time, and the size guess 
 
 Fun fact from your sprints: {what} really take you about {real}, not {guess}. Maybe size the next one {better}.
 
-After {count} of them, Bunny has a theory: {what} take about {real}. The size says {guess}. {better} might fit better.
+After {count} of them, Bunny has a theory: {what} take about {real}. The size says {guess}. A size of {better} might fit better.
 
 Your {what} have been running about {real} each. Calling the next one {better} would make planning easier.
 
@@ -26,7 +26,7 @@ Your {what} keep taking about {real}. That is not a problem, just a size: {bette
 
 A little thing Bunny learned: {what} need about {real} from you. Plan them as {better}.
 
-Planning note: {what} take about {real} in sprints. {better} fits them better than the guess of {guess}.
+Planning note: {what} take about {real} in sprints. The size {better} fits them better than the guess of {guess}.
 
 Bunny checked the numbers on your {what}: about {real} each. Next time, {better} might be the honest size.
 
@@ -34,7 +34,7 @@ Your {count} most recent {what} took around {real}. Sizing them {better} would h
 
 Here is something useful: {what} really take about {real}. The guess of {guess} is off, so try {better}.
 
-Bunny has data now. {what} take about {real}, so {better} is the size to try.
+Bunny has data now: your {what} take about {real}, so {better} is the size to try.
 
 Just so you know, {what} take you about {real}. Size the next one {better} and see if the day feels calmer.
 

@@ -81,6 +81,10 @@ namespace BusyBunny
         private readonly List<MessageParam> _history = new();
         private DateTime _historyDay;
         private bool _busy;
+        // Whether the run under way is an automatic one nobody is waiting on (the briefing, a check-in by itself).
+        private bool _runQuiet;
+        // About how many tokens the talk so far is, from Claude's last answer: the next request's input estimate.
+        private long _talkTokens;
         private CancellationTokenSource? _stop, _learnStop;
         private bool _stoppedByHand;
         private string _privateSig = "";
@@ -342,16 +346,16 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                     "Overview:\n" + OverviewFor(S, Cfg, _w.TabNames, now) + "\nHabits from her history:\n" + Habits(S, now) + "\nHer open tasks:\n" + (tasks.Length > 0 ? tasks : "none yet") +
                     (S.Data.BunnyProfile.Length > 0 ? "\n\nWhat you knew before:\n" + S.Data.BunnyProfile : "") +
                     (first && welcome ? "\n\nThis is the first time you are meeting her properly: write the welcome." : "\n\nNo welcome this time.");
-                SmartSpend.Check();
-                var response = await MakeClient(SavedKey(), TimeSpan.FromMinutes(3), retries: 0).Messages.Create(new MessageCreateParams
+                long chars = LearnPrompt.Length + ask.Length;
+                using var spend = SmartSpend.Reserve(SmartSpend.Estimate(chars, 16000), asked: first && !quiet);
+                var response = await Send(MakeClient(SavedKey(), TimeSpan.FromMinutes(3), retries: 0), new MessageCreateParams
                 {
                     Model = ModelId,
                     MaxTokens = 16000,
                     OutputConfig = new OutputConfig { Effort = Effort.Medium },
                     System = LearnPrompt,
                     Messages = [new UserMessageParam { Content = ask }],
-                }, stop.Token);
-                SmartSpend.Record(response.Usage);
+                }, spend, chars, stop.Token);
                 var (profile, hello) = ParseLearned(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                 if (profile.Length == 0) throw new Exception("Bunny came back with nothing.");
                 S.Data.BunnyProfile = profile;
@@ -470,6 +474,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         private async Task<bool> Run(string userText, UIElement? focusBack, bool quiet = false)
         {
             _busy = true;
+            _runQuiet = quiet;
             _stoppedByHand = false;
             // A cap on the whole run, on top of each request's own timeout. It is paused while she answers a window.
             using var stop = new CancellationTokenSource(RunCap);
@@ -561,6 +566,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                 case Stopped: return "Okay, Bunny stopped.";
                 case TooSlow: return "Bunny took too long and stopped. Try again, or ask for something smaller.";
                 case SmartSpend.CapHit: return e.Message;
+                case TooLong: return e.Message;
             }
             if (StatusCode(e) is int code) return ProblemFor(code, e.Message + " " + Body(e));
             return e switch
@@ -646,21 +652,34 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
             void Still() { if (_talk != talk) throw new Stopped(); stop.ThrowIfCancellationRequested(); }
             var client = Client();
             var tools = ToolList();
+            if (_history.Count <= 1) _talkTokens = 0;
             for (int round = 0; round < 15; round++)
             {
                 stop.ThrowIfCancellationRequested();
-                SmartSpend.Check();
-                var response = await client.Messages.Create(new MessageCreateParams
+                // The input is about the system prompt and tools, plus the talk so far, plus what this round added.
+                long chars = (SystemPrompt.Length + 24000 + _talkTokens * 4) + 8000;
+                SmartSpend.Reservation spend;
+                try { spend = SmartSpend.Reserve(SmartSpend.Estimate(chars, 16000), asked: !_runQuiet); }
+                catch (SmartSpend.CapHit) when (round > 0)
                 {
-                    Model = ModelId,
-                    MaxTokens = 16000,
-                    System = new List<TextBlockParam> { new() { Text = SystemPrompt, CacheControl = new CacheControlEphemeral() } },
-                    Tools = tools,
-                    Messages = _history.ToList(),
-                    OutputConfig = new OutputConfig { Effort = Effort.Medium },
-                    CacheControl = new CacheControlEphemeral(),
-                }, stop);
-                SmartSpend.Record(response.Usage);
+                    // Bunny's tools may already have changed things this run: say so, not only the cap.
+                    return "Bunny did part of it, then reached today's spending cap. File, Bunny changes today shows what it did.";
+                }
+                Message response;
+                using (spend)
+                {
+                    response = await Send(client, new MessageCreateParams
+                    {
+                        Model = ModelId,
+                        MaxTokens = 16000,
+                        System = new List<TextBlockParam> { new() { Text = SystemPrompt, CacheControl = new CacheControlEphemeral() } },
+                        Tools = tools,
+                        Messages = _history.ToList(),
+                        OutputConfig = new OutputConfig { Effort = Effort.Medium },
+                        CacheControl = new CacheControlEphemeral(),
+                    }, spend, chars, stop);
+                }
+                if (response.Usage is Usage u) _talkTokens = u.InputTokens + (u.CacheReadInputTokens ?? 0) + (u.CacheCreationInputTokens ?? 0) + u.OutputTokens;
                 Still();
                 if (response.StopReason == "refusal") throw new Declined();
 
@@ -734,18 +753,19 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         {
             if (_me == null || !Ready) return null;
             if (about != null && !MayShare(_me.S, about)) return null;
-            if (SmartSpend.CapReached()) return null;
+            long chars = request.Length + 400;
+            using var spend = SmartSpend.TryReserve(SmartSpend.Estimate(chars, 3000));
+            if (spend == null) return null;
             try
             {
-                var response = await _me.Client().Messages.Create(new MessageCreateParams
+                var response = await Send(_me.Client(), new MessageCreateParams
                 {
                     Model = ModelId,
                     MaxTokens = 3000,
                     OutputConfig = new OutputConfig { Effort = Effort.Low },
                     System = "You write short, funny lines for Busy Bunny, a to-do app for Morgan, a blind psychology student. Her screen reader reads them aloud. Plain sentences only: no Markdown, emoji, quotation marks around the whole thing, pound signs or asterisks. Never mean about her worth, disability or health.",
                     Messages = [new UserMessageParam { Content = request }],
-                });
-                SmartSpend.Record(response.Usage);
+                }, spend, chars);
                 string text = Clean(string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                 return text.Length is > 0 and < 1200 ? text : null;
             }
@@ -757,28 +777,63 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
         /// schedule): the raw answer, under the daily spending cap. Throws when Bunny has no key, is over the cap, or
         /// Claude fails; Problem(e) says why. Never for a private list's tasks.
         /// </summary>
-        public static async Task<string> AskAsync(string system, string request, int maxTokens = 16000)
+        public static async Task<string> AskAsync(string system, string request, int maxTokens = 16000, CancellationToken stop = default)
         {
             if (_me == null || !Ready) throw new InvalidOperationException("Bunny needs a Claude API key first: Options, Smarter Bunny.");
-            SmartSpend.Check();
-            var response = await MakeClient(_me.SavedKey(), TimeSpan.FromMinutes(3), retries: 1).Messages.Create(new MessageCreateParams
+            long chars = system.Length + request.Length;
+            using var spend = SmartSpend.Reserve(SmartSpend.Estimate(chars, maxTokens), asked: true);
+            // One long try and no retry: a big semester can take minutes, and a retry would bill it twice. Stop cancels it.
+            var response = await Send(MakeClient(_me.SavedKey(), TimeSpan.FromMinutes(10), retries: 0), new MessageCreateParams
             {
                 Model = ModelId,
                 MaxTokens = maxTokens,
                 OutputConfig = new OutputConfig { Effort = Effort.Low },
                 System = system,
                 Messages = [new UserMessageParam { Content = request }],
-            });
-            SmartSpend.Record(response.Usage);
+            }, spend, chars, stop);
             if (response.StopReason == "refusal") throw new Declined();
+            if (response.StopReason == "max_tokens") throw new TooLong();
             return string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text));
         }
+
+        /// <summary>Claude ran out of room before it finished the answer.</summary>
+        private sealed class TooLong : Exception
+        {
+            public TooLong() : base("That was too long for Bunny in one go. Try one syllabus at a time.") { }
+        }
+
+        /// <summary>
+        /// One request to Claude under its spending reservation: records the tokens it used, or, when it was stopped or
+        /// timed out after Claude may have started on it, an estimate, so a failed try still counts.
+        /// </summary>
+        private static async Task<Message> Send(AnthropicClient client, MessageCreateParams p, SmartSpend.Reservation spend, long inputChars, CancellationToken stop = default)
+        {
+            var started = DateTime.UtcNow;
+            try
+            {
+                var response = await client.Messages.Create(p, stop);
+                spend.Record(response.Usage);
+                return response;
+            }
+            catch (Exception e) when (e is OperationCanceledException or TimeoutException || e.InnerException is TimeoutException)
+            {
+                double seconds = (DateTime.UtcNow - started).TotalSeconds;
+                if (seconds >= 3) SmartSpend.RecordFailed(inputChars, FailedOutputTokens(seconds, (long)p.MaxTokens), spend.Asked);
+                throw;
+            }
+        }
+
+        /// <summary>About how much Claude wrote before a request was stopped: some 70 tokens a second, never more than it was allowed.</summary>
+        public static long FailedOutputTokens(double seconds, long maxTokens) => Math.Min(maxTokens, (long)(Math.Max(0, seconds) * 70));
 
         /// <summary>A date phrase the form could not read, worked out by Claude. Null when it is not a date.</summary>
         public static async Task<(DateTime When, bool HasTime)?> ReadDateAsync(string text, DateTime now, Status week, string? list = null)
         {
-            if (_me == null || !Ready || !_me.MayReadDatesOn(list) || SmartSpend.CapReached()) return null;
-            var response = await _me.Client().Messages.Create(new MessageCreateParams
+            if (_me == null || !Ready || !_me.MayReadDatesOn(list)) return null;
+            long chars = text.Length + 600;
+            using var spend = SmartSpend.TryReserve(SmartSpend.Estimate(chars, 4000), asked: true);
+            if (spend == null) return null;
+            var response = await Send(_me.Client(), new MessageCreateParams
             {
                 Model = ModelId,
                 MaxTokens = 4000,
@@ -786,8 +841,7 @@ Then a line that says WELCOME: and then, only when asked for, a welcome for her 
                 System = "You turn a student's words for a date into a date. Reply with only YYYY-MM-DD, or YYYY-MM-DD HH:mm when a time is given, or the word none when the words are not a date. Weeks start on Monday.",
                 Messages = [new UserMessageParam { Content = "Now: " + now.ToString("dddd yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture) + ". The task is set to " + Words.Of(week) +
                     (week == Status.NextWeek ? ", so a day name on its own means that day next week." : week == Status.ThisWeek ? ", so a day name on its own means that day this week." : ".") + " Words: " + text }],
-            });
-            SmartSpend.Record(response.Usage);
+            }, spend, chars);
             string reply = string.Concat(response.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)).Trim();
             return ParseWhen(reply) is (DateTime d, bool t) ? (d, t) : null;
         }
@@ -2036,7 +2090,7 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                         OutputConfig = new OutputConfig { Effort = Effort.Low },
                         Messages = [new UserMessageParam { Content = "You are Bunny, a cheerful helper in a to-do app. Say hello in one short sentence, no emoji." }],
                     });
-                    SmartSpend.Record(r.Usage);
+                    SmartSpend.Record(r.Usage, asked: true);
                     string hi = Clean(string.Concat(r.Content.Select(b => b.Value).OfType<AText>().Select(t => t.Text)));
                     // A key that works is saved at once, so it cannot get lost.
                     if (key != Unprotect(_cfg.BunnyKey)) { _cfg.BunnyKey = Protect(key); _cfg.BunnyLastCheck = DateTime.Now; }
@@ -2107,6 +2161,10 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
         {
             void Check(bool ok, string what) { if (!ok) throw new Exception("Smarter Bunny: " + what); }
             Check(ToolList().Count == 19, "tool list");
+            // The about_me tool shares nothing for a common word.
+            store.World.Set(SmartMemory.AboutId, new SmartMemory.AboutMe { Lines = new List<string> { "Therapy on Tuesdays", "You matter" } });
+            Check(!SmartMemory.ForClaude(store, "the").Contains("Therapy") && !SmartMemory.ForClaude(store, "you").Contains("matter"), "about_me shared lines for a common word");
+            store.World.Set(SmartMemory.AboutId, new SmartMemory.AboutMe());
             Check(Clean("**Hi** there # friend\n- one\n- two") == "Hi there  friend\none\ntwo", "clean gave " + Clean("**Hi** there # friend\n- one\n- two"));
             Check(ParseWhen("2026-11-03 14:30") == (new DateTime(2026, 11, 3, 14, 30, 0), true), "time");
             Check(ParseWhen("2026-11-03") == (new DateTime(2026, 11, 3), false), "date");
@@ -2244,6 +2302,8 @@ Tabs: Today (To do today, Overdue, Due today, Get ahead), Priority, Focus (Overd
                 && ProblemFor(400, "Your credit balance is too low").Contains("platform.claude.com") && ProblemFor(503, "").Contains("moment") && ProblemFor(418, "") == NoAnswer, "error lines");
             Check(Problem(new System.Net.Http.HttpRequestException("no route")) == Offline && Problem(new Stopped()).Contains("stopped"), "offline and stop lines");
             Check(!SystemPrompt.Contains("console.anthropic"), "old website");
+            Check(Problem(new TooLong()).Contains("one syllabus at a time") && Problem(new SmartSpend.CapHit(1)).Contains("$1.00"), "too long and cap lines");
+            Check(FailedOutputTokens(600, 32000) == 32000 && FailedOutputTokens(10, 32000) == 700 && FailedOutputTokens(-5, 100) == 0, "the estimate for a stopped request");
             // Check-ins: hours, classes, rough days, sprints and meetings.
             var s = new Store();
             var cfg = new Settings { BunnyCheckFrom = 9, BunnyCheckUntil = 21 };

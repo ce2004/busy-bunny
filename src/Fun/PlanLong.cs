@@ -42,6 +42,10 @@ namespace BusyBunny
 
             w.Refreshed += WatchLadders;
             GameEvents.WeekEnded += monday => PayQuest(monday);
+            // Catch-up: a goal met after the week's end was raised (the weekend, or with the tool off then) is paid next week.
+            GameEvents.WeekStarted += monday => PayQuest(monday.AddDays(-7));
+            GameEvents.TaskDone += OnQuestTaskDone;
+            GameEvents.TaskUndone += t => QuestTaskUndone(S, t);
             PlanKit.Morning(MondayId, (s, now) =>
             {
                 var m = s.World.GetKept<PreviewMark>(MondayId);
@@ -130,18 +134,45 @@ namespace BusyBunny
         public static bool QuestMet(Store s, WeekQuest q) =>
             q.TaskId is Guid id ? s.Data.Tasks.FirstOrDefault(t => t.Id == id) is TaskItem t && PlanKit.Finished(t) : q.Done;
 
-        /// <summary>Pays the week's prize once, if the goal was met. Returns the points, or 0.</summary>
-        public static int QuestPrizeFor(Store s, DateTime monday)
+        /// <summary>
+        /// Pays the week's prize once, if the goal was met. Returns the points, or 0. remember false when it is part of a step
+        /// already remembered (a finish, or her I did it); taskId when the finish of the goal's task paid it, so un-finishing takes it back.
+        /// </summary>
+        public static int QuestPrizeFor(Store s, DateTime monday, bool remember = true, Guid? taskId = null)
         {
             var q = s.World.Get<WeekQuest>(QuestId);
             if (q.Week != s.Key(monday) || q.Paid || !QuestMet(s, q)) return 0;
-            s.Remember("this week's goal prize");
+            if (remember) s.Remember("this week's goal prize");
             q.Paid = true;
             s.World.Set(QuestId, q);
             int pts = Ledger.Boost(s, QuestPrize);
-            Ledger.Pay(s, pts, "Weekly goal met: " + q.Text, QuestId);
+            Ledger.Pay(s, pts, "Weekly goal met: " + q.Text, QuestId, taskId);
             PlanKit.SaveAll(s);
             return pts;
+        }
+
+        /// <summary>Whether that week's end (Friday 3 pm, when the prize is paid) has already come.</summary>
+        public static bool WeekOver(DateTime monday, DateTime now) => now >= monday.Date.AddDays(4).AddHours(15);
+
+        /// <summary>The goal's task went back: when the prize was paid by its finish, that payment is gone, so the prize is due again.</summary>
+        public static void QuestTaskUndone(Store s, TaskItem t)
+        {
+            var q = s.World.Get<WeekQuest>(QuestId);
+            if (q.TaskId != t.Id || !q.Paid || s.Data.Log.Any(e => e.Kind == Ledger.FunKind && e.Feature == QuestId && e.Text == "Weekly goal met: " + q.Text)) return;
+            q.Paid = false;
+            s.World.Set(QuestId, q);
+            s.World.Save();
+        }
+
+        // The goal's task finished after the week's end came: the prize is paid now, with the finish.
+        private void OnQuestTaskDone(TaskItem t)
+        {
+            var s = S;
+            var now = DateTime.Now;
+            var q = s.World.Get<WeekQuest>(QuestId);
+            if (!Tools.IsOn(QuestId) || q.TaskId != t.Id || q.Paid || !DateTime.TryParse(q.Week, out var monday) || !WeekOver(monday, now)) return;
+            int pts = QuestPrizeFor(s, monday, remember: false, taskId: t.Id);
+            if (pts > 0) Calm.AfterTaskDone(_w, Game.Goals, "Your goal for the week is met: " + pts + " points. " + Content.Pick(s, "plan.quest"));
         }
 
         private void PayQuest(DateTime monday)
@@ -167,11 +198,24 @@ namespace BusyBunny
                 if (!met && q.TaskId == null) options.Insert(1, "I did it");
                 int c = PlanKit.Pick(_w, "One goal " + label, "Your goal " + label + ": " + q.Text + (met ? ", done" : "") + ". _What now?", options);
                 if (c < 0) return;
-                if (options[c] == "Keep it") { _w.Say("Kept: " + q.Text + "." + (met ? " Done, and the prize comes at the week's end." : ""), true); return; }
+                if (options[c] == "Keep it")
+                {
+                    // Met after the week's end came: the prize is paid now instead of never.
+                    int late = met && WeekOver(monday, now) ? QuestPrizeFor(S, monday) : 0;
+                    _w.Say("Kept: " + q.Text + "." + (late > 0 ? " Done, so here is the prize: " + late + " points. " + PlayTime.SpendLine(S.Data) + "." : met && !q.Paid ? " Done, and the prize comes at the week's end." : met ? " Done, and the prize is yours." : ""), true);
+                    return;
+                }
                 if (options[c] == "I did it")
                 {
-                    PlanKit.Change<WeekQuest>(S, QuestId, "this week's goal done", x => x.Done = true);
-                    _w.Say("Done: " + q.Text + ". The prize, " + QuestPrize + " points, comes at the week's end.", true);
+                    S.Remember("this week's goal done");
+                    var x = S.World.Get<WeekQuest>(QuestId);
+                    x.Done = true;
+                    S.World.Set(QuestId, x);
+                    PlanKit.SaveAll(S);
+                    // The week's end already came: pay now, in the same Control Z step.
+                    int pts = WeekOver(monday, now) ? QuestPrizeFor(S, monday, remember: false) : 0;
+                    _w.Say(pts > 0 ? "Done: " + q.Text + ". " + pts + " points. " + Content.Pick(S, "plan.quest") + " " + PlayTime.SpendLine(S.Data) + "."
+                        : "Done: " + q.Text + ". The prize, " + QuestPrize + " points, comes at the week's end.", true);
                     return;
                 }
             }
@@ -251,7 +295,7 @@ namespace BusyBunny
         private void FreshStartWalk()
         {
             var now = DateTime.Now;
-            var stale = S.Data.Tasks.Where(t => !PlanKit.Finished(t) && t.Status is Status.Today or Status.ThisWeek && !S.ListOf(t).Archived && t.TouchedAt <= now.AddDays(-21)).OrderBy(t => t.TouchedAt).Take(40).ToList();
+            var stale = Stale(S, now);
             List<int>? drop = new();
             if (stale.Count > 0)
             {
@@ -273,6 +317,11 @@ namespace BusyBunny
             _w.Say("Fresh start done." + (drop.Count > 0 ? " " + PlanKit.Plural(drop.Count, "task", "tasks") + " moved to Next week." : "") + (carry.Length > 0 ? " Carrying: " + carry + "." : "") +
                 (added ? " Goal on the board: " + goal + "." : goal.Length > 0 ? " The board is full for this month." : "") + " Control Z undoes it.", true);
         }
+
+        /// <summary>Tasks in Today or This week untouched for three weeks, never one due within a week (moving it could let it go overdue unseen).</summary>
+        public static List<TaskItem> Stale(Store s, DateTime now) =>
+            s.Data.Tasks.Where(t => !PlanKit.Finished(t) && t.Status is Status.Today or Status.ThisWeek && !s.ListOf(t).Archived && t.TouchedAt <= now.AddDays(-21)
+                && !(t.Due is DateTime d && d.Date <= now.Date.AddDays(7))).OrderBy(t => t.TouchedAt).Take(40).ToList();
 
         /// <summary>Adds a goal to this month's board (no Remember). False when the board already has 5.</summary>
         public static bool AddGoal(Store s, DateTime now, string text)
@@ -427,6 +476,29 @@ namespace BusyBunny
             Need(QuestPrizeFor(s, monday) > 0 && QuestPrizeFor(s, monday) == 0, "the weekly goal paid twice");
             s.Undo();
             Need(Engine.Total(s.Data) == before && !s.World.Get<WeekQuest>(QuestId).Paid, "undo left the weekly goal prize");
+
+            // Met after the week's end: paid right away, in the step already made, and the task's undo takes it back.
+            Need(WeekOver(monday, monday.AddDays(4).AddHours(15)) && !WeekOver(monday, monday.AddDays(4).AddHours(14)) && WeekOver(monday, monday.AddDays(5)), "the week's end time");
+            var goalTask = new TaskItem { Name = "quest task", List = s.Data.Lists[0].Name, Status = Status.Done };
+            s.Data.Tasks.Add(goalTask);
+            s.World.Set(QuestId, new WeekQuest { Week = s.Key(monday), Text = "quest task", TaskId = goalTask.Id });
+            int beforeLate = Engine.Total(s.Data);
+            Need(QuestPrizeFor(s, monday, remember: false, taskId: goalTask.Id) > 0 && s.World.Get<WeekQuest>(QuestId).Paid, "a late weekly goal was not paid");
+            goalTask.Status = Status.Today;
+            Engine.Unfinish(s, goalTask, now);
+            QuestTaskUndone(s, goalTask);
+            Need(Engine.Total(s.Data) == beforeLate && !s.World.Get<WeekQuest>(QuestId).Paid, "setting the goal's task back left the prize or the paid mark");
+            s.Data.Tasks.Remove(goalTask);
+            s.World.Set(QuestId, new WeekQuest());
+
+            // Fresh start never moves a task due within a week.
+            s.Data.Tasks.Clear();
+            var old = now.AddDays(-30);
+            var soon = new TaskItem { Name = "soon", List = s.Data.Lists[0].Name, Status = Status.Today, TouchedAt = old, Due = now.Date.AddDays(2) };
+            var later = new TaskItem { Name = "later", List = s.Data.Lists[0].Name, Status = Status.ThisWeek, TouchedAt = old, Due = now.Date.AddDays(30) };
+            s.Data.Tasks.Add(soon); s.Data.Tasks.Add(later);
+            var stale = Stale(s, now);
+            Need(stale.Contains(later) && !stale.Contains(soon), "a fresh start offered a task due soon");
 
             // Goals board: at most 5, met pays once.
             s.World.Set(BoardId, new Board());

@@ -72,11 +72,17 @@ namespace BusyBunny
             }, "Review finished.");
         }
 
-        private void BacklogSweep()
+        private void BacklogSweep() => Sweep(_w);
+
+        /// <summary>
+        /// The backlog sweep from another window (spring cleaning in Bunny's world): its dialog belongs to owner, focus goes
+        /// back there, and its lines are said from there. Returns how many tasks it changed.
+        /// </summary>
+        public int Sweep(Window owner)
         {
             var tasks = SweepCandidates(Live(), DateTime.Now);
-            if (tasks.Count == 0) { _w.Say("Nothing has been sitting untouched for three weeks. Impressive.", true); return; }
-            Walk("Backlog sweep", tasks, new (string, Action<TaskItem>)[]
+            if (tasks.Count == 0) { Speech.Say(owner, "Nothing has been sitting untouched for three weeks. Impressive.", true); return 0; }
+            return Walk("Backlog sweep", tasks, new (string, Action<TaskItem>)[]
             {
                 ("Keep it", t => t.TouchedAt = DateTime.Now),
                 ("Reschedule to Today", t => Move(t, Status.Today)),
@@ -85,7 +91,7 @@ namespace BusyBunny
                 ("Reschedule to Waiting on someone", t => Move(t, Status.Waiting)),
                 ("Let go: mark done", t => Move(t, Status.Done)),
                 ("Let go: delete", Delete),
-            }, "Sweep finished.");
+            }, "Sweep finished.", owner);
         }
 
         private void Move(TaskItem t, Status s)
@@ -100,8 +106,9 @@ namespace BusyBunny
 
         private void Delete(TaskItem t) => _w.Store.Data.Tasks.Remove(t);
 
-        private void Walk(string title, List<TaskItem> tasks, (string Label, Action<TaskItem> Act)[] actions, string finished)
+        private int Walk(string title, List<TaskItem> tasks, (string Label, Action<TaskItem> Act)[] actions, string finished, Window? owner = null)
         {
+            var from = owner ?? _w;
             var store = _w.Store;
             int at = 0, changed = 0, undoSteps = 0;
             bool remembered = false;
@@ -111,7 +118,7 @@ namespace BusyBunny
             var next = Layout.Button("_Next", isDefault: true);
             var stop = Layout.Button("_Stop", isCancel: true);
 
-            var w = Layout.Dialog(_w, title);
+            var w = Layout.Dialog(from, title);
             var panel = new StackPanel { Margin = new Thickness(12) };
             panel.Children.Add(shown);
             panel.Children.Add(Layout.Row("_What to do with it", pick, 420));
@@ -148,8 +155,10 @@ namespace BusyBunny
             };
             w.Loaded += (_, _) => Show();
             bool finishedAll = w.ShowDialog() == true;
+            if (owner != null) owner.Activate();
             if (changed > 0) _w.SaveAndRefresh();
-            _w.Say((finishedAll ? finished : "Stopped at " + (at + 1) + " of " + tasks.Count + ".") + (changed > 0 ? " " + changed + (changed == 1 ? " task changed." : " tasks changed.") + UndoWords(undoSteps) : " Nothing changed."), true);
+            Speech.Say(from, (finishedAll ? finished : "Stopped at " + (at + 1) + " of " + tasks.Count + ".") + (changed > 0 ? " " + changed + (changed == 1 ? " task changed." : " tasks changed.") + UndoWords(undoSteps) : " Nothing changed."), true);
+            return changed;
         }
 
         /// <summary>How to undo the walk, honestly: every Mark done is its own undo step.</summary>

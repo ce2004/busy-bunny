@@ -34,7 +34,7 @@ namespace BusyBunny
             GameEvents.TaskDone += t =>
             {
                 if (Calm.FunPaused || !Tools.IsOn(TimesId)) return;
-                if (Suggestion(w.Store, t) is string line) Calm.AfterTaskDone(w, Game.Other, line);
+                if (Suggestion(w.Store, t) is string line) Calm.AfterTaskDone(w, Game.Chatter, line);
             };
         }
 
@@ -166,7 +166,7 @@ namespace BusyBunny
             var day = new TextBox();
             DateTime since = choices[0].From;
             var back = _w.KeepFocus();
-            bool ok = SmartUi.Form(_w, "What changed", "_Show", p =>
+            bool ok = SmartUi.Form(_w, "What changed", "Sh_ow", p =>
             {
                 p.Children.Add(Layout.Row("_Since", pick, 260));
                 p.Children.Add(Layout.Row("_Day, like october 28 or last friday", day, 260));
@@ -192,10 +192,10 @@ namespace BusyBunny
             (Part2.Finished, "How many tasks I finished", true),
             (Part2.ByClass, "Finished, by class or tag", true),
             (Part2.Names, "The names of the tasks I finished", false),
-            (Part2.Streaks, "Streaks", true),
+            (Part2.Streaks, "Streaks, counted from all my lists", true),
             (Part2.Focus, "Focused sprint time", true),
             (Part2.Hard, "What got hard: rough days, tasks pushed back, overdue now", true),
-            (Part2.Level, "Level and badges", false),
+            (Part2.Level, "Level and badges, counted from all my lists", false),
             (Part2.Coming, "Big due dates coming next month", false),
         };
 
@@ -204,7 +204,8 @@ namespace BusyBunny
         {
             var from = new DateTime(month.Year, month.Month, 1);
             var to = from.AddMonths(1);
-            bool Ok(string list) => includePrivate || s.Data.Lists.FirstOrDefault(l => l.Name == list) is not TaskList l || !SmartBunny.ListPrivate(s, l);
+            // A name that matches no list now (a list renamed or deleted since, maybe a private one) stays out unless she ticked private lists.
+            bool Ok(string list) => includePrivate || s.Data.Lists.FirstOrDefault(l => l.Name == list) is TaskList l && !SmartBunny.ListPrivate(s, l);
             var tasks = s.Data.Tasks.Where(t => Ok(t.List)).ToList();
             var done = tasks.Where(t => t.DoneAt >= from && t.DoneAt < to && t.Status == Status.Done).ToList();
             var log = s.Data.Log.Where(e => e.When >= from && e.When < to && (e.List.Length == 0 || Ok(e.List))).ToList();
@@ -267,7 +268,7 @@ namespace BusyBunny
             var preview = SmartUi.ReadOnly("The report", "", 600, 220);
             string Make() => Report(_w.Store, months[Math.Max(0, month.SelectedIndex)], Parts.Where((p, i) => boxes[i].IsChecked == true).Select(p => p.Part).ToHashSet(), priv.IsChecked == true, now);
             var back = _w.KeepFocus();
-            SmartUi.Form(_w, "Monthly report to share", "_Make the report", p =>
+            SmartUi.Form(_w, "Monthly report to share", "Ma_ke the report", p =>
             {
                 p.Children.Add(SmartUi.Intro("Tick exactly what goes in, then make the report. You can copy it or save it as a text file to bring to a meeting.", 600));
                 p.Children.Add(Layout.Row("_Month", month, 260));
@@ -360,6 +361,10 @@ namespace BusyBunny
                 string r = Report(s2, now, names, false, now);
                 Need(r.Contains("1 task finished") && r.Contains("old done") && !r.Contains("ZZSECRET") && !r.Contains("Streaks"), "the report gave " + r);
                 Need(Report(s2, now, names, true, now).Contains("ZZSECRET"), "private lists did not go in when ticked");
+                // Sprints logged under a list name that no longer exists (a private list renamed later) stay out.
+                s2.Data.Log.Add(new LogEntry { Kind = "Sprint", When = now, Minutes = 47, List = "ZZOLDNAME" });
+                var focus = new HashSet<Part2> { Part2.Focus };
+                Need(!Report(s2, now, focus, false, now).Contains("47 minutes") && Report(s2, now, focus, true, now).Contains("47 minutes"), "a renamed list's sprints went into the report");
                 string all = Report(s2, now, Parts.Select(x => x.Part).ToHashSet(), false, now);
                 Need(all.Contains("What got hard") && all.Contains("Coming next month") && !all.Contains((char)35), "the full report");
             }

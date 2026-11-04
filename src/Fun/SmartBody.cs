@@ -24,10 +24,13 @@ namespace BusyBunny
         private double _awake;
         private int _minutes;
         private TaskItem? _task;
+        // The time is up and the one question waits for Busy Bunny to be in front. Not a sprint any more.
         private bool _asking;
+        private DispatcherTimer? _wait;
+        public static readonly TimeSpan GiveUpAfter = TimeSpan.FromMinutes(10);
 
-        /// <summary>A body double sprint is running.</summary>
-        public static bool Running => _me != null && (_me._timer.IsEnabled || _me._asking);
+        /// <summary>A body double sprint is running. Waiting to ask how it went does not count: the calm rules let go at once.</summary>
+        public static bool Running => _me != null && _me._timer.IsEnabled;
 
         public static readonly string[] Answers = { "I finished it", "I made progress", "I got stuck", "I got distracted, and that is okay" };
 
@@ -38,11 +41,19 @@ namespace BusyBunny
             Tools.Register(new BunnyTool(Id, "Body double", Drawers.GetGoing, "Bunny works alongside you for a sprint, stays quiet, and checks in at the end. Again tells you the time left.", StartOrCheck) { Since = "0.14.0" });
             Calm.OtherSprints.Add(() => Running);
             _timer.Tick += (_, _) => Tick();
-            w.Closed += (_, _) => _timer.Stop();
+            w.Closed += (_, _) => { _timer.Stop(); StopWaiting(); };
+        }
+
+        private void StopWaiting()
+        {
+            _wait?.Stop();
+            _wait = null;
+            _asking = false;
         }
 
         private void StartOrCheck()
         {
+            if (_asking) { _w.Say("Bunny is waiting to hear how the last one went.", true); return; }
             if (_timer.IsEnabled)
             {
                 var left = _endUtc - DateTime.UtcNow;
@@ -131,20 +142,35 @@ namespace BusyBunny
             Sounds.Play(Sounds.Event.SprintFinished);
             GameEvents.RaiseSprintDone(minutes);
             _asking = true;
-            Ask(minutes);
+            Ask(minutes, _task, DateTime.UtcNow);
         }
 
-        /// <summary>The one question at the end. It waits until Busy Bunny is in front with no window open, so it never lands on top of something else.</summary>
-        private void Ask(int minutes)
+        /// <summary>
+        /// The one question at the end. It waits until Busy Bunny is in front with no window open, so it never lands on
+        /// top of something else. After 10 minutes of waiting it lets the question go and keeps a note instead.
+        /// </summary>
+        private void Ask(int minutes, TaskItem? t, DateTime sinceUtc)
         {
             if (!_w.IsActive || _w.OwnedWindows.Count > 0)
             {
+                if (_wait != null) return;
                 var wait = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-                wait.Tick += (_, _) => { if (_w.IsActive && _w.OwnedWindows.Count == 0) { wait.Stop(); Ask(minutes); } };
+                _wait = wait;
+                wait.Tick += (_, _) =>
+                {
+                    if (_wait != wait) { wait.Stop(); return; }
+                    if (DateTime.UtcNow - sinceUtc >= GiveUpAfter)
+                    {
+                        StopWaiting();
+                        Game.Note(_w.Store, "Body double: " + minutes + " minutes done" + (t != null ? " on " + t.Name : "") + ". Bunny did not want to interrupt to ask how it went.");
+                        return;
+                    }
+                    if (_w.IsActive && _w.OwnedWindows.Count == 0) { wait.Stop(); _wait = null; Ask(minutes, t, sinceUtc); }
+                };
                 wait.Start();
                 return;
             }
-            var t = _task;
+            _wait = null;
             string question = Content.Pick(_w.Store, "smart.body.end");
             var back = _w.KeepFocus();
             int pick;
@@ -152,13 +178,16 @@ namespace BusyBunny
             finally { _asking = false; back(); }
             if (pick < 0) { _w.Say("Okay. Bunny is proud of you either way.", true); return; }
             if (pick == 0 && t != null && t.Status != Status.Done && _w.Store.Data.Tasks.Contains(t)) _w.SetTaskStatus(t, Status.Done);
-            Reply(pick);
+            Reply(pick, minutes, t);
         }
 
-        private async void Reply(int pick)
+        /// <summary>The library topic that answers what she said: finished or progress, stuck, or distracted.</summary>
+        public static string AfterTopic(int pick) => pick switch { 2 => "smart.body.stuck", 3 => "smart.body.distracted", _ => "smart.body.after" };
+
+        private async void Reply(int pick, int minutes, TaskItem? t)
         {
-            string line = await BunnyWrite.Short(_w.Store, Id, "A student just finished a " + _minutes + " minute body double sprint with you and said: " + Answers[pick] + ". Answer in one kind line, under 25 words, " +
-                (pick == 2 ? "with one tiny next step. " : "") + SmartText.Voice(_w.AppSettings) + About(_w.Store, _task), "smart.body.after");
+            string line = await BunnyWrite.Short(_w.Store, Id, "A student just finished a " + minutes + " minute body double sprint with you and said: " + Answers[pick] + ". Answer in one kind line, under 25 words, " +
+                (pick == 2 ? "with one tiny next step. " : "") + SmartText.Voice(_w.AppSettings) + About(_w.Store, t), AfterTopic(pick));
             _w.Say(line);
         }
 
@@ -175,7 +204,9 @@ namespace BusyBunny
             var secret = new TaskList { Name = "ZZPRIVATE", PrivateFromBunny = true };
             store.Data.Lists.Add(secret);
             Need(!About(store, new TaskItem { Name = "ZZSECRET", List = secret.Name }).Contains("ZZ") && About(store, t).Contains(t.Name), "a private task reached Claude");
-            foreach (var topic in new[] { "smart.body.start", "smart.body.end", "smart.body.after" }) Need(Content.Lines(topic).Count >= 20, topic + " has fewer than 20 lines");
+            foreach (var topic in new[] { "smart.body.start", "smart.body.end", "smart.body.after", "smart.body.stuck", "smart.body.distracted" }) Need(Content.Lines(topic).Count >= 20, topic + " has fewer than 20 lines");
+            Need(AfterTopic(0) == "smart.body.after" && AfterTopic(1) == "smart.body.after" && AfterTopic(2) == "smart.body.stuck" && AfterTopic(3) == "smart.body.distracted", "the answer after a sprint picks the wrong topic");
+            Need(!Content.Lines("smart.body.after").Any(l => l.Contains("Stuck") || l.Contains("Distracted")), "the general after lines talk about being stuck or distracted");
             Need(!Running && Calm.OtherSprints.Count > 0, "body double is not known to the calm rules");
         }
     }

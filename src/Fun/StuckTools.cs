@@ -22,7 +22,7 @@ namespace BusyBunny
         // The last dare, first line or rough draft that ended, so using it again soon after offers to keep going.
         private (string Id, Guid? Task, DateTime When)? _ended;
         // Comfort lines asked for lately: a few are kind, an endless stream is not (sweep 12.7).
-        private readonly List<DateTime> _comfort = new();
+        private static readonly List<DateTime> Comfort = new();
 
         public void Attach(MainWindow w)
         {
@@ -59,7 +59,7 @@ namespace BusyBunny
             {
                 _ended = null;
                 var task0 = FunKit.Find(S, ended.Task);
-                int len = FunKit.SprintLength(FunKit.Energy(S, _w.AppSettings, now));
+                int len = GetGoingTools.SprintMinutesNow(S, _w.AppSettings, now);
                 int pick = FunKit.Pick(_w, name, "Keep going?", new[] { "Keep going: a " + len + " minute sprint" + (task0 != null ? " on " + task0.Name : ""), "Start a new " + name.ToLowerInvariant() });
                 if (pick < 0) return;
                 if (pick == 0) { StartKeepGoing(task0, len); return; }
@@ -109,18 +109,30 @@ namespace BusyBunny
 
         // ---- Future-you message and pep talk ----
 
-        /// <summary>A kind line asked for again and again stops helping: after three in half an hour, a gentle nudge to act instead.</summary>
-        private bool EnoughComfort(DateTime now)
+        /// <summary>
+        /// A kind line asked for again and again stops helping: after three in half an hour (pep talk, future you, both
+        /// things are true, how today went, all counted together), a gentle nudge to act instead. True when it nudged.
+        /// </summary>
+        public static bool EnoughComfort(MainWindow w, DateTime now)
         {
-            _comfort.RemoveAll(t => now - t > TimeSpan.FromMinutes(30));
-            if (_comfort.Count >= 3)
+            if (TooMuchComfort(Comfort, now))
             {
-                _w.Say("You have heard three of these in the last half hour, and you deserved every one. More words will not add much now. Try one tiny step instead: the Two-minute dare is right here in this drawer.", true);
+                w.Say("You have heard three of these in the last half hour, and you deserved every one. More words will not add much now. Try one tiny step instead: the Two-minute dare, in the I am stuck drawer.", true);
                 return true;
             }
-            _comfort.Add(now);
             return false;
         }
+
+        /// <summary>The counting behind EnoughComfort: drops asks older than half an hour, then true at three, otherwise counts this one.</summary>
+        public static bool TooMuchComfort(List<DateTime> asks, DateTime now)
+        {
+            asks.RemoveAll(t => now - t > TimeSpan.FromMinutes(30));
+            if (asks.Count >= 3) return true;
+            asks.Add(now);
+            return false;
+        }
+
+        private bool EnoughComfort(DateTime now) => EnoughComfort(_w, now);
 
         /// <summary>Her own past wins, newest first: things she logged with I did a thing (and any proud moment kept in the log).</summary>
         public static List<LogEntry> PastWins(Store s, DateTime now) => s.Data.Log
@@ -287,14 +299,23 @@ namespace BusyBunny
                     }
                 }
                 string idea = Content.Pick(S, "stuck.makeover").Replace("{task}", task.Name);
+                Guid id = task.Id;
                 if (BunnyWrite.Visible(S).Contains(task))
                 {
+                    // Say why there is a pause, so the box that opens after it is no surprise.
+                    _w.Say("Thinking of a friendlier name for " + task.Name + ".", true);
                     string prompt = "Rewrite this to-do item as a friendly, tiny first step of at most 10 words. Reply with only the new name. Task: " + task.Name;
                     string written = await BunnyWrite.Short(S, Makeover, prompt, "stuck.makeover");
                     if (written.Length > 0 && written.Length < 120) idea = written.Replace("{task}", task.Name).Trim().Trim('"');
+                    // Control Z or anything else may have replaced the task objects while Claude was writing.
+                    if (FunKit.Find(S, id) is not TaskItem fresh || !FunKit.Open(fresh)) { _w.Say("That task changed meanwhile, so I left it.", true); return; }
+                    task = fresh;
                 }
                 string? name = FunKit.Ask(_w, "Task makeover", "_New name", idea, "A friendly first step. Change it any way you like. The old name goes in the task's notes.");
-                if (name == null || name == task.Name) return;
+                if (name == null) return;
+                if (FunKit.Find(S, id) is not TaskItem now2 || !FunKit.Open(now2)) { _w.Say("That task changed meanwhile, so I left it.", true); return; }
+                task = now2;
+                if (name == task.Name) return;
                 S.Remember("making over " + task.Name);
                 Rename(task, name);
                 _w.SaveAndRefresh();
@@ -342,6 +363,10 @@ namespace BusyBunny
         {
             void Need(bool ok, string what) { if (!ok) throw new Exception("stuck: " + what); }
             FunKit.SelfTest(store);
+            var asks = new List<DateTime>();
+            var at = new DateTime(2026, 11, 4, 10, 0, 0);
+            Need(!TooMuchComfort(asks, at) && !TooMuchComfort(asks, at.AddMinutes(5)) && !TooMuchComfort(asks, at.AddMinutes(10)) && TooMuchComfort(asks, at.AddMinutes(15)), "comfort limit at three");
+            Need(!TooMuchComfort(asks, at.AddMinutes(45)), "comfort limit did not end after half an hour");
             var t = new TaskItem { Name = "Read chapter 9", List = store.Data.Lists[0].Name, Notes = "pages 200 to 230" };
             store.Data.Tasks.Add(t);
             store.Remember("makeover test");

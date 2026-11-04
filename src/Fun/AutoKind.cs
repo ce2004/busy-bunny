@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Threading;
 
 namespace BusyBunny
@@ -37,7 +38,7 @@ namespace BusyBunny
             T(ThanksId, "Thank-you notes", Drawers.Wins, "Automatic: after a large or dreaded task, Bunny says thank you.", () => _w.Say("Thank-you notes are on. Bunny thanks you after large tasks and ones you dread 4 or 5. Your name for them is set in Options, Settings, Plans and little extras.", true));
             T(GraceId, "Grace days", Drawers.Wins, "Automatic: streaks in the planning tools forgive missed days, 1 a week unless you change it.", () => _w.Say(GraceLine(S), true));
             T(FeelId, "How did that feel", Drawers.Wins, "Automatic and skippable: after a task, pick easy, fine or draining; once a day unless you change it.", FeelReport);
-            T(HopId, "Task-hopping note", Drawers.GetGoing, "Automatic: after lots of switching between tasks, one gentle note to pick one; once a day at most.", () => _w.Say("Task-hopping note is on. Starting more than 4 different tasks in 20 minutes gets one gentle note, once a day at most.", true));
+            T(HopId, "Task-hopping note", Drawers.GetGoing, "Automatic: after sprints on lots of different tasks in a short time, one gentle note to pick one; once a day at most.", () => _w.Say("Task-hopping note is on. Switching your focus sprints between tasks more than 4 times in 20 minutes gets one gentle note, once a day at most.", true));
             T(LandingId, "Soft landing after vacation", Drawers.Rest, "Automatic: the first day after vacation is planned light, with half your usual hours.", () => _w.Say("Soft landing is on. The first day back from vacation mode gets half your usual hours. Control Z undoes it that morning.", true));
             T(StepId, "Auto first step", Drawers.GetGoing, "Automatic: a new task gets a suggested first step in its notes, which you can delete.", () => _w.Say("Auto first step is on. New tasks with empty notes get one small first step." + (PlanKit.Prefs(S).BunnyFirstSteps ? " Bunny writes them for lists Bunny may see." : " They come from simple rules; Bunny can write them instead, in Options, Settings, Plans and little extras."), true));
 
@@ -47,7 +48,7 @@ namespace BusyBunny
                 var t = s.World.Get<Treat>(TreatId);
                 if (t.ForDay != s.Key(now) || t.Text.Length == 0) return null;
                 s.World.Set(TreatId, new Treat());
-                return "A treat from yesterday's tiny goal: " + t.Text;
+                return TreatLine(t.Text);
             });
             PlanKit.Morning(HypeId, (s, now) => Hype(s, now));
             PlanKit.Morning(MottoId, (s, now) =>
@@ -70,6 +71,16 @@ namespace BusyBunny
 
         public static bool IsTest(TaskItem t) => t.Type == TaskType.Test ||
             new[] { "test", "exam", "midterm", "quiz", "final" }.Any(x => (" " + t.Name.ToLowerInvariant() + " ").Contains(" " + x));
+
+        /// <summary>The morning line for a treat, with the content line's own lead ("A fun fact:") taken off so it is said once.</summary>
+        public static string TreatLine(string text)
+        {
+            string t = text.Trim();
+            foreach (var lead in new[] { "A fun fact:", "A small thought:" })
+                if (t.StartsWith(lead, StringComparison.OrdinalIgnoreCase)) { t = t[lead.Length..].TrimStart(); break; }
+            if (t.Length > 0) t = char.ToUpper(t[0]) + t[1..];
+            return "Yesterday's tiny goal left you a treat. " + t;
+        }
 
         public static void LeaveTreat(Store s, DateTime now)
         {
@@ -128,9 +139,20 @@ namespace BusyBunny
 
         // ---- Handlers ----
 
+        /// <summary>
+        /// Whether today gets a soft landing: yesterday was vacation, today is not, and she has not set today's hours herself
+        /// (typed hours, or a morning check-in she answered, which always sets her energy).
+        /// </summary>
+        public static bool LandingDue(Store s, DateTime now)
+        {
+            var today = s.Data.PeekDay(now);
+            if (s.Data.PeekDay(now.AddDays(-1)).Mode != DayMode.Vacation || today.Mode == DayMode.Vacation || today.Hours > 0) return false;
+            return !(today.CheckedIn && today.Energy.Length > 0);
+        }
+
         private string? SoftLanding(Store s, DateTime now)
         {
-            if (s.Data.PeekDay(now.AddDays(-1)).Mode != DayMode.Vacation || s.Data.PeekDay(now).Mode == DayMode.Vacation || s.Data.PeekDay(now).Hours > 0) return null;
+            if (!LandingDue(s, now)) return null;
             double usual = s.Data.HoursAvailable, light = Math.Max(1, Math.Round(usual / 2 * 2) / 2);
             if (light >= usual) return null;
             s.Remember("a soft landing after vacation");
@@ -149,13 +171,10 @@ namespace BusyBunny
                 string name = PlanKit.Prefs(s).YourName;
                 Calm.AfterTaskDone(_w, Game.Other, PlanKit.Line(s, "auto.thanks", ("you", name.Length > 0 ? ", " + name : "")));
             }
-            if (!Tools.IsOn(FeelId) || Calm.FunPaused || Calm.Hush(s, _w.AppSettings, now) is "a rough day" or "class" or "quiet hours") return;
-            var m = s.World.GetKept<Marks>(MarksId);
-            if (!PlanKit.Prefs(s).FeelEveryTask && m.FeelDay == s.Key(now)) return;
-            m.FeelDay = s.Key(now);
-            s.World.SetKept(MarksId, m);
-            s.World.Save();
-            // After the line about the finish has been said, and only when nothing else is open.
+            // Never during a sprint, vacation, a rough day, class or quiet hours, or while Smarter Bunny is at work (its tools finish tasks too).
+            if (!Tools.IsOn(FeelId) || Calm.FunPaused || Calm.Hush(s, _w.AppSettings, now) != null || Speech.Muted) return;
+            if (!PlanKit.Prefs(s).FeelEveryTask && s.World.GetKept<Marks>(MarksId).FeelDay == s.Key(now)) return;
+            // After the line about the finish has been said, and only when nothing else is open. The day's ask is used only when it is shown.
             var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2.5) };
             timer.Tick += (_, _) => { timer.Stop(); AskFeel(t); };
             timer.Start();
@@ -163,12 +182,24 @@ namespace BusyBunny
 
         private void AskFeel(TaskItem t)
         {
-            if (!_w.IsActive || Application.Current.Windows.OfType<Window>().Any(x => x != _w && x.IsVisible && x.Owner == _w)) return;
+            var s = S;
+            var now = DateTime.Now;
+            if (!_w.IsActive || _w.OwnedWindows.Count > 0 || Application.Current.Windows.OfType<Window>().Any(x => x != _w && x.IsVisible && x.Owner == _w)) return;
+            if (!FeelMayAsk(s, t, Keyboard.FocusedElement) || Speech.Muted || Calm.Hush(s, _w.AppSettings, now) != null) return;
+            var m = s.World.GetKept<Marks>(MarksId);
+            if (!PlanKit.Prefs(s).FeelEveryTask && m.FeelDay == s.Key(now)) return;
+            m.FeelDay = s.Key(now);
+            s.World.SetKept(MarksId, m);
+            s.World.Save();
             int i = PlanKit.Pick(_w, "How did that feel?", "How did _" + t.Name + " feel?", FeelOptions, 1, "Optional. Escape skips it. It helps spot what drains you.");
             if (i < 0) return;
             Record(S, t, FeelOptions[i]);
             _w.Say("Noted: " + FeelOptions[i].ToLowerInvariant() + ".", true);
         }
+
+        /// <summary>The task is still there and still finished (not set back or undone), and she is not typing in a text box.</summary>
+        public static bool FeelMayAsk(Store s, TaskItem t, IInputElement? focused) =>
+            s.Data.Tasks.Contains(t) && PlanKit.Finished(t) && focused is not System.Windows.Controls.Primitives.TextBoxBase;
 
         /// <summary>Keeps how a task felt, counted by its tag (or list when it has none). A second answer for the same task replaces the first.</summary>
         public static void Record(Store s, TaskItem t, string feel)
@@ -291,6 +322,31 @@ namespace BusyBunny
             var fe = s.World.Get<Feelings>(FeelId).ByKind["TESTFEEL"];
             Need(fe["Draining"] == 0 && fe["Easy"] == 1, "feelings counted twice");
             s.World.Set(FeelId, new Feelings());
+
+            // The treat line has one lead, not two.
+            Need(TreatLine("A fun fact: otters hold hands.") == "Yesterday's tiny goal left you a treat. Otters hold hands.", "treat line: " + TreatLine("A fun fact: otters hold hands."));
+            foreach (var line in Content.Lines("auto.treat")) Need(!TreatLine(line).StartsWith("Yesterday's tiny goal left you a treat. A fun fact"), "a treat line with two leads: " + TreatLine(line));
+
+            // Soft landing: only the day after vacation, never over hours she set or a check-in she answered.
+            var keepDays = s.Data.Days.ToDictionary(kv => kv.Key, kv => kv.Value);
+            s.Data.Days.Clear();
+            s.Data.Day(now.AddDays(-1)).Mode = DayMode.Vacation;
+            Need(LandingDue(s, now), "no soft landing the day after vacation");
+            s.Data.Day(now).CheckedIn = true; s.Data.Day(now).Energy = "medium";
+            Need(!LandingDue(s, now), "the soft landing overrode her morning check-in");
+            s.Data.Day(now).CheckedIn = false; s.Data.Day(now).Energy = ""; s.Data.Day(now).Hours = 6;
+            Need(!LandingDue(s, now), "the soft landing overrode hours she typed");
+            s.Data.Days.Clear();
+            foreach (var kv in keepDays) s.Data.Days[kv.Key] = kv.Value;
+
+            // How did that feel: only about a task still finished, and never while she types.
+            var felt = new TaskItem { Name = "feel check", List = s.Data.Lists[0].Name, Status = Status.Done };
+            s.Data.Tasks.Add(felt);
+            Need(FeelMayAsk(s, felt, null) && !FeelMayAsk(s, felt, new System.Windows.Controls.TextBox()), "asked how it felt while she was typing");
+            felt.Status = Status.Today;
+            Need(!FeelMayAsk(s, felt, null), "asked how it felt about a task set back");
+            s.Data.Tasks.Remove(felt);
+            Need(!FeelMayAsk(s, felt, null), "asked how it felt about a task that is gone");
 
             foreach (var topic in new[] { "auto.treat", "auto.hype", "auto.motto", "auto.thanks", "auto.hopping", "auto.firststep" }) Need(Content.Lines(topic).Count >= 20, topic + " has fewer than 20 lines");
             foreach (var line in Content.Lines("auto.thanks")) Need(line.Contains("{you}"), "a thank-you note with no place for her name: " + line);

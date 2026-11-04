@@ -67,60 +67,121 @@ namespace BusyBunny
             .Select(l => Regex.Replace(l.Trim(), @"^(?:[-•]\s+|\d{1,3}[.)]\s+)", "").Replace(((char)42).ToString(), "").Replace(((char)35).ToString(), "").Trim())
             .Where(l => l.Length > 1).Select(l => l.Length > 400 ? l[..400] : l).Distinct().ToList();
 
-        /// <summary>The text of a plain text file, or of a Word file's paragraphs (one line each).</summary>
+        public const long MaxFileBytes = 1_000_000, MaxDocxXmlBytes = 5_000_000;
+        public const int MaxImportLines = 300;
+
+        /// <summary>A problem reading her file, in a line she can act on.</summary>
+        public sealed class ReadProblem : Exception { public ReadProblem(string line) : base(line) { } }
+
+        /// <summary>
+        /// The text of a plain text file, or of a Word file's paragraphs (one line each). Opened so a file Word still has
+        /// open can be read. Throws ReadProblem with a friendly line for a file that is too big, locked or not readable.
+        /// </summary>
         public static string ReadFile(string path)
         {
-            if (!path.EndsWith(".docx", StringComparison.OrdinalIgnoreCase)) return File.ReadAllText(path);
-            using var zip = ZipFile.OpenRead(path);
-            var entry = zip.GetEntry("word/document.xml") ?? throw new InvalidDataException("That Word file has no text in it.");
-            using var stream = entry.Open();
-            return DocxText(XDocument.Load(stream));
+            try
+            {
+                if (new FileInfo(path).Length > MaxFileBytes) throw new ReadProblem("That file is too big for About me. Pick a shorter one.");
+                using var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+                if (!path.EndsWith(".docx", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var reader = new StreamReader(file, Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+                    return reader.ReadToEnd();
+                }
+                using var zip = new ZipArchive(file, ZipArchiveMode.Read);
+                var entry = zip.GetEntry("word/document.xml") ?? throw new ReadProblem("That Word file has no text in it.");
+                if (entry.Length > MaxDocxXmlBytes) throw new ReadProblem("That file is too big for About me. Pick a shorter one.");
+                using var stream = entry.Open();
+                return DocxText(XDocument.Load(stream));
+            }
+            catch (ReadProblem) { throw; }
+            catch (FileNotFoundException) { throw new ReadProblem("That file is not there any more."); }
+            catch (UnauthorizedAccessException) { throw new ReadProblem("Windows did not let Busy Bunny open that file."); }
+            catch (IOException) { throw new ReadProblem("Another program is using that file. Close it in Word first, then import again."); }
+            catch (Exception e) when (e is InvalidDataException or System.Xml.XmlException) { throw new ReadProblem("That does not look like a Word file."); }
         }
+
+        /// <summary>The lines to offer from a file: at most 300, with how many more were left out.</summary>
+        public static (List<string> Lines, int LeftOut) Trimmed(List<string> lines) =>
+            lines.Count <= MaxImportLines ? (lines, 0) : (lines.Take(MaxImportLines).ToList(), lines.Count - MaxImportLines);
 
         public static string DocxText(XDocument doc)
         {
-            XNamespace w = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
-            var sb = new StringBuilder();
-            foreach (var p in doc.Descendants(w + "p"))
+            string Read(XNamespace w)
             {
-                foreach (var node in p.Descendants())
+                var sb = new StringBuilder();
+                foreach (var p in doc.Descendants(w + "p"))
                 {
-                    if (node.Name == w + "t") sb.Append(node.Value);
-                    else if (node.Name == w + "tab") sb.Append(' ');
-                    else if (node.Name == w + "br") sb.Append('\n');
+                    // Only this paragraph's own text: a text box or nested table inside it is its own paragraph, read once on its own.
+                    foreach (var node in p.Descendants().Where(n => n.Ancestors(w + "p").First() == p))
+                    {
+                        if (node.Name == w + "t") sb.Append(node.Value);
+                        else if (node.Name == w + "tab") sb.Append(' ');
+                        else if (node.Name == w + "br") sb.Append('\n');
+                    }
+                    sb.Append('\n');
                 }
-                sb.Append('\n');
+                return sb.ToString();
             }
-            return sb.ToString();
+            string text = Read("http://schemas.openxmlformats.org/wordprocessingml/2006/main");
+            // Strict Open XML files use another name for the same thing.
+            return text.Trim().Length > 0 ? text : Read("http://purl.oclc.org/ooxml/wordprocessingml/main");
         }
 
+        /// <summary>Words too common to pick out a line: a topic made only of these finds nothing.</summary>
+        private static readonly HashSet<string> StopWords = new(StringComparer.Ordinal)
+        {
+            "the", "and", "you", "her", "she", "for", "with", "about", "what", "how", "like", "likes", "things", "thing", "me", "my",
+            "this", "that", "they", "them", "there", "their", "your", "from", "have", "does", "when", "want", "wants", "some", "more",
+            "most", "much", "very", "just", "also", "into", "onto", "over", "only", "than", "then", "will", "would", "should", "could",
+            "anything", "something", "everything", "stuff", "info", "information", "know", "tell", "said", "says", "life", "self", "herself",
+        };
+
+        /// <summary>The words of a text that can pick out a line: 4 letters or more, not a stop word, cut to 6 letters so plurals still match.</summary>
         private static IEnumerable<string> Words(string text) =>
-            Regex.Split(text.ToLowerInvariant(), @"[^a-z0-9]+").Where(x => x.Length >= 3).Select(x => x.Length > 5 ? x[..5] : x).Distinct();
+            Regex.Split(text.ToLowerInvariant(), @"[^a-z0-9]+").Where(x => x.Length >= 4 && !StopWords.Contains(x)).Select(x => x.Length > 6 ? x[..6] : x).Distinct();
+
+        /// <summary>Whether Bunny may use About me at all: the About me tool is on and she allows sharing.</summary>
+        public static bool MayUse(Store s) => Tools.IsOn("aboutme") && Get(s).BunnyMayUse;
+
+        public const int MaxLinesForClaude = 5;
 
         /// <summary>
-        /// The About me lines about a topic, for Talk to Bunny's about_me tool: only lines sharing a word with the topic,
-        /// at most 8. Nothing when she turned sharing off.
+        /// The About me lines about a topic, for Talk to Bunny's about_me tool: only lines with a word that starts with one
+        /// of the topic's own words (common words left out), at most 5. Nothing when the tool or sharing is off.
         /// </summary>
         public static string ForClaude(Store s, string topic)
         {
             var me = Get(s);
-            if (!me.BunnyMayUse) return "She has turned off sharing her About me with you.";
+            if (!Tools.IsOn("aboutme") || !me.BunnyMayUse) return "She has turned off sharing her About me with you.";
             if (me.Lines.Count == 0) return "She has not written an About me yet. She can add one in Options, Settings, About me.";
             var want = Words(topic).ToList();
-            if (want.Count == 0) return "Ask about one topic, like humor or describing things.";
-            var found = me.Lines.Where(l => Words(l).Any(w => want.Any(x => w.StartsWith(x) || x.StartsWith(w)))).Take(8).ToList();
+            if (want.Count == 0) return "Ask about one specific topic, like humor or describing things.";
+            var found = me.Lines.Where(l => Words(l).Any(w => want.Any(x => w.StartsWith(x, StringComparison.Ordinal)))).Take(MaxLinesForClaude).ToList();
             return found.Count == 0 ? "Nothing in her About me about " + topic + "." : "From her About me: " + string.Join(" | ", found);
         }
 
-        private static readonly string[] HumorWords = { "humor", "humour", "funny", "joke", "laugh", "sarcas", "tease", "never", "describ", "touch", "pun" };
+        /// <summary>Only words about the humor she likes: what her other lines say stays out of routine writing.</summary>
+        private static readonly Regex HumorWords = new(@"\b(?:humou?r|funny|jok(?:e|es|ing)\b|laugh|sarcas|teas(?:e|es|ing)\b|puns?\b|silly|goofy|witty)", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        /// <summary>A few About me lines about humor and what she never wants, for fresh writing. Empty when there are none or sharing is off.</summary>
+        public const int MaxCharsForWriting = 300;
+
+        /// <summary>
+        /// Her About me lines about humor, for fresh writing (cheers, the week, Wrapped): at most 300 characters. Empty when
+        /// there are none, or the About me tool or sharing is off. Nothing else from About me goes into routine writing.
+        /// </summary>
         public static string ForWriting(Store s)
         {
-            var me = Get(s);
-            if (!me.BunnyMayUse) return "";
-            var lines = me.Lines.Where(l => HumorWords.Any(h => l.Contains(h, StringComparison.OrdinalIgnoreCase))).Take(5).ToList();
-            return lines.Count == 0 ? "" : " What she said about herself: " + string.Join(" | ", lines) + ".";
+            if (!MayUse(s)) return "";
+            var lines = new List<string>();
+            int chars = 0;
+            foreach (var l in Get(s).Lines.Where(l => HumorWords.IsMatch(l)))
+            {
+                if (chars + l.Length > MaxCharsForWriting) continue;
+                lines.Add(l);
+                chars += l.Length;
+            }
+            return lines.Count == 0 ? "" : " The humor she likes, in her words: " + string.Join(" | ", lines) + ".";
         }
 
         public IEnumerable<ISettingsPage> SettingsPages(Store store, Settings settings) { yield return new AboutPage(this, store); }
@@ -159,7 +220,7 @@ namespace BusyBunny
                 Add(row2, "_Delete this line", DeleteLine);
                 Add(row2, "E_xport...", Export);
                 Add(row2, "Delete _everything", DeleteAll);
-                Add(row2, "Bunny's monthly check-_in...", () => SettingsWindow.SaveAndThen(_f.ShowCheckIn));
+                Add(row2, "Bunny's monthly chec_k-in...", () => SettingsWindow.SaveAndThen(_f.ShowCheckIn));
                 _panel.Children.Add(row1);
                 _panel.Children.Add(row2);
                 _share = new CheckBox { Content = "Bunny may use these lines when it talks to Claude, only the ones a reply needs", IsChecked = me.BunnyMayUse, Margin = new Thickness(0, 8, 0, 4) };
@@ -188,19 +249,21 @@ namespace BusyBunny
                 if (Owner is not Window owner) return;
                 var d = new OpenFileDialog { Title = "Import an About me file", Filter = "Text or Word files (*.txt;*.docx)|*.txt;*.docx|All files (*.*)|*.*" };
                 if (d.ShowDialog(owner) != true) return;
-                List<string> found;
-                try { found = SplitLines(ReadFile(d.FileName)); }
-                catch (Exception e) { Say("Could not read that file: " + e.Message); return; }
-                found = found.Where(l => !_lines.Contains(l)).ToList();
+                List<string> all;
+                try { all = SplitLines(ReadFile(d.FileName)); }
+                catch (ReadProblem e) { Say(e.Message); return; }
+                catch (Exception) { Say("Busy Bunny could not read that file. Try saving it as plain text, then import again."); return; }
+                var (found, leftOut) = Trimmed(all.Where(l => !_lines.Contains(l)).ToList());
                 if (found.Count == 0) { Say("There was nothing new in that file to remember."); return; }
-                var picked = SmartUi.Checklist(owner, "What Busy Bunny will remember", "Each line is one thing Bunny will remember about you. Uncheck anything it should not keep.",
+                string more = leftOut > 0 ? " That file is long, so these are the first " + found.Count + "; " + SmartUi.Count(leftOut, "more line") + " were left out." : "";
+                var picked = SmartUi.Checklist(owner, "What Busy Bunny will remember", "Each line is one thing Bunny will remember about you. Uncheck anything it should not keep." + more,
                     found.Select(l => (l, true)).ToList(), "_Remember checked");
                 if (picked.Cancelled) { Say("Nothing imported."); _list.Focus(); return; }
                 int first = _lines.Count;
                 _lines.AddRange(picked.Chosen.Select(i => found[i]));
                 _changed = true;
                 Fill(first);
-                Say("Added " + SmartUi.Count(picked.Chosen.Count, "line") + ". Press OK to save them.");
+                Say("Added " + SmartUi.Count(picked.Chosen.Count, "line") + ". Press OK to save them." + (leftOut > 0 ? " " + SmartUi.Count(leftOut, "line") + " past the first " + MaxImportLines + " were left out." : ""));
                 _list.Focus();
             }
 
@@ -212,11 +275,28 @@ namespace BusyBunny
                 var box = new TextBox { Text = adding ? "" : _lines[i], TextWrapping = TextWrapping.Wrap };
                 if (!SmartUi.Form(owner, adding ? "Add a line about you" : "Change this line", "OK", p => p.Children.Add(Layout.Row("_Line", box, 440)),
                     () => box.Text.Trim().Length == 0 ? "The line is empty." : null)) { _list.Focus(); return; }
-                string text = SplitLines(box.Text).FirstOrDefault() ?? box.Text.Trim();
-                if (adding) { _lines.Add(text); i = _lines.Count - 1; } else _lines[i] = text;
+                var typed = SplitLines(box.Text);
+                if (typed.Count == 0) typed.Add(box.Text.Trim());
+                string extra = "";
+                if (adding)
+                {
+                    // A pasted block becomes one line each, like an import.
+                    var add = typed.Where(l => !_lines.Contains(l)).ToList();
+                    if (add.Count == 0) { Say("That line is there already."); _list.Focus(); return; }
+                    i = _lines.Count;
+                    _lines.AddRange(add);
+                    if (add.Count > 1) extra = " " + SmartUi.Count(add.Count, "line") + " added, one for each line you typed.";
+                }
+                else
+                {
+                    _lines[i] = typed[0];
+                    var rest = typed.Skip(1).Where(l => !_lines.Contains(l)).ToList();
+                    _lines.InsertRange(i + 1, rest);
+                    if (rest.Count > 0) extra = " The other " + SmartUi.Count(rest.Count, "line") + " you typed became new lines after it.";
+                }
                 _changed = true;
                 Fill(i);
-                Say((adding ? "Added." : "Changed.") + " Press OK to save.");
+                Say((adding ? "Added." : "Changed.") + extra + " Press OK to save.");
                 _list.Focus();
             }
 
@@ -266,7 +346,7 @@ namespace BusyBunny
 
         // ---- Bunny's monthly check-in ----
 
-        public static string MonthKey(DateTime d) => d.ToString("yyyy-MM");
+        public static string MonthKey(DateTime d) => d.ToString("yyyy-MM", System.Globalization.CultureInfo.InvariantCulture);
 
         public static Baseline Now(Store s, DateTime now) => new()
         {
@@ -408,9 +488,53 @@ namespace BusyBunny
             store.World.Set(AboutId, new AboutMe { Lines = lines });
             Need(ForClaude(store, "humor").Contains("Dry humor") && !ForClaude(store, "humor").Contains("thunder"), "only the lines a reply needs");
             Need(ForClaude(store, "pizza").StartsWith("Nothing"), "nothing about an unknown topic");
-            Need(ForWriting(store).Contains("Dry humor") && ForWriting(store).Contains("touch"), "lines for fresh writing");
+            Need(ForWriting(store).Contains("Dry humor") && !ForWriting(store).Contains("touch"), "fresh writing got more than the humor lines");
+            // Common words and short words never pull lines out; a topic word only matches the start of a line's word.
+            var touchy = new List<string> { "Never mention my dad", "Therapy on Tuesdays", "You can tease me about coffee", "Never bring up my weight", "There is a dog next door",
+                "My sister likes horses", "Things about school stress me", "I love the rain", "Rain sounds help me sleep", "Rainy days are cozy", "Rain boots are the best", "Rain makes me calm", "Rain on the roof is nice" };
+            store.World.Set(AboutId, new AboutMe { Lines = touchy });
+            foreach (var topic in new[] { "the", "about you", "you", "her", "and", "about me", "things", "me and my", "what she likes", "a" })
+                Need(!ForClaude(store, topic).StartsWith("From"), "the topic " + topic + " gave lines");
+            Need(!ForClaude(store, "the rapy").Contains("Therapy"), "a short word matched a longer one");
+            Need(ForClaude(store, "rain").Split('|').Length == MaxLinesForClaude, "more than 5 lines in one answer");
+            Need(!ForClaude(store, "raincoat").StartsWith("From"), "a topic word matched a shorter line word");
+            string writing = ForWriting(store);
+            Need(writing.Contains("tease me") && !writing.Contains("dad") && !writing.Contains("weight") && !writing.Contains("Therapy"), "fresh writing took private lines: " + writing);
+            store.World.Set(AboutId, new AboutMe { Lines = Enumerable.Range(0, 30).Select(i => "Silly joke number " + i + " is one I really enjoy hearing").ToList() });
+            Need(ForWriting(store).Length <= MaxCharsForWriting + 60, "fresh writing was too long");
+            // The About me tool turned off stops all sharing, even with the Settings checkbox on.
+            if (Engines.Settings is Settings cfg && Tools.Find("aboutme") is BunnyTool aboutTool)
+            {
+                store.World.Set(AboutId, new AboutMe { Lines = lines });
+                bool wasOn = Tools.IsOn(cfg, aboutTool);
+                Tools.SetOn(cfg, aboutTool, false);
+                try { Need(!ForClaude(store, "humor").Contains("Dry") && ForWriting(store).Length == 0, "the About me tool turned off still shared"); }
+                finally { Tools.SetOn(cfg, aboutTool, wasOn); }
+            }
+            // Big files are refused, and a file Word keeps open can still be read.
+            string tmp = Path.Combine(Path.GetTempPath(), "busybunny-aboutme-" + Guid.NewGuid().ToString("N") + ".txt");
+            try
+            {
+                File.WriteAllText(tmp, "Likes rain\nDry humor");
+                using (new FileStream(tmp, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite))
+                    Need(SplitLines(ReadFile(tmp)).Count == 2, "a file open in another program");
+                File.WriteAllText(tmp, new string('x', (int)MaxFileBytes + 10));
+                bool refused = false;
+                try { ReadFile(tmp); } catch (ReadProblem e) { refused = e.Message.Contains("too big"); }
+                Need(refused, "a file over 1 MB was read");
+            }
+            finally { try { File.Delete(tmp); } catch { } }
+            Need(Trimmed(Enumerable.Range(0, 350).Select(i => "line " + i).ToList()) is var (kept, leftOut) && kept.Count == MaxImportLines && leftOut == 50, "long files keep the first 300 lines");
+            // Text boxes inside a paragraph are read once, and Strict Word files are read too.
+            var boxed = new XDocument(new XElement(w + "document", new XElement(w + "body",
+                new XElement(w + "p", new XElement(w + "r", new XElement(w + "t", "Outer")), new XElement(w + "r", new XElement(w + "txbxContent", new XElement(w + "p", new XElement(w + "r", new XElement(w + "t", "Inner")))))))));
+            Need(SplitLines(DocxText(boxed)).SequenceEqual(new[] { "Outer", "Inner" }), "a text box was read twice: " + string.Join(" / ", SplitLines(DocxText(boxed))));
+            XNamespace strict = "http://purl.oclc.org/ooxml/wordprocessingml/main";
+            var strictDoc = new XDocument(new XElement(strict + "document", new XElement(strict + "body", new XElement(strict + "p", new XElement(strict + "r", new XElement(strict + "t", "Strict line"))))));
+            Need(SplitLines(DocxText(strictDoc)).SequenceEqual(new[] { "Strict line" }), "a Strict Word file");
             store.World.Set(AboutId, new AboutMe { Lines = lines, BunnyMayUse = false });
             Need(!ForClaude(store, "humor").Contains("Dry") && ForWriting(store).Length == 0, "sharing turned off still shared");
+            store.World.Set(AboutId, new AboutMe { Lines = lines });
             // Undo puts About me back (it is a world bag).
             store.Remember("test");
             store.World.Set(AboutId, new AboutMe());

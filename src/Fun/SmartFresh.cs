@@ -67,12 +67,28 @@ namespace BusyBunny
             return fresh.Count;
         }
 
+        /// <summary>The priority a fresh cheer holds: it is heard over Chatter lines, but a badge, points reason, goal, record or level up wins.</summary>
+        public const int CheerPriority = Game.Badge;
+
+        /// <summary>Whether a fresh cheer is waiting, without using it.</summary>
+        public static bool HasCheer(Store s) => s.World.GetKept<Cheers>(CacheKey).Lines.Count > 0;
+
+        // Kept to tasks and the line after the finish: no Claude call here. Writing more cheers waits until the app is idle.
         private void Done(TaskItem t)
         {
-            if (!CheersAllowed) return;
-            // Just ahead of the library cheers (Chatter), behind level ups, records, goals, points and badges.
-            if (Take(_w.Store) is string line) Calm.AfterTaskDone(_w, Game.Chatter - 1, line);
-            Fill();
+            // Not while Bunny's own tool is finishing a task: its answer comes first.
+            if (!CheersAllowed || Speech.Muted) return;
+            if (HasCheer(_w.Store))
+            {
+                // A place in the line after this finish. The paid cheer is used only when it is the one heard; otherwise it waits for the next finish.
+                var late = Game.QueueLate(_w, CheerPriority);
+                _w.Dispatcher.BeginInvoke(() =>
+                {
+                    if (late.Decided && late.Chosen && !Calm.FunPaused && Take(_w.Store) is string line) { Game.Note(_w.Store, line); _w.Say(line); }
+                    Fill();
+                }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            }
+            else _w.Dispatcher.BeginInvoke(() => Fill(), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
         }
 
         /// <summary>Writes a few cheers ahead, when fewer than two are waiting. Never more than BunnyWrite allows.</summary>
@@ -179,6 +195,12 @@ namespace BusyBunny
             foreach (var text in new[] { WeekPrompt(store, new Settings(), now), WrappedPrompt(store, new Settings(), now) })
                 Need(!text.Contains("ZZ"), "a private task reached Claude: " + text);
             Need(WeekLines(store, now).Count >= 2, "the week's numbers");
+            // Only her humor lines go into routine writing, never the rest of About me.
+            store.World.Set(SmartMemory.AboutId, new SmartMemory.AboutMe { Lines = new List<string> { "Never mention ZZDAD", "Describe ZZTOUCH things by touch", "Dry humor please" } });
+            foreach (var text in new[] { WeekPrompt(store, new Settings(), now), WrappedPrompt(store, new Settings(), now) })
+                Need(!text.Contains("ZZ") && text.Contains("Dry humor"), "About me lines in fresh writing: " + text);
+            Need(!HasCheer(store) && Keep(store, "A brand new cheer for you.") == 1 && HasCheer(store), "a waiting cheer");
+            Need(CheerPriority > Game.Other && CheerPriority < Game.Chatter, "a fresh cheer must rank behind points and goals and ahead of Chatter lines");
             Need(Tools.Find(CheersId)?.Spoken.EndsWith(", now on") == true, "fresh cheers do not say whether they are on");
         }
     }

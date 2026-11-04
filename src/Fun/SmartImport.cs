@@ -83,7 +83,10 @@ namespace BusyBunny
             foreach (var t in SmartText.Array(root, "tasks"))
             {
                 string name = SmartText.Str(t, "name");
-                if (name.Length == 0 || !DateTime.TryParseExact(SmartText.Str(t, "due"), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var due)) continue;
+                // Only the date: Claude sometimes adds a time, like 2026-10-20T23:59.
+                string dueText = SmartText.Str(t, "due").Trim();
+                if (dueText.Length > 10) dueText = dueText[..10];
+                if (name.Length == 0 || !DateTime.TryParseExact(dueText, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var due)) continue;
                 string kind = SmartText.Str(t, "kind").ToLowerInvariant();
                 bool test = kind == "test";
                 string tag = Tag(SmartText.Str(t, "tag"));
@@ -120,7 +123,11 @@ namespace BusyBunny
                 else if (have.Description.Length == 0) have.Description = t.Description;
             }
             foreach (var c in p.Classes)
+            {
                 if (!store.Data.Classes.Any(x => x.Tag == c.Tag && x.Start == c.Start && x.End == c.End && x.Days.SequenceEqual(c.Days))) store.Data.Classes.Add(c);
+                // A class time names a tag even when she skipped the tags group, so the tag must exist.
+                if (c.Tag.Length > 0 && !store.Data.Tags.Any(x => x.Name.Equals(c.Tag, StringComparison.OrdinalIgnoreCase))) store.Data.Tags.Add(new TagInfo { Name = c.Tag });
+            }
             foreach (var (day, plan) in p.Plans) store.Data.WeekdayPlans[day.ToString()] = plan;
             foreach (var t in p.Tasks)
             {
@@ -142,7 +149,14 @@ namespace BusyBunny
             return cb;
         }
 
-        private string TaskText(TaskItem t, DateTime now) => _w.Store.Line(t, now) + (t.Due < now.Date ? ", that date has passed" : "");
+        /// <summary>Whether she already has this task: same list, same name (any case), same due day. Importing twice adds nothing twice.</summary>
+        public static bool HaveAlready(Store store, TaskItem t) =>
+            store.Data.Tasks.Any(x => x.List == t.List && x.Name.Trim().Equals(t.Name.Trim(), StringComparison.OrdinalIgnoreCase) && x.Due?.Date == t.Due?.Date);
+
+        /// <summary>Whether a found task starts checked: its date has not passed and she does not have it already.</summary>
+        public static bool StartsChecked(Store store, TaskItem t, DateTime now) => t.Due >= now.Date && !HaveAlready(store, t);
+
+        private string TaskText(TaskItem t, DateTime now) => _w.Store.Line(t, now) + (HaveAlready(_w.Store, t) ? ", you have it already" : t.Due < now.Date ? ", that date has passed" : "");
 
         private async void ImportSyllabus()
         {
@@ -172,16 +186,25 @@ namespace BusyBunny
             if (SmartBunny.Ready && !SmartBunny.ListPrivate(store, target) && !SmartSpend.CapReached())
             {
                 _busy = true;
-                _w.Say("Bunny is reading the syllabus. This takes a little while.", true);
                 try
                 {
-                    string answer = await SmartBunny.AskAsync(SyllabusSystem(now), text.Text.Trim());
+                    string answer = await SmartUi.Waiting(_w, "Bunny is reading", "Bunny is reading the syllabus. This takes a little while. Stop ends it.", "Bunny is still reading.",
+                        stop => SmartBunny.AskAsync(SyllabusSystem(now), text.Text.Trim(), 16000, stop));
                     found = Parse(answer, store, target, defaultTag, now).Tasks;
+                    // The tag she typed wins over whatever Claude read off the page.
+                    if (defaultTag.Length > 0) foreach (var t in found) t.Tag = defaultTag;
                     how = "Bunny found";
+                    if (found.Count == 0)
+                    {
+                        found = ImportExport.ParseSyllabus(text.Text, defaultTag, target, now).Select(f => f.Task).ToList();
+                        how = "Busy Bunny found";
+                        if (found.Count > 0) _w.Say("Bunny's answer had no dates in it, so Busy Bunny looked for the dated lines itself.", true);
+                    }
                 }
                 catch (Exception e)
                 {
-                    _w.Say(SmartBunny.Problem(e) + " Busy Bunny looked for the dated lines itself instead.", true);
+                    string why = e is SmartUi.StoppedByHand ? e.Message : SmartBunny.Problem(e);
+                    _w.Say(why + " Busy Bunny looked for the dated lines itself instead.", true);
                     found = ImportExport.ParseSyllabus(text.Text, defaultTag, target, now).Select(f => f.Task).ToList();
                     how = "Busy Bunny found";
                 }
@@ -194,8 +217,8 @@ namespace BusyBunny
                 how = "Busy Bunny found";
             }
             if (found.Count == 0) { _w.Say("No dates turned up in that syllabus, so nothing was added.", true); back(); return; }
-            var picked = SmartUi.Checklist(_w, "Import a syllabus, check the list", how + " these. Uncheck anything you do not want; dates that have passed start unchecked.",
-                found.Select(t => (TaskText(t, now), t.Due >= now.Date)).ToList(), "_Add checked");
+            var picked = SmartUi.Checklist(_w, "Import a syllabus, check the list", how + " these. Uncheck anything you do not want; dates that have passed, and tasks you have already, start unchecked.",
+                found.Select(t => (TaskText(t, now), StartsChecked(store, t, now))).ToList(), "_Add checked");
             if (picked.Cancelled || picked.Chosen.Count == 0) { _w.Say("Nothing was added.", true); back(); return; }
             int n = Apply(store, new Proposal { Tasks = picked.Chosen.Select(i => found[i]).ToList() }, "importing a syllabus with Bunny");
             _w.SaveAndRefresh();
@@ -226,11 +249,15 @@ namespace BusyBunny
             var target = lists.First(l => l.Name == (string)list.SelectedItem);
             Proposal p;
             _busy = true;
-            _w.Say("Bunny is reading your semester. This can take a minute.", true);
-            try { p = Parse(await SmartBunny.AskAsync(SemesterSystem(now), text.Text.Trim(), 32000), store, target, "", now); }
-            catch (Exception e) { _w.Say(SmartBunny.Problem(e), true); back(); return; }
+            try
+            {
+                string answer = await SmartUi.Waiting(_w, "Bunny is reading", "Bunny is reading your semester. A long one can take a few minutes. Stop ends it.", "Bunny is still reading your semester.",
+                    stop => SmartBunny.AskAsync(SemesterSystem(now), text.Text.Trim(), 32000, stop));
+                p = Parse(answer, store, target, "", now);
+            }
+            catch (Exception e) { _w.Say((e is SmartUi.StoppedByHand ? e.Message : SmartBunny.Problem(e)) + " Nothing changed.", true); back(); return; }
             finally { _busy = false; }
-            if (p.Tags.Count + p.Classes.Count + p.Plans.Count + p.Tasks.Count == 0) { _w.Say("Bunny could not find a schedule or dates in that. Nothing changed.", true); back(); return; }
+            if (p.Tags.Count + p.Classes.Count + p.Plans.Count + p.Tasks.Count == 0) { _w.Say("Bunny could not find a schedule or dates in that. Nothing changed. File, Import a syllabus with Bunny can read one syllabus at a time.", true); back(); return; }
 
             var keep = new Proposal();
             bool Group<T>(string title, string intro, List<T> items, Func<T, string> line, Func<T, bool> on, List<T> into)
@@ -247,7 +274,7 @@ namespace BusyBunny
                 Group("Semester setup, 1 of 4: tags", "Tags for your classes.", p.Tags, t => t.Name + (t.Description.Length > 0 ? ", " + t.Description : "") + (store.Data.Tags.Any(x => x.Name.Equals(t.Name, StringComparison.OrdinalIgnoreCase)) ? ", you have it already" : ""), _ => true, keep.Tags)
                 && Group("Semester setup, 2 of 4: class times", "When your classes meet. Bunny's check-ins and fun lines stay quiet during them.", p.Classes, ClassLine, _ => true, keep.Classes)
                 && Group("Semester setup, 3 of 4: weekday plans", "A plan for each weekday, said with your morning check-in.", p.Plans, PlanLine, x => !store.Data.WeekdayPlans.TryGetValue(x.Day.ToString(), out var old) || old.Length == 0, keep.Plans)
-                && Group("Semester setup, 4 of 4: due dates", "Each becomes a task on " + target.Name + ". Dates that have passed start unchecked.", p.Tasks, t => TaskText(t, now), t => t.Due >= now.Date, keep.Tasks);
+                && Group("Semester setup, 4 of 4: due dates", "Each becomes a task on " + target.Name + ". Dates that have passed, and tasks you have already, start unchecked.", p.Tasks, t => TaskText(t, now), t => StartsChecked(store, t, now), keep.Tasks);
             if (!done) { _w.Say("Semester setup cancelled. Nothing changed.", true); back(); return; }
             int n = Apply(store, keep, "semester setup with Bunny");
             if (n == 0) { _w.Say("Nothing was checked, so nothing changed.", true); back(); return; }
@@ -283,6 +310,21 @@ namespace BusyBunny
             store.Undo();
             Need(store.Data.Tasks.Count == tasks && store.Data.Classes.Count == classes, "one Control Z did not take the setup back");
             Need(Apply(store, new Proposal(), "nothing") == 0, "an empty setup made an undo step");
+            // A due date with a time still counts.
+            var timed = Parse("{\"tasks\":[{\"name\":\"Essay\",\"due\":\"2026-10-20T23:59\"},{\"name\":\"Quiz\",\"due\":\"2026-10-21 09:00\"}]}", store, list, "", now);
+            Need(timed.Tasks.Count == 2 && timed.Tasks[0].Due == new DateTime(2026, 10, 20), "a due date with a time was dropped");
+            // Class times keep their tag even when she skipped the tags group.
+            Apply(store, new Proposal { Classes = new List<ClassTime> { new() { Tag = "BIO205", Days = new List<DayOfWeek> { DayOfWeek.Friday }, Start = new TimeSpan(9, 0, 0), End = new TimeSpan(10, 0, 0) } } }, "classes only");
+            Need(store.Data.Tags.Any(t => t.Name == "BIO205"), "a class time named a tag that does not exist");
+            store.Undo();
+            // Importing twice: what she has already starts unchecked.
+            var twice = new TaskItem { Name = "Final paper", List = list.Name, Due = new DateTime(2026, 12, 10) };
+            Need(StartsChecked(store, twice, now), "a new task started unchecked");
+            Apply(store, new Proposal { Tasks = new List<TaskItem> { twice } }, "first import");
+            var again = new TaskItem { Name = "final PAPER", List = list.Name, Due = new DateTime(2026, 12, 10, 23, 0, 0) };
+            Need(HaveAlready(store, again) && !StartsChecked(store, again, now), "a task she has already started checked");
+            Need(!HaveAlready(store, new TaskItem { Name = "Final paper", List = list.Name, Due = new DateTime(2026, 12, 11) }), "a different date counted as the same task");
+            store.Undo();
             Need(Tools.Find(SyllabusId) != null && Tools.Find(SemesterId) != null, "not in the toolbox");
         }
     }

@@ -119,6 +119,8 @@ namespace BusyBunny
             if (count > 0 && Tools.IsOn(ClassId)) PlanKit.PlayLater(ClassTone(t.Tag, count), delay);
         }
 
+        private static bool AnySprint() => FocusTools.SprintRunning || Calm.OtherSprints.Any(f => f()) || Calm.FocusTimers.Any(f => f());
+
         private void StartTicks(int minutes)
         {
             _ticks?.Stop();
@@ -128,7 +130,8 @@ namespace BusyBunny
             _ticks.Tick += (_, _) =>
             {
                 double left = (_sprintEnd - DateTime.UtcNow).TotalSeconds;
-                if (!FocusTools.SprintRunning || left <= 5) { _ticks?.Stop(); return; }
+                // Any kind of sprint counts: focus sprints, and the timers of I am stuck and Smarter body.
+                if (left <= 5 || !AnySprint()) { _ticks?.Stop(); return; }
                 if (left <= 62 && Tools.IsOn(TickId)) SoundBank.Play(TickId);
             };
             _ticks.Start();

@@ -139,9 +139,83 @@ namespace BusyBunny
         public static double Factor(Store store, DateTime now) =>
             Math.Min(MaxBoost, Active(store, now).Aggregate(1.0, (f, m) => f * m.Factor));
 
-        /// <summary>Base points with the running multipliers applied (capped at 4 times). task is for features that boost only some tasks; the ledger boosts all.</summary>
-        public static int Boost(Store store, int basePoints, TaskItem? task = null) =>
-            (int)Math.Round(basePoints * Factor(store, DateTime.Now));
+        /// <summary>
+        /// Base points with the running multipliers applied (capped at 4 times). With a task, the part the multipliers add on
+        /// top is kept inside the task's room for extras (see PayExtra); basePoints itself is always paid.
+        /// </summary>
+        public static int Boost(Store store, int basePoints, TaskItem? task = null)
+        {
+            int boosted = (int)Math.Round(basePoints * Factor(store, DateTime.Now));
+            if (task == null || boosted <= basePoints) return boosted;
+            return basePoints + Math.Min(boosted - basePoints, Room(store, task, BaseOf(store, task), DateTime.Now));
+        }
+
+        // ---- Extras for a task: one ceiling across every feature ----
+
+        private const string ExtraFeaturesId = "ledger.extrafeatures";
+        private static readonly HashSet<string> ExtraIds = new();
+
+        /// <summary>
+        /// Marks a feature id as a multiplier-style extra, so its payments use up a task's room. PayExtra does this by itself;
+        /// call it in Attach too if you pay that feature some other way. Kept in the world's bookkeeping, so it lasts.
+        /// </summary>
+        public static void CountAsExtra(Store store, string feature)
+        {
+            ExtraIds.Add(feature);
+            var kept = store.World.GetKept<HashSet<string>>(ExtraFeaturesId);
+            if (!kept.Add(feature)) return;
+            store.World.SetKept(ExtraFeaturesId, kept);
+            store.World.Save();
+        }
+
+        /// <summary>Whether payments of this feature count as multiplier-style extras.</summary>
+        public static bool IsExtra(Store store, string feature) =>
+            ExtraIds.Contains(feature) || store.World.GetKept<HashSet<string>>(ExtraFeaturesId).Contains(feature);
+
+        /// <summary>The task's own Done points as logged (Done not submitted is already halved there), or what it would earn now.</summary>
+        public static int BaseOf(Store store, TaskItem task)
+        {
+            int logged = store.Data.Log.Where(e => e.Kind == "Done" && e.TaskId == task.Id).Sum(e => e.Points);
+            return logged > 0 ? logged : Engine.PointsFor(task, store.ListOf(task), half: task.Status == Status.DoneNotSubmitted);
+        }
+
+        /// <summary>The multiplier-style extras already paid today for this task, by every feature. Flat prizes (bingo, quests, the marble) do not count.</summary>
+        public static int ExtrasToday(Store store, Guid taskId, DateTime now)
+        {
+            var ids = new HashSet<string>(ExtraIds);
+            ids.UnionWith(store.World.GetKept<HashSet<string>>(ExtraFeaturesId));
+            return store.Data.Log.Where(e => e.Kind == FunKind && e.TaskId == taskId && e.When.Date == now.Date && ids.Contains(e.Feature)).Sum(e => e.Points);
+        }
+
+        /// <summary>How many extra points this task may still get today: base times (MaxBoost minus 1), minus the extras paid already.</summary>
+        public static int Room(Store store, TaskItem task, int basePoints, DateTime now) =>
+            Math.Max(0, (int)Math.Round(Math.Max(0, basePoints) * (MaxBoost - 1)) - ExtrasToday(store, task.Id, now));
+
+        /// <summary>
+        /// Pays a multiplier-style extra for a finished task (running multipliers, the dice roll, a golden task, a combo, doubles,
+        /// dread or well-ahead), clamped so base plus every such extra for this task today, by all features together, never
+        /// passes 4 times base. Carries the task's id, so un-finishing takes it back. Does not save or speak. Null for nothing paid.
+        /// </summary>
+        public static Outcome? PayExtra(Store store, TaskItem task, int basePoints, int extra, string reason, string feature)
+        {
+            CountAsExtra(store, feature);
+            int pay = Math.Min(extra, Room(store, task, basePoints, DateTime.Now));
+            return pay > 0 ? Pay(store, pay, reason, feature, task.Id) : null;
+        }
+
+        /// <summary>The same, then saves and tells her as voice says (see Pay(w, ...)). Returns what was paid, 0 for nothing.</summary>
+        public static int PayExtra(MainWindow w, TaskItem task, int basePoints, int extra, string reason, string feature, PayVoice voice = PayVoice.AfterTask)
+        {
+            CountAsExtra(w.Store, feature);
+            int pay = Math.Min(extra, Room(w.Store, task, basePoints, DateTime.Now));
+            if (pay <= 0) return 0;
+            Pay(w, pay, reason, feature, task.Id, voice: voice);
+            return pay;
+        }
+
+        /// <summary>What the running multipliers add on top of a task's base points: base times (Factor minus 1). Paid once, by GetGoingTools.</summary>
+        public static int RunningExtra(Store store, int basePoints, DateTime now) =>
+            (int)Math.Round(Math.Max(0, basePoints) * (Factor(store, now) - 1));
 
         public static void SelfTest(Store store)
         {
@@ -172,6 +246,33 @@ namespace BusyBunny
             t.Status = Status.Today;
             Engine.Unfinish(store, t, DateTime.Now);
             Need(Engine.Total(store.Data) == before && !store.Data.Log.Any(e => e.TaskId == t.Id && e.Kind == FunKind), "undoing the task left its ledger entries");
+
+            // The per-task ceiling: power hour, dice, golden and combo style extras together stay at 4 times base at most.
+            t.Status = Status.Done;
+            store.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Done", Text = t.Name, Points = 10, TaskId = t.Id });
+            AddMultiplier(store, "test.power", 2, until, "test");
+            int doubled = Boost(store, 10, t);
+            Need(doubled == 20, "a boost for a task with room: " + doubled);
+            Pay(store, 15, "test flat prize first", "test.prize", t.Id);
+            PayExtra(store, t, 10, 10, "test power", "test.power");
+            PayExtra(store, t, 10, 10, "test dice", "test.dice");
+            PayExtra(store, t, 10, 20, "test golden", "test.golden");
+            PayExtra(store, t, 10, 15, "test combo", "test.combo");
+            Need(ExtrasToday(store, t.Id, DateTime.Now) == 30, "extras for one task went past 4 times base: " + ExtrasToday(store, t.Id, DateTime.Now));
+            Need(PayExtra(store, t, 10, 5, "test more", "test.more") == null && Boost(store, 10, t) == 10, "a full task still got more, or lost its flat points");
+            // A flat prize with the task's id uses no room.
+            Pay(store, 15, "test bingo", "test.bingo", t.Id);
+            Need(ExtrasToday(store, t.Id, DateTime.Now) == 30, "a flat prize counted as an extra");
+            RemoveMultiplier(store, "test.power");
+            t.Status = Status.Today;
+            Engine.Unfinish(store, t, DateTime.Now);
+            Need(Engine.Total(store.Data) == before && !store.Data.Log.Any(e => e.TaskId == t.Id), "un-finishing left some extras");
+            t.Status = Status.Done;
+            store.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Done", Text = t.Name, Points = 10, TaskId = t.Id });
+            PayExtra(store, t, 10, 10, "test again", "test.power");
+            Need(ExtrasToday(store, t.Id, DateTime.Now) == 10, "done again found no room");
+            t.Status = Status.Today;
+            Engine.Unfinish(store, t, DateTime.Now);
 
             // Spending refuses when short and never lowers Karma; Control Z gives it back.
             Pay(store, 50, "test pay", "test", remember: true);

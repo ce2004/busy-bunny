@@ -18,7 +18,9 @@ namespace BusyBunny
         public sealed class Promises { public List<Promise> Items { get; set; } = new(); }
         public sealed class WordDay { public string Day { get; set; } = ""; public string Word { get; set; } = ""; }
         public sealed class TinyGoal { public string Day { get; set; } = ""; public string Text { get; set; } = ""; public Guid? TaskId { get; set; } public bool Won { get; set; } public List<string> WonDays { get; set; } = new(); }
-        public sealed class DailyThree { public string Day { get; set; } = ""; public List<Guid> Tasks { get; set; } = new(); public bool Won { get; set; } public List<string> WonDays { get; set; } = new(); }
+        public sealed class DailyThree { public string Day { get; set; } = ""; public List<Guid> Tasks { get; set; } = new(); public bool Won { get; set; } public List<string> WonDays { get; set; } = new(); public Guid? PaidBy { get; set; } }
+        public sealed class WordCount { public string Day { get; set; } = ""; public int Finishes { get; set; } }
+        public sealed class Nudged { public HashSet<string> Keys { get; set; } = new(); }
         public sealed class TaskTexts { public Dictionary<Guid, string> Of { get; set; } = new(); }
         public sealed class TaskScores { public Dictionary<Guid, int> Of { get; set; } = new(); }
         public sealed class Ticks { public Dictionary<Guid, List<int>> Of { get; set; } = new(); }
@@ -69,7 +71,7 @@ namespace BusyBunny
             w.Store.ReorderRules.Add((tasks, now) => Tools.IsOn(EnergyId) ? EnergySort(tasks, EnergyToday(S, w.AppSettings, now)) : tasks);
             w.Store.SummaryParts.Add((now, shortMode) => !shortMode && Tools.IsOn(FunId) ? FunLine(S, now) : null);
 
-            Ticker.Every(PromiseId, now => Tools.IsOn(PromiseId) && S.World.Get<Promises>(PromiseId).Items.Any(p => !p.Nudged && p.At <= now), Nudge);
+            Ticker.Every(PromiseId, now => Tools.IsOn(PromiseId) && S.World.Get<Promises>(PromiseId).Items.Any(p => !WasNudged(S, p) && p.At <= now), Nudge);
             PlanKit.Morning(FirstId, (s, now) =>
             {
                 var f = s.World.Get<FirstTask>(FirstId);
@@ -90,7 +92,8 @@ namespace BusyBunny
             var now = DateTime.Now;
             if (Tools.IsOn(TinyId) && TinyDone(s, t, now))
             {
-                if (Ledger.Pay(s, Ledger.Boost(s, 10, t), "Tiny goal, big win: " + t.Name, TinyId, t.Id) is Outcome o) Game.Queue(_w, o);
+                // A fixed prize, not a multiple of the task's points: plain Pay (it still carries the id, so un-finishing takes it back).
+                if (Ledger.Pay(s, Ledger.Boost(s, 10), "Tiny goal, big win: " + t.Name, TinyId, t.Id) is Outcome o) Game.Queue(_w, o);
                 s.Save();
                 if (!Calm.FunPaused) PlanKit.PlayLater("PersonalRecord");
                 Calm.AfterTaskDone(_w, Game.Goals, Content.Pick(s, "plan.tinygoal"));
@@ -98,19 +101,20 @@ namespace BusyBunny
             }
             if (Tools.IsOn(ThreeId) && ThreeDone(s, t, now))
             {
-                if (Ledger.Pay(s, Ledger.Boost(s, 10, t), "Daily three, all done", ThreeId, t.Id) is Outcome o) Game.Queue(_w, o);
+                // The prize carries the id of the task that finished the three (ThreeDone keeps it as PaidBy).
+                if (Ledger.Pay(s, Ledger.Boost(s, 10), "Daily three, all done", ThreeId, t.Id) is Outcome o) Game.Queue(_w, o);
                 s.Save();
                 Calm.AfterTaskDone(_w, Game.Goals, Content.Pick(s, "plan.daily3"));
             }
             if (Tools.IsOn(EnoughId) && s.World.Get<TaskTexts>(EnoughId).Of.ContainsKey(t.Id))
             {
-                if (Ledger.Pay(s, Ledger.Boost(s, 5, t), "Good enough is done: " + t.Name, EnoughId, t.Id) is Outcome o) Game.Queue(_w, o);
+                if (Ledger.PayExtra(s, t, Ledger.BaseOf(s, t), Ledger.Boost(s, 5), "Good enough is done: " + t.Name, EnoughId) is Outcome o) Game.Queue(_w, o);
                 s.Save();
                 Calm.AfterTaskDone(_w, Game.Other, Content.Pick(s, "plan.goodenough"));
             }
             if (Tools.IsOn(DreadId) && DreadBonus(DreadOf(s, t.Id)) is int bonus and > 0)
             {
-                if (Ledger.Pay(s, Ledger.Boost(s, bonus, t), "Did a dreaded one: " + t.Name, DreadId, t.Id) is Outcome o) Game.Queue(_w, o);
+                if (Ledger.PayExtra(s, t, Ledger.BaseOf(s, t), Ledger.Boost(s, bonus), "Did a dreaded one: " + t.Name, DreadId) is Outcome o) Game.Queue(_w, o);
                 s.Save();
             }
             if (Tools.IsOn(PairId) && s.World.Get<TaskTexts>(PairId).Of.TryGetValue(t.Id, out var reward))
@@ -121,7 +125,7 @@ namespace BusyBunny
                     .SelectMany(h => h.Tasks).Select(id => s.Data.Tasks.FirstOrDefault(x => x.Id == id)).OfType<TaskItem>().Where(x => !PlanKit.Finished(x)).ToList();
                 if (stacked.Count > 0) Calm.AfterTaskDone(_w, Game.Other, "Stacked on that: " + string.Join(", ", stacked.Select(x => x.Name)) + ".");
             }
-            if (Tools.IsOn(WordId) && WordToday(s, now) is string word && !Calm.FunPaused)
+            if (Tools.IsOn(WordId) && WordToday(s, now) is string word && !Calm.FunPaused && WordTurn(s, now))
                 Calm.AfterTaskDone(_w, Game.Chatter, PlanKit.Line(s, "plan.word", ("word", word)));
         }
 
@@ -163,20 +167,39 @@ namespace BusyBunny
             var tasks = d.Tasks.Select(id => s.Data.Tasks.FirstOrDefault(x => x.Id == id)).OfType<TaskItem>().ToList();
             if (tasks.Count == 0 || !tasks.All(PlanKit.Finished)) return false;
             d.Won = true;
+            d.PaidBy = t.Id;
             if (!d.WonDays.Contains(d.Day)) d.WonDays.Add(d.Day);
             s.World.Set(ThreeId, d);
             s.World.Save();
             return true;
         }
 
+        /// <summary>
+        /// One of the three went back: the win is off, and so is its prize. The prize carries the id of the task that finished
+        /// the three, so when another of the three goes back, that entry is taken out here (the paying task's own undo takes it by itself).
+        /// </summary>
         public static void ThreeUndone(Store s, TaskItem t, DateTime now)
         {
             var d = s.World.Get<DailyThree>(ThreeId);
             if (d.Day != s.Key(now) || !d.Won || !d.Tasks.Contains(t.Id)) return;
+            if (d.PaidBy is Guid by && by != t.Id)
+                s.Data.Log.RemoveAll(e => e.Kind == Ledger.FunKind && e.Feature == ThreeId && e.TaskId == by && e.When.Date == now.Date);
             d.Won = false;
+            d.PaidBy = null;
             d.WonDays.Remove(d.Day);
             s.World.Set(ThreeId, d);
             s.World.Save();
+        }
+
+        /// <summary>Whether this finish gets a word of the day line: the first finish of the day, then every third one.</summary>
+        public static bool WordTurn(Store s, DateTime now)
+        {
+            var c = s.World.GetKept<WordCount>(WordId);
+            if (c.Day != s.Key(now)) c = new WordCount { Day = s.Key(now) };
+            c.Finishes++;
+            s.World.SetKept(WordId, c);
+            s.World.Save();
+            return c.Finishes % 3 == 1;
         }
 
         public static int? DreadOf(Store s, Guid id) => s.World.Get<TaskScores>(DreadId).Of.TryGetValue(id, out int d) ? d : null;
@@ -256,19 +279,29 @@ namespace BusyBunny
             if (at == null || at <= DateTime.Now) { _w.Say("I could not read that time. Try 3 pm or in 20 minutes.", true); return; }
             PlanKit.Change<Promises>(S, PromiseId, "a promise to start " + t.Name, p =>
             {
-                p.Items.RemoveAll(x => x.Nudged || x.TaskId == t.Id || x.At < DateTime.Now.AddDays(-2));
+                p.Items.RemoveAll(x => WasNudged(S, x) || x.TaskId == t.Id || x.At < DateTime.Now.AddDays(-2));
                 p.Items.Add(new Promise { TaskId = t.Id, Name = t.Name, At = at.Value });
             });
             _w.Say("Promise noted: one nudge at " + Words.Time(at.Value) + (at.Value.Date == DateTime.Today ? "" : " " + Words.Day(at.Value, DateTime.Now)) + " to start " + t.Name + ".", true);
         }
 
+        private const string NudgedId = "plan.promise.nudged";
+        private static string NudgeKey(Promise p) => p.TaskId.ToString("N") + " " + p.At.ToString("o");
+
+        /// <summary>Whether a promise was nudged. Kept, so a Control Z of something else never brings a nudge back.</summary>
+        public static bool WasNudged(Store s, Promise p) => p.Nudged || s.World.GetKept<Nudged>(NudgedId).Keys.Contains(NudgeKey(p));
+
         /// <summary>Marks due promises as nudged first, so a promise is never nudged twice, then says one line for each that still matters.</summary>
         public static List<Promise> DuePromises(Store s, DateTime now)
         {
             var p = s.World.Get<Promises>(PromiseId);
-            var due = p.Items.Where(x => !x.Nudged && x.At <= now).ToList();
+            var due = p.Items.Where(x => !WasNudged(s, x) && x.At <= now).ToList();
             if (due.Count == 0) return due;
-            foreach (var x in due) x.Nudged = true;
+            var kept = s.World.GetKept<Nudged>(NudgedId);
+            // Only the last few days' promises need remembering.
+            kept.Keys.RemoveWhere(k => DateTime.TryParse(k[(k.IndexOf(' ') + 1)..], null, System.Globalization.DateTimeStyles.RoundtripKind, out var at) && at < now.AddDays(-7));
+            foreach (var x in due) { x.Nudged = true; kept.Keys.Add(NudgeKey(x)); }
+            s.World.SetKept(NudgedId, kept);
             s.World.Set(PromiseId, p);
             s.World.Save();
             return due.Where(x => s.Data.Tasks.FirstOrDefault(t => t.Id == x.TaskId) is TaskItem t && !PlanKit.Finished(t)).ToList();
@@ -458,9 +491,18 @@ namespace BusyBunny
             if (!PlanKit.Form(_w, "Pre-flight checklist: " + t.Name, "Tick each one once it is true. Ticked ones stay ticked.", rows)) return;
             var ticked = Enumerable.Range(0, boxes.Count).Where(i => boxes[i].IsChecked == true).ToList();
             if (ticked.SequenceEqual(had)) { _w.Say(ticked.Count + " of " + FlightItems.Length + " checked for " + t.Name + ".", true); return; }
-            PlanKit.Change<Ticks>(S, FlightId, "the pre-flight checklist", x => x.Of[t.Id] = ticked);
             bool submitted = ticked.Contains(FlightItems.Length - 1) && !had.Contains(FlightItems.Length - 1);
-            if (submitted && t.Status == Status.DoneNotSubmitted) { _w.SetTaskStatus(t, Status.Done); return; }
+            if (submitted && t.Status == Status.DoneNotSubmitted)
+            {
+                // The status change makes the one Control Z step; the ticks join it, so one Control Z undoes both.
+                _w.SetTaskStatus(t, Status.Done);
+                var x = S.World.Get<Ticks>(FlightId);
+                x.Of[t.Id] = ticked;
+                S.World.Set(FlightId, x);
+                PlanKit.SaveAll(S);
+                return;
+            }
+            PlanKit.Change<Ticks>(S, FlightId, "the pre-flight checklist", x => x.Of[t.Id] = ticked);
             _w.Say(ticked.Count == FlightItems.Length ? "All checked. Ready for takeoff: mark it done whenever you like." : ticked.Count + " of " + FlightItems.Length + " checked for " + t.Name + ".", true);
         }
 
@@ -574,6 +616,27 @@ namespace BusyBunny
             ThreeUndone(s, b, now);
             Need(!s.World.Get<DailyThree>(ThreeId).Won, "daily three stayed won after undo");
 
+            // Daily three paid once: b finished the three and carries the prize; setting a back takes it, so a again pays once.
+            b.Status = Status.Done;
+            Need(ThreeDone(s, b, now) && s.World.Get<DailyThree>(ThreeId).PaidBy == b.Id, "the daily three does not know who paid");
+            Ledger.Pay(s, 10, "test three", ThreeId, b.Id);
+            int withPrize = Engine.Total(s.Data);
+            a.Status = Status.Today;
+            ThreeUndone(s, a, now);
+            Need(Engine.Total(s.Data) == withPrize - 10, "setting another of the three back left the prize");
+            a.Status = Status.Done;
+            Need(ThreeDone(s, a, now), "the daily three did not come back");
+            Ledger.Pay(s, 10, "test three", ThreeId, a.Id);
+            Need(Engine.Total(s.Data) == withPrize, "the daily three paid twice");
+            s.Data.Log.RemoveAll(e => e.Feature == ThreeId && (e.TaskId == a.Id || e.TaskId == b.Id));
+            b.Status = Status.Today;
+
+            // Word of the day: the first finish, then every third.
+            s.World.SetKept(WordId, new WordCount());
+            var turns = Enumerable.Range(0, 7).Select(_ => WordTurn(s, now)).ToList();
+            Need(turns.SequenceEqual(new[] { true, false, false, true, false, false, true }), "word of the day on every finish");
+            s.World.SetKept(WordId, new WordCount());
+
             // Points: a dreaded task pays and un-finishing takes it back.
             Need(DreadBonus(5) == 10 && DreadBonus(4) == 5 && DreadBonus(3) == 0 && DreadBonus(null) == 0, "dread bonus");
             int before = Engine.Total(s.Data);
@@ -583,7 +646,11 @@ namespace BusyBunny
 
             // Promise: nudged once, never a second time.
             s.World.Set(PromiseId, new Promises { Items = { new Promise { TaskId = b.Id, Name = b.Name, At = now.AddMinutes(-1) } } });
+            s.Remember("a step before the nudge");
             Need(DuePromises(s, now).Count == 1 && DuePromises(s, now.AddMinutes(5)).Count == 0, "a promise nudged twice");
+            // Control Z of an earlier step puts the bag back, but the nudge is kept: never a second.
+            s.Undo();
+            Need(DuePromises(s, now.AddMinutes(6)).Count == 0, "a promise nudged again after Control Z");
 
             // Energy order, fitting a gap and mood scores.
             a.Energy = Energy.BrainHeavy; b.Energy = Energy.Easy;

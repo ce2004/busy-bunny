@@ -111,20 +111,28 @@ namespace BusyBunny
             return tasks.Count;
         }
 
+        /// <summary>Where the clean slate can move tasks: one choice a date (on a Sunday the end of the week, tomorrow and next Monday are one day), then a typed date.</summary>
+        public static List<(string Text, DateTime? When)> SlateChoices(DateTime now)
+        {
+            var end = Store.WeekEnd(now);
+            if (end <= now.Date) end = now.Date.AddDays(1);
+            var dated = new List<(string Text, DateTime? When)>
+            {
+                ("The end of this week, " + end.ToString("dddd"), end),
+                ("Tomorrow, " + now.Date.AddDays(1).ToString("dddd"), now.Date.AddDays(1)),
+                ("Next Monday", Store.WeekEnd(now).AddDays(1)),
+            };
+            var options = dated.GroupBy(o => o.When!.Value.Date).Select(g => g.First()).ToList();
+            options.Add(("A date I type", null));
+            return options;
+        }
+
         private void CleanSlateTool()
         {
             var now = DateTime.Now;
             var tasks = SlateTasks(S, now);
             if (tasks.Count == 0) { _w.Say("Nothing is overdue. The slate is already clean.", true); return; }
-            var end = Store.WeekEnd(now);
-            if (end <= now.Date) end = now.Date.AddDays(1);
-            var options = new List<(string Text, DateTime? When)>
-            {
-                ("The end of this week, " + end.ToString("dddd"), end),
-                ("Tomorrow", now.Date.AddDays(1)),
-                ("Next Monday", Store.WeekEnd(now).AddDays(1)),
-                ("A date I type", null),
-            };
+            var options = SlateChoices(now);
             int i = FunKit.Pick(_w, "Clean slate", FunKit.Plural(tasks.Count, "overdue task", "overdue tasks") + ". Move them all to:", options.Select(o => o.Text).ToList());
             if (i < 0) return;
             DateTime to;
@@ -220,7 +228,7 @@ namespace BusyBunny
             {
                 GameEvents.RaiseBreakEnded();
                 _w.Say("Your free time is up. Come back whenever you are ready.");
-            });
+            }, GameEvents.RaiseBreakEnded);
             _w.Say("Enjoy " + FocusLogic.Duration(take) + ". You earned it. I will tell you when it is up.", true);
         }
 
@@ -259,6 +267,8 @@ namespace BusyBunny
         public void SelfTest(Store store)
         {
             void Need(bool ok, string what) { if (!ok) throw new Exception("rest: " + what); }
+            var sunday = new DateTime(2026, 11, 8, 10, 0, 0);
+            Need(SlateChoices(sunday).Count == 2 && SlateChoices(new DateTime(2026, 11, 4, 10, 0, 0)).Count == 4, "clean slate offered the same date twice");
             var now = DateTime.Now;
             var list = store.Data.Lists[0].Name;
             var late = new TaskItem { Name = "late essay", List = list, Status = Status.Today, Due = now.Date.AddDays(-3) };

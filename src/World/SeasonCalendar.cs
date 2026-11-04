@@ -15,7 +15,7 @@ namespace BusyBunny
         /// <summary>Her birthday from Settings, month and day, or 0 for none (then About me is asked).</summary>
         public int BirthMonth { get; set; }
         public int BirthDay { get; set; }
-        /// <summary>Bunny's birthday: the first day of spring unless she picks another.</summary>
+        /// <summary>Bunny's birthday: March 21, near the start of spring, unless she picks another.</summary>
         public int BunnyMonth { get; set; } = 3;
         public int BunnyDay { get; set; } = 21;
         public DateTime? SemesterStart { get; set; }
@@ -58,15 +58,20 @@ namespace BusyBunny
             new("fullmoon", "The full moon", Moon, 3),
         };
 
-        /// <summary>The ones the engine raises itself (RealWorld.Holiday and a new season): never raised twice.</summary>
-        private static readonly HashSet<string> EngineWords = new() { "New Year's Day", "Valentine's Day", "Saint Patrick's Day", "April Fools' Day", "Halloween", "Christmas Eve", "Christmas Day", "New Year's Eve", "Winter begins", "Spring begins", "Summer begins", "Fall begins" };
-
         public static SeasonEvent? ByWords(string words) => Catalog.FirstOrDefault(e => e.Words.Equals(words.Trim(), StringComparison.OrdinalIgnoreCase));
         public static SeasonEvent? ById(string id) => Catalog.FirstOrDefault(e => e.Id == id);
 
-        /// <summary>The event's touch and sound words from season.events, with its name.</summary>
-        public static Dictionary<string, string> Info(string id) =>
-            Content.Items("season.events").FirstOrDefault(i => i.TryGetValue("id", out var x) && x == id) ?? new Dictionary<string, string>();
+        /// <summary>The event's touch and sound words from season.events, with its name, and her bunny's name filled in.</summary>
+        public static Dictionary<string, string> Info(string id)
+        {
+            var item = Content.Items("season.events").FirstOrDefault(i => i.TryGetValue("id", out var x) && x == id);
+            if (item == null) return new Dictionary<string, string>();
+            string bunny = BunnyName(Engines.Store);
+            return item.ToDictionary(kv => kv.Key, kv => kv.Value.Replace("{name}", bunny));
+        }
+
+        /// <summary>Her bunny's name for filling in content, or plain Bunny with no store or no name yet.</summary>
+        public static string BunnyName(Store? s) => s?.Data.Game.BunnyName is string n && n.Trim().Length > 0 ? n : "Bunny";
 
         public static string Name(SeasonEvent e) => Info(e.Id).TryGetValue("name", out var n) && n.Length > 0 ? n : e.Words;
 
@@ -104,10 +109,23 @@ namespace BusyBunny
             var p = Prefs(s);
             if (p.BirthMonth > 0 && p.BirthDay > 0) return (p.BirthMonth, p.BirthDay);
             foreach (var note in s.Data.BunnyNotes)
+                if (BirthdayIn(note) is (int m, int d)) return (m, d);
+            return null;
+        }
+
+        /// <summary>
+        /// Her own birthday in one About me note: only a note that says "my birthday", "her birthday", "I was born" or "born on",
+        /// so "my mom's birthday" never counts. Every spot after those words is tried, so "the 5th of May" is found too.
+        /// </summary>
+        public static (int Month, int Day)? BirthdayIn(string note)
+        {
+            var own = Regex.Match(note ?? "", @"\b(my|her)\s+birthday\b|\bi\s+was\s+born\b|\bborn\s+on\b", RegexOptions.IgnoreCase);
+            if (!own.Success) return null;
+            var words = Regex.Matches(note![own.Index..], @"\S+").Select(m => m.Value).ToList();
+            for (int i = 0; i < words.Count; i++)
             {
-                int at = note.IndexOf("birthday", StringComparison.OrdinalIgnoreCase);
-                if (at < 0 || note.Contains("bunny's birthday", StringComparison.OrdinalIgnoreCase)) continue;
-                if (ParseMonthDay(Regex.Match(note[at..], @"([A-Za-z]+\.?\s+\d{1,2}(st|nd|rd|th)?|\d{1,2}(st|nd|rd|th)?\s+(of\s+)?[A-Za-z]+|\d{1,2}\s*/\s*\d{1,2})").Value) is (int m, int d)) return (m, d);
+                if (ParseMonthDay(words[i]) is (int m1, int d1)) return (m1, d1);
+                if (ParseMonthDay(string.Join(" ", words.Skip(i).Take(3))) is (int m, int d)) return (m, d);
             }
             return null;
         }

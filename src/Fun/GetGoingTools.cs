@@ -65,6 +65,7 @@ namespace BusyBunny
             GameEvents.DayStarted += day => { if (Tools.IsOn(Dice) && !Calm.FunPaused && RollIfNew(S, DateTime.Now, FunKit.Rng) is string list) Calm.SayUnprompted(_w, DiceLine(list)); };
             GameEvents.TaskDone += OnDone;
             GameEvents.TaskUndone += OnUndone;
+            GameEvents.StatusChanged += (t, old) => { if (HalveDoubled(S, t, old)) S.Save(); };
             GameEvents.SprintDone += _ => MicroAfterSprint();
             Ticker.Every(Power, _ => true, PowerTick);
 
@@ -92,13 +93,20 @@ namespace BusyBunny
                 {
                     if (s is not Window win || win.Title != "Start a sprint" || !Tools.IsOn(SprintLen) || Engines.Store is not Store st) return;
                     int len = FunKit.SprintLength(FunKit.Energy(st, Engines.Settings, DateTime.Now));
-                    var minutes = Descendants(win).OfType<ComboBox>().FirstOrDefault(c => c.Items.Count > 0 && c.Items[0] is string first && first.EndsWith(" minutes"));
-                    if (minutes == null) return;
-                    int at = minutes.Items.IndexOf(len + " minutes");
-                    if (at >= 0) minutes.SelectedIndex = at;
+                    // Only the box that lists exactly the sprint lengths, so a break-length box or a renamed item is never touched.
+                    var want = FocusLogic.SprintMinutes.Select(m => m + " minutes").ToList();
+                    var minutes = Descendants(win).OfType<ComboBox>().FirstOrDefault(c => c.Items.OfType<string>().SequenceEqual(want));
+                    int at = Array.IndexOf(FocusLogic.SprintMinutes, len);
+                    if (minutes == null || at < 0) { if (!_lenMissed) { _lenMissed = true; ErrorLog.Write("Sprint length by energy found no sprint-length box in the sprint window."); } return; }
+                    minutes.SelectedIndex = at;
                 }));
             }
         }
+
+        private static bool _lenMissed;
+
+        /// <summary>A sprint's length today: by energy while Sprint length by energy is on, otherwise the usual 15 minutes.</summary>
+        public static int SprintMinutesNow(Store s, Settings? cfg, DateTime now) => Tools.IsOn(SprintLen) ? FunKit.SprintLength(FunKit.Energy(s, cfg, now)) : 15;
 
         private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
         {
@@ -115,28 +123,32 @@ namespace BusyBunny
         {
             var now = DateTime.Now;
             if (FunTimer.Current is FunTimer timer && timer.Id is Tidy or Batch) timer.Count++;
-            if (S.World.Get<Claimed>(Claim).Id == t.Id) S.World.Set(Claim, new Claimed());
+            // A claim, the hard thing and the warmup plan are kept, not cleared: a finished task simply stops counting
+            // for them, so reopening it by mistake brings them back (ENGINES: undo in TaskUndone what TaskDone did).
 
-            // Doubled points: the dice roll's list, and power hour. Paid on the task, so un-finishing takes them back.
+            // Power hour (a ledger multiplier) and the dice roll, on the task's base points. Each multiplier's own feature pays
+            // its part (the game's Done points are not multiplied; consistency is paid by AutoPoints), so power hour is counted
+            // here once. One extra on the task, inside its 4 times room, so un-finishing takes it back.
+            int basePts = Ledger.BaseOf(S, t);
             bool dice = Tools.IsOn(Dice) && DiceApplies(S.World.GetKept<DiceRoll>(Dice), t, now);
-            bool power = Tools.IsOn(Power) && Ledger.Active(S, now).Any(m => m.Id == Power);
-            int bonus = DoubleBonus(Engine.PointsFor(t, S.ListOf(t), half: t.Status == Status.DoneNotSubmitted), dice, power);
+            var power = Ledger.Active(S, now).FirstOrDefault(m => m.Id == Power);
+            int bonus = DoubleBonus(basePts, dice, power?.Factor ?? 1);
             if (bonus > 0)
-                Ledger.Pay(_w, bonus, dice && power ? "Power hour and the dice roll both double this one" : dice ? "The dice roll doubles " + t.List + " today" : "Power hour doubles it", dice ? Dice : Power, t.Id);
+                Ledger.PayExtra(_w, t, basePts, bonus, dice && power != null ? "Power hour and the dice roll both double this one" : dice ? "The dice roll doubles " + t.List + " today" : "Power hour doubles it", dice ? Dice : Power);
 
             var hard = S.World.Get<DayTask>(Hard);
-            if (Tools.IsOn(Hard) && hard.Day == S.Key(now) && hard.Task == t.Id)
+            if (Tools.IsOn(Hard) && hard.Day == S.Key(now) && hard.Task == t.Id && !HardPaid(S, t.Id, now))
             {
                 int pts = HardBonus(now);
-                if (Ledger.Pay(S, pts, "Hard thing first", Hard, t.Id) is Outcome o) Game.Queue(_w, o);
-                S.World.Set(Hard, new DayTask());
+                // A flat prize, not a multiple of the task, so it is paid outside the task's room for extras.
+                if (Ledger.Pay(S, pts, "Hard thing first", Hard, t.Id) is Outcome o) { S.Save(); Game.Queue(_w, o); }
                 Calm.AfterTaskDone(_w, Game.Other, "Hard thing first, and done. " + pts + " bonus points. Everything else is downhill from here.");
             }
 
             var plan = S.World.Get<WarmupPlan>(Warmup);
-            if (Tools.IsOn(Warmup) && plan.Day == S.Key(now) && plan.Warm.Contains(t.Id) && plan.Warm.All(id => FunKit.Find(S, id) is not TaskItem x || !FunKit.Open(x)))
+            if (Tools.IsOn(Warmup) && WarmedUp(S, plan, t, now) && S.World.GetKept<Offered>(Warmup + ".said").Day != S.Key(now))
             {
-                S.World.Set(Warmup, new WarmupPlan());
+                S.World.SetKept(Warmup + ".said", new Offered { Day = S.Key(now) });
                 if (FunKit.Find(S, plan.Big) is TaskItem big && FunKit.Open(big))
                     Calm.AfterTaskDone(_w, Game.Other, "Warmed up. Now the big one: " + big.Name + ".");
             }
@@ -168,11 +180,38 @@ namespace BusyBunny
             return run.Count;
         }
 
-        /// <summary>The extra points for doubling: base times the factor minus base, the factor capped at 4.</summary>
-        public static int DoubleBonus(int basePoints, bool dice, bool power)
+        /// <summary>
+        /// The extra points for doubling: base times the factor minus base. factor is power hour's running multiplier (1 when
+        /// it is not on); the dice roll doubles it; all of it capped at 4.
+        /// </summary>
+        public static int DoubleBonus(int basePoints, bool dice, double factor)
         {
-            double f = Math.Min(Ledger.MaxBoost, (dice ? 2 : 1) * (power ? 2 : 1));
+            double f = Math.Min(Ledger.MaxBoost, Math.Max(1, factor) * (dice ? 2 : 1));
             return (int)Math.Round(basePoints * (f - 1));
+        }
+
+        /// <summary>Whether the hard thing first bonus was already paid for this task today (un-finishing removes it, so done, back, done pays once).</summary>
+        public static bool HardPaid(Store s, Guid id, DateTime now) =>
+            s.Data.Log.Any(e => e.Kind == Ledger.FunKind && e.Feature == Hard && e.TaskId == id && e.When.Date == now.Date);
+
+        /// <summary>The warmup plan for today, with this task one of its warmups and every warmup finished. Changes nothing.</summary>
+        public static bool WarmedUp(Store s, WarmupPlan plan, TaskItem t, DateTime now) =>
+            plan.Day == s.Key(now) && plan.Warm.Contains(t.Id) && plan.Warm.All(id => FunKit.Find(s, id) is not TaskItem x || !FunKit.Open(x));
+
+        /// <summary>
+        /// Done becomes Done not submitted: the core points halve (GameFeature corrects them), so the dice and power hour extra
+        /// for the task halves too. A correction, not a penalty. The status change made the Control Z step.
+        /// </summary>
+        public static bool HalveDoubled(Store s, TaskItem t, Status old)
+        {
+            if (old != Status.Done || t.Status != Status.DoneNotSubmitted) return false;
+            bool changed = false;
+            foreach (var e in s.Data.Log.Where(e => e.Kind == Ledger.FunKind && e.TaskId == t.Id && e.Feature is Dice or Power))
+            {
+                e.Points = Math.Max(1, e.Points / 2);
+                changed = true;
+            }
+            return changed;
         }
 
         public static int HardBonus(DateTime now) => now.Hour < 12 ? 10 : 5;
@@ -278,7 +317,7 @@ namespace BusyBunny
                 p.Started = today;
                 S.World.SetKept(Power, p);
                 Ledger.AddMultiplier(S, Power, 2, now.Date.AddHours(p.Hour + 1), "Power hour");
-                if (!Calm.FunPaused) SoundBank.Play("go.power.start");
+                if (Calm.Hush(S, _w.AppSettings, now) == null) SoundBank.Play("go.power.start");
                 Calm.SayUnprompted(_w, Content.Pick(S, "go.power") + " Points double until " + HourWords(p.Hour + 1) + ".");
             }
             else if (p.Started == today && p.Ended != today && now >= now.Date.AddHours(p.Hour + 1))
@@ -286,7 +325,7 @@ namespace BusyBunny
                 p.Ended = today;
                 S.World.SetKept(Power, p);
                 S.World.Save();
-                if (!Calm.FunPaused) SoundBank.Play("go.power.end");
+                if (Calm.Hush(S, _w.AppSettings, now) == null) SoundBank.Play("go.power.end");
                 Game.Note(S, "Power hour is over for today.");
             }
         }
@@ -448,7 +487,7 @@ namespace BusyBunny
             m.Waiting = true;
             S.World.SetKept(Micro, m);
             S.World.Save();
-            _w.Say("Your micro-goal was: " + m.Goal + ". Micro-goal for a sprint, in the toolbox, marks it reached.");
+            Calm.SayUnprompted(_w, "Your micro-goal was: " + m.Goal + ". Micro-goal for a sprint, in the toolbox, marks it reached.");
         }
 
         // ---- Polish timer ----
@@ -480,14 +519,13 @@ namespace BusyBunny
         private void DanceTool()
         {
             if (FunTimer.Handle(_w, Dance)) return;
-            GameEvents.RaiseBreakStarted();
+            // Not a rest between sprints, so it raises no break events (they pay a break on time in AutoPoints).
             _beatStep = 0;
             FunTimer.Start(_w, Dance, "Dance break", 2, null, false, (_, _) =>
             {
                 _beat.Stop();
-                GameEvents.RaiseBreakEnded();
                 _w.Say(Content.Pick(S, "go.dance"));
-            });
+            }, () => _beat.Stop());
             if (Sounds.Enabled) _beat.Start();
             _w.Say("Dance break: two minutes. Move however feels good, sitting or standing. Open it again to stop early.", true);
         }
@@ -506,7 +544,7 @@ namespace BusyBunny
         {
             void Need(bool ok, string what) { if (!ok) throw new Exception("get going: " + what); }
             var now = new DateTime(2026, 11, 4, 9, 30, 0);
-            Need(DoubleBonus(10, true, false) == 10 && DoubleBonus(10, true, true) == 30 && DoubleBonus(10, false, false) == 0, "doubled points");
+            Need(DoubleBonus(10, true, 1) == 10 && DoubleBonus(10, true, 2) == 30 && DoubleBonus(10, false, 1) == 0 && DoubleBonus(10, false, 2) == 10 && DoubleBonus(10, true, 3) == 30, "doubled points");
             var list = store.Data.Lists[0].Name;
             var t = new TaskItem { Name = "dice test", List = list };
             Need(DiceApplies(new DiceRoll { Day = "2026-11-04", List = list }, t, now) && !DiceApplies(new DiceRoll { Day = "2026-11-03", List = list }, t, now), "dice roll day");
@@ -537,6 +575,27 @@ namespace BusyBunny
             store.Data.Tasks.AddRange(new[] { b1, b2 });
             Need(Groups(store, DateTime.Now).Any(g => g.Label == "Email tasks" && g.Tasks.Count == 2), "batch groups");
             store.Data.Tasks.RemoveAll(x => x == b1 || x == b2 || x.Name == "dice test");
+
+            // Dice and power hour, then a golden and a combo style extra: never past 4 times base; un-finishing takes all back.
+            var d = new TaskItem { Name = "stack test", List = list, Status = Status.Done, DoneAt = DateTime.Now };
+            store.Data.Tasks.Add(d);
+            store.Data.Log.Add(new LogEntry { When = DateTime.Now, Kind = "Done", Text = d.Name, Points = 10, TaskId = d.Id });
+            int before = Engine.Total(store.Data);
+            Ledger.PayExtra(store, d, 10, DoubleBonus(10, true, 2), "test dice and power", Dice);
+            Ledger.PayExtra(store, d, 10, 20, "test golden", "test.golden");
+            Ledger.PayExtra(store, d, 10, 10, "test combo", "test.combo");
+            Need(Engine.Total(store.Data) - before == 30, "stacked extras went past 4 times base: " + (Engine.Total(store.Data) - before));
+            Need(!HardPaid(store, d.Id, DateTime.Now), "hard thing first counted as paid");
+            d.Status = Status.DoneNotSubmitted;
+            Need(HalveDoubled(store, d, Status.Done) && store.Data.Log.First(e => e.TaskId == d.Id && e.Feature == Dice).Points == 15, "dice bonus not halved for Done not submitted");
+            d.Status = Status.Today;
+            Engine.Unfinish(store, d, DateTime.Now);
+            Need(Engine.Total(store.Data) == before - 10, "un-finishing left extras behind");
+            var wp = new WarmupPlan { Day = store.Key(DateTime.Now), Warm = new List<Guid> { d.Id } };
+            Need(!WarmedUp(store, wp, d, DateTime.Now), "warmed up with the warmup still open");
+            d.Status = Status.Done;
+            Need(WarmedUp(store, wp, d, DateTime.Now) && WarmedUp(store, wp, d, DateTime.Now), "the warmup plan was used up by checking it");
+            store.Data.Tasks.Remove(d);
             foreach (var topic in new[] { "go.dice", "go.momentum", "go.power", "go.tidy", "go.polish", "go.dance" })
                 Need(Content.Lines(topic).Count >= 20, topic + " has fewer than 20 lines");
             Need(Content.Lines("go.dice").All(l => l.Contains("{list}")) && Content.Lines("go.momentum").All(l => l.Contains("{task}")), "a line without its blank");

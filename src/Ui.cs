@@ -260,12 +260,16 @@ namespace BusyBunny
         private static DateTime _lastSpoken = DateTime.MinValue, _lastKey = DateTime.MinValue;
         private static System.Windows.Threading.DispatcherTimer? _timer;
 
+        /// <summary>Every line handed to the screen reader (Rate a line uses it to know which fun line she really heard).</summary>
+        public static event Action<string>? Said;
+
         public static void Say(UIElement from, string text, bool interrupt = false)
         {
             if (Muted || string.IsNullOrWhiteSpace(text)) return;
             var disp = from.Dispatcher;
             if (!disp.CheckAccess()) { disp.BeginInvoke(() => Say(from, text, interrupt)); return; }
             Hook();
+            try { Said?.Invoke(text); } catch { }
             // An interrupting line goes first, and whatever was waiting is said right after it, never dropped.
             if (interrupt) _burstInterrupt = true;
             if (!_burst.Any(b => b.Text == text)) _burst.Add((from, text));

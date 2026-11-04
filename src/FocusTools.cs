@@ -166,6 +166,9 @@ namespace BusyBunny
                 _w.Say("Sprint stopped. No harm done, it just does not count.", true);
                 return;
             }
+            // One timer at a time: a toolbox timer (ten-minute tidy, a dare, free time and the rest) must end or be stopped first.
+            if (FunTimer.Current is FunTimer ft) { _w.Say(ft.Name + " is running, " + ft.LeftWords + " left. Open it again from the toolbox to stop it first.", true); return; }
+            if (Calm.FocusTimers.Any(f => f())) { _w.Say("A toolbox timer is running. Stop it from the toolbox first, then start your sprint.", true); return; }
             var minutes = new ComboBox();
             foreach (int m in FocusLogic.SprintMinutes) minutes.Items.Add(m + " minutes");
             minutes.SelectedIndex = 2;

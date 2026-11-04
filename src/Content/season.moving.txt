@@ -1,4 +1,4 @@
-{name} wraps her favorite teacup in a soft cloth and tucks it into a box. Not a single chip.
+{name} wraps their favorite teacup in a soft cloth and tucks it into a box. Not a single chip.
 
 The neighbors form a line and pass boxes paw to paw, and every one arrives at the new burrow safe and sound.
 
@@ -6,7 +6,7 @@ The heavy old armchair takes three neighbors to carry, but it gets there, and it
 
 Your quilts and blankets go in a big soft pile in the wheelbarrow, and not one gets dropped in the mud.
 
-{name} carries the little felt carrot herself, held tight in both paws, all the way to the new burrow.
+{name} carries the little felt carrot themselves, held tight in both paws, all the way to the new burrow.
 
 The pony pulls a cart full of books, and the hedgehog checks every single one off her list. All accounted for.
 
@@ -20,4 +20,4 @@ The new burrow is bigger and has a round window, and your old things fit inside 
 
 Every last spoon, sock and button makes it to the new burrow. {name} counted.
 
-That night, {name} curls up in her old bed in the new burrow and says it already smells like home.
+That night, {name} curls up in their old bed in the new burrow and says it already smells like home.
