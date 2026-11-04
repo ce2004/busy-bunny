@@ -1,0 +1,87 @@
+name: The trailhead
+touch: Packed dirt under your paws and a wooden sign with carved letters.
+sound: Birds chattering, everyone excited to start.
+
+name: The little bridge
+touch: Wooden planks that give a little with each step.
+sound: A brook trickling underneath.
+
+name: The pine grove
+touch: Soft needles underfoot, springy and quiet.
+sound: Wind hushing through tall branches.
+
+name: The mossy log
+touch: A fallen log covered in cushiony moss. A good place to sit.
+sound: A woodpecker tapping somewhere far away.
+
+name: The blackberry bramble
+touch: Prickly canes with a few sweet berries if you reach carefully.
+sound: Buzzing bees.
+
+name: The stepping stones
+touch: Smooth flat rocks across a shallow creek, cool and wet.
+sound: Splashes as you hop from one to the next.
+
+name: The meadow
+touch: Tall grass brushing your shoulders, warm from the sun.
+sound: Crickets singing.
+
+name: The old oak
+touch: Deep ridged bark you can feel like a map.
+sound: Leaves rustling high above.
+
+name: The halfway bench
+touch: A wooden bench worn smooth by many travelers.
+sound: Your own breathing, slowing down. You are about halfway.
+
+name: The windy ridge
+touch: Cool air on your face and gravel crunching underfoot.
+sound: The wind whistling past your ears.
+
+name: The berry stand
+touch: A little wooden counter with a basket of berries.
+sound: A neighbor humming while sorting fruit.
+
+name: The fern hollow
+touch: Feathery ferns brushing your legs and damp, cool air.
+sound: Water dripping off leaves.
+
+name: The rope bridge
+touch: Rough rope railings that sway gently.
+sound: The creak of the rope and a river far below.
+
+name: The cave overhang
+touch: Cool rock above you and dry sand below.
+sound: Your voice echoing back softly.
+
+name: The sunny clearing
+touch: Warm flat rocks perfect for a rest.
+sound: A breeze and a distant woodpecker.
+
+name: The waterfall view
+touch: Fine mist on your face.
+sound: A steady roar of falling water.
+
+name: The switchbacks
+touch: The path zigzags uphill, with a handrail of smooth wood.
+sound: Pebbles skittering away under your steps.
+
+name: The lookout
+touch: A stone wall at waist height, cool and solid.
+sound: Quiet, open air. You can feel how far you have come.
+
+name: The pine cone hill
+touch: Pine cones everywhere, rolling under your paws.
+sound: Crunch, crunch, crunch.
+
+name: The last stream
+touch: A shallow crossing with warm sunlit stones.
+sound: Water chuckling over pebbles.
+
+name: The lantern path
+touch: Smooth flat stones lit by little lanterns that feel warm as you pass.
+sound: Soft music from the finish ahead.
+
+name: The finish line
+touch: A ribbon across the path that you break with your chest.
+sound: Cheering neighbors. You made it to the end of the semester.

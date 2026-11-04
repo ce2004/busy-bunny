@@ -1,0 +1,89 @@
+name: A daisy
+touch: Thin soft petals around a bumpy center, like a tiny pincushion.
+sound: A faint rustle in the breeze.
+
+name: A bluebell
+touch: Little hanging bells, smooth and cool, all along one stem.
+sound: Almost a tinkle when the wind brushes them.
+
+name: A clover blossom
+touch: A round fluffy head made of tiny tubes.
+sound: Bees humming as they visit.
+
+name: A buttercup
+touch: Glossy petals that feel waxy and smooth.
+sound: A tiny tick as a stem springs back.
+
+name: A poppy
+touch: Petals as thin and crinkly as tissue paper.
+sound: A papery flutter.
+
+name: A violet
+touch: Small velvety petals and heart-shaped leaves.
+sound: Quiet. Violets are shy.
+
+name: A sunflower
+touch: A big rough face full of seeds, with a fuzzy stem.
+sound: A creak as it turns toward the sun.
+
+name: A forget-me-not
+touch: Tiny round petals in a little cluster, delicate as crumbs.
+sound: A whisper among the grass.
+
+name: A lavender sprig
+touch: Bumpy little buds along a stiff stem.
+sound: A soft swish when you brush it.
+looks: It smells calm and sweet.
+
+name: A black-eyed Susan
+touch: Rough petals around a firm domed middle.
+sound: Leaves rubbing together.
+
+name: A wild rose
+touch: Silky petals and, careful, a few small thorns on the stem.
+sound: A faint hum of a visiting bee.
+
+name: A cornflower
+touch: Frilly, spiky petals like a little crown.
+sound: A dry rustle in the wind.
+
+name: A foxglove
+touch: Tall stems with soft tube-shaped flowers you could fit a fingertip in.
+sound: Bumblebees buzzing in and out.
+
+name: A dandelion puff
+touch: A ball of fluff so light it tickles.
+sound: A soft breath, and the seeds float away.
+
+name: A morning glory
+touch: A smooth trumpet that is open in the morning and closed by evening.
+sound: A vine creaking as it climbs.
+
+name: A Queen Anne's lace
+touch: A flat lacy umbrella of tiny flowers.
+sound: A whisper in the field.
+
+name: A goldenrod
+touch: Fluffy spikes of tiny flowers, slightly sticky.
+sound: Busy bees and a buzzing chorus.
+
+name: A honeysuckle
+touch: Thin trumpet flowers along a twisting vine.
+sound: A hummingbird's wings, very fast.
+looks: It smells like summer.
+
+name: A primrose
+touch: Five soft rounded petals and crinkly leaves.
+sound: A drip of dew falling off a leaf.
+
+name: A thistle
+touch: Prickly leaves and a soft tufted purple top. Touch gently.
+sound: A crackle as it sways.
+
+name: A snowdrop
+touch: A small drooping bell, cool as frost.
+sound: The quiet of early spring.
+
+name: A marigold
+touch: Ruffled layers of petals, thick and soft.
+sound: A crisp rustle.

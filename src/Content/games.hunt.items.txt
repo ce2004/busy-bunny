@@ -1,0 +1,89 @@
+name: A brass key
+touch: Cold and heavy for its size, with three little teeth.
+sound: It clinks when you set it down.
+
+name: A glass marble
+touch: Perfectly smooth and cool, rolling in your palm.
+sound: A tiny tick against your claw.
+
+name: A wooden whistle
+touch: Light and warm, with one hole on top.
+sound: It gives a cheerful toot when you blow it.
+
+name: A seashell
+touch: Ridged on the outside and silky smooth inside.
+sound: Hold it to your ear and you hear a hush like the ocean.
+
+name: A knitted mitten
+touch: Fuzzy and stretchy, just the right size for a paw.
+sound: Almost silent, a soft swish.
+
+name: A pinecone
+touch: Prickly scales that open like a flower.
+sound: A dry rustle when you shake it.
+
+name: A tiny bell
+touch: Smooth metal with a little loop on top.
+sound: A bright jingle.
+
+name: A velvet ribbon
+touch: Soft one way and a little rough the other.
+sound: A whisper as it slides through your paws.
+
+name: A clay bead
+touch: Round with a hole through the middle, slightly bumpy.
+sound: It clacks against your teeth if you check it that way. Please do not.
+
+name: A feather
+touch: So light you barely feel it, with a stiff spine down the middle.
+sound: Nothing at all, unless you tickle your nose with it.
+
+name: An acorn cap
+touch: A tiny bumpy cup that fits on your fingertip.
+sound: A faint pop when you press it.
+
+name: A smooth stone
+touch: Flat, cool and polished by a river.
+sound: A deep tock when you tap it on the table.
+
+name: A cinnamon stick
+touch: Rough rolled bark that feels like paper.
+sound: A dry snap if you bend it, so do not.
+looks: It smells sweet and warm.
+
+name: A music box key
+touch: A little winding key with a butterfly-shaped handle.
+sound: It clicks when you turn it.
+
+name: A felt star
+touch: Five soft points with neat stitches around the edge.
+sound: Silent, but it feels like a twinkle.
+
+name: A thimble
+touch: A tiny metal cap covered in dimples.
+sound: A ting when you tap it with a claw.
+
+name: A dried flower
+touch: Papery petals that crinkle at the edges.
+sound: A faint crackle.
+looks: It still smells a little like summer.
+
+name: A wooden spool
+touch: Smooth and round, with a little thread still wound on it.
+sound: It rolls across the floor with a hollow rumble.
+
+name: A walnut
+touch: Wrinkly and hard, with a seam around the middle.
+sound: It rattles a little when you shake it.
+
+name: A paper crane
+touch: Crisp folded wings and a pointy beak.
+sound: A soft crinkle.
+
+name: A carrot charm
+touch: A tiny carved carrot with a smooth glaze.
+sound: It clicks against the other charms.
+
+name: A sock
+touch: One very fuzzy sock. Its partner is still missing.
+sound: Silence, the sound of a mystery.
