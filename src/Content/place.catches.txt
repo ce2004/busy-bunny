@@ -1,0 +1,143 @@
+name: Speckled sunfish
+kind: fish
+touch: A small round fish, cool and slippery, with a fan of soft fin that tickles your paw as it wiggles.
+sound: A happy little splash and a flip, flip, flip in the bucket.
+looks: Golden green with orange freckles all over, like a sunset that learned to swim.
+
+name: Button minnow
+kind: fish
+touch: Tiny and quick, no longer than your thumb, it zips around your cupped paws like a wet secret.
+sound: The faintest plip as it lands in the bucket.
+looks: Silver with one round black spot near its tail, exactly like a coat button.
+
+name: Puddle perch
+kind: fish
+touch: Firm and smooth with a gentle ridge of fin along its back, it rests calmly in your paws.
+sound: A slow, satisfied splosh, as if it expected to be admired.
+looks: Olive stripes on a pale belly, with big curious eyes.
+
+name: Moonlight carp
+kind: fish
+touch: Heavy and silky, the biggest fish of the day, with whiskers that brush your wrist like soft string.
+sound: A deep, lazy gulp, then a ripple.
+looks: Pearly white with silver scales that shimmer like the moon on water.
+
+name: Bubble guppy
+kind: fish
+touch: Light as a leaf, with a frilly tail that feels like wet tissue paper fluttering.
+sound: A string of tiny bubbles popping, pip pip pip.
+looks: Bright blue with a tail of every color, like a party streamer.
+
+name: Grumbly catfish
+kind: fish
+touch: Smooth with no scales at all, like a wet river stone, and long soft whiskers that wiggle hello.
+sound: A low little croak that sounds a lot like grumbling, though it is perfectly content.
+looks: Mud brown with a wide friendly mouth and whiskers like a grandpa's mustache.
+
+name: Daisy trout
+kind: fish
+touch: Long, cool and strong, it gives one brave wiggle and then settles down.
+sound: A bright splash that sprinkles your nose with drops.
+looks: Pink stripe down each side and little white dots like scattered daisies.
+
+name: Pebble goby
+kind: fish
+touch: Small and plump with a sticky little belly fin that holds onto your paw like a suction cup.
+sound: A soft pop when it lets go.
+looks: Speckled gray and tan, so much like a pebble it is easy to miss.
+
+name: Honey bream
+kind: fish
+touch: Flat and wide like a warm pancake, with smooth scales in neat rows under your paw.
+sound: A gentle slap of tail, then quiet.
+looks: Deep amber gold, glowing like honey in a jar.
+
+name: Ribbon eel
+kind: fish
+touch: Long and soft as a satin ribbon, it slides through your paws in one slow loop.
+sound: A swishy whisper through the water.
+looks: Blue with a yellow stripe, waving like a ribbon on a gift.
+
+name: Teacup tetra
+kind: fish
+touch: So tiny it feels like a cool raindrop with a tail, tickling your palm.
+sound: A tiny tink against the side of the bucket.
+looks: Glowing red and teal, bright as a lantern.
+
+name: Lily pad pike
+kind: fish
+touch: Long, sleek and smooth, with a pointy nose that bumps your paw politely.
+sound: A quick swoosh and one confident splash.
+looks: Green with pale spots, like sunlight through lily pads.
+
+name: Snoozy loach
+kind: fish
+touch: Soft and floppy, it lies in your paws so calmly it might be asleep.
+sound: A sleepy little blub.
+looks: Tiger stripes of orange and black on a round body.
+
+name: Rainbow dace
+kind: fish
+touch: Slim and lively, with scales so smooth your paw glides right over them.
+sound: A cheerful flick flick flick of its tail.
+looks: Every color of the rainbow shimmering along its sides when it turns.
+
+name: Old boot
+kind: oddity
+touch: Wet heavy leather, soft and squishy, with laces that drip on your toes.
+sound: A loud squelch, then water glugging out of the toe.
+looks: A brown boot with a tiny snail family living happily in the heel.
+
+name: Message in a bottle
+kind: oddity
+touch: Cool smooth glass with a cork you can wiggle loose, and a rolled paper inside.
+sound: A hollow clunk, then a satisfying pop from the cork.
+looks: A green bottle holding a note that says: whoever finds this, you are doing better than you think.
+
+name: Floating teacup
+kind: oddity
+touch: Thin smooth china with a dainty curved handle, still holding a little pond water.
+sound: A delicate clink against the line.
+looks: A white teacup painted with blue forget me nots, not a chip on it.
+
+name: Rubber duck
+kind: oddity
+touch: Squeezy, bouncy rubber with a smooth round head and a little flat beak.
+sound: A proud squeak when you squeeze it.
+looks: Bright yellow with a painted smile, and the real ducks seem very interested.
+
+name: Lost mitten
+kind: oddity
+touch: Soggy knitted wool, soft and stretchy, with a thumb that flops over.
+sound: A wet drip drip onto the dock.
+looks: A red striped mitten that will be cozy again once it dries in the sun.
+
+name: Tiny treasure chest
+kind: oddity
+touch: Little wooden box with metal corners and a lid that creaks open under your paw.
+sound: A creak, then the rattle of something small inside.
+looks: Inside are three shiny buttons and a smooth blue marble.
+
+name: Toy sailboat
+kind: oddity
+touch: Light painted wood with a cloth sail that is damp and flappy.
+sound: A soft flutter of the wet sail.
+looks: A little red boat with a white sail, ready to float again.
+
+name: Gerald's spare hat
+kind: oddity
+touch: A tiny felt hat, soft and fuzzy, barely bigger than a thimble.
+sound: Almost nothing, just a polite little drip.
+looks: A green hat that Gerald the snail will be very glad to get back.
+
+name: Wind up frog
+kind: oddity
+touch: Smooth tin with a small key in its back that turns with a click, click, click.
+sound: When wound, a busy whirr and a hop on the dock.
+looks: A green tin frog with painted gold eyes.
+
+name: Pond lantern
+kind: oddity
+touch: Cool metal frame around smooth glass panels, with a loop handle on top.
+sound: A soft clank and a slosh of water draining out.
+looks: An old brass lantern that still has a candle stub inside, ready for a cozy evening.

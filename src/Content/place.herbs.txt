@@ -1,0 +1,71 @@
+name: Peppermint
+touch: Soft fuzzy leaves with crinkly edges that leave your paw smelling fresh.
+sound: A crisp snap when you pick a sprig.
+looks: Bright green leaves on square stems.
+tea: Cool and bright, it wakes up your nose and settles your tummy.
+
+name: Chamomile
+touch: Tiny daisy flowers with soft round centers and feathery leaves.
+sound: A whispery rustle in the breeze.
+looks: Little white and yellow blossoms in a fluffy patch.
+tea: Mild and honey sweet, it feels like being tucked into bed.
+
+name: Lavender
+touch: Slender stems with little bumpy flower spikes and soft silvery leaves.
+sound: Bees humming lazily all around.
+looks: Purple wands swaying in a row.
+tea: Floral and calm, like breathing out after a long day.
+
+name: Lemon balm
+touch: Soft wrinkly heart shaped leaves that smell of lemon when rubbed.
+sound: A gentle rustle as the leaves brush together.
+looks: Bright leafy mounds of light green.
+tea: Light and lemony, it lifts your mood like a sunny morning.
+
+name: Rosemary
+touch: Thin, needle like leaves, firm and a little piney.
+sound: A woody snap.
+looks: A small shrub with dark green needles and tiny blue flowers.
+tea: Warm and woodsy, it makes your thoughts feel clear.
+
+name: Sage
+touch: Velvety soft gray green leaves, like fuzzy little tongues.
+sound: A soft brush of leaves.
+looks: Silvery green leaves in a cozy clump.
+tea: Earthy and soothing, like a warm scarf for your throat.
+
+name: Thyme
+touch: Tiny round leaves on wiry little stems that tickle your paw.
+sound: A faint crackle.
+looks: A low carpet of small green leaves and pink flowers.
+tea: Gentle and savory, warming from the inside out.
+
+name: Basil
+touch: Big smooth glossy leaves that feel cool and a little puffy.
+sound: A soft pop when you pinch off a leaf.
+looks: Rich green leaves stacked like little umbrellas.
+tea: Sweet and peppery, a surprising cozy treat.
+
+name: Lemongrass
+touch: Long stiff grassy blades with a firm bulb at the bottom.
+sound: A dry swish in the wind.
+looks: Tall pale green grass in a big tuft.
+tea: Zesty and bright, like a little sunshine in a cup.
+
+name: Ginger root
+touch: Knobbly firm root with a thin papery skin.
+sound: A crisp snap when you break off a piece.
+looks: A tan root shaped like a funny little paw.
+tea: Spicy and warm, it makes your toes feel toasty.
+
+name: Rose hips
+touch: Smooth firm little berries, round and shiny.
+sound: A light rattle in the basket.
+looks: Glossy red orange berries left after the wild roses bloom.
+tea: Tart and fruity, like a cozy fruit punch.
+
+name: Spearmint
+touch: Smooth pointed leaves, softer and gentler than peppermint.
+sound: A tiny crinkle when you rub a leaf.
+looks: Light green leaves on tall stems.
+tea: Sweet and mellow mint, refreshing without being too strong.

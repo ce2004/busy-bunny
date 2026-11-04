@@ -1,0 +1,119 @@
+name: Brass compass
+touch: Heavy and cool, with a smooth glass face and a lid that clicks shut.
+sound: A tiny tick as the needle settles.
+looks: A green tinged brass compass that still points north.
+
+name: Pearl in a clam
+touch: A rough ridged shell that opens to reveal one smooth round bead.
+sound: A soft clack as the shell closes again.
+looks: A gleaming creamy pearl nestled in pink.
+
+name: Silver spoon
+touch: Smooth and cool with a curly pattern on the handle.
+sound: A delicate ting when tapped.
+looks: An old fancy spoon, polished by the sea.
+
+name: Ship's bell
+touch: Cool heavy metal, curved and smooth, with a clapper inside.
+sound: A deep, rolling ding that echoes underwater.
+looks: A barnacle dotted bronze bell.
+
+name: Sea glass marble
+touch: Frosted smooth, like a candy that has been licked a hundred times.
+sound: A soft clink in your bag.
+looks: A cloudy green glass ball.
+
+name: Old pocket watch
+touch: Round and smooth with a little button on top and a chain that slides through your paws.
+sound: A tick tock, still going after all these years.
+looks: A gold watch with a seahorse on the lid.
+
+name: Mermaid comb
+touch: A light curved comb with smooth rounded teeth.
+sound: A tiny zip as you run your claw over the teeth.
+looks: A pearly pink shell comb.
+
+name: Captain's hat
+touch: Damp stiff fabric with a smooth leather brim.
+sound: A squelchy squish as water drains out.
+looks: A navy captain's hat with a gold anchor badge.
+
+name: Treasure coin
+touch: A thick round coin with a bumpy stamped face on each side.
+sound: A bright, satisfying clink.
+looks: A shiny gold coin with a crown on it.
+
+name: Ceramic teapot
+touch: Smooth glazed belly, curved spout and a lid that wobbles gently.
+sound: A hollow, happy clunk.
+looks: A blue and white teapot, not a single crack.
+
+name: Starfish brooch
+touch: Five smooth points and a little pin on the back.
+sound: A tiny tick against your claws.
+looks: A silver starfish set with blue stones.
+
+name: Glass fishing float
+touch: A big round smooth glass ball wrapped in rough rope netting.
+sound: A soft bonk as it bumps the boat.
+looks: A bubbly green glass ball, glowing in the light.
+
+name: Message tube
+touch: A smooth metal tube with a screw cap and a rolled note inside.
+sound: A twist and a squeak as the cap comes off.
+looks: The note reads: thank you for being kind to the sea.
+
+name: Telescope
+touch: Smooth brass sections that slide out one after another.
+sound: A satisfying shhk as it extends.
+looks: An old brass spyglass, slightly sandy.
+
+name: Anchor charm
+touch: A tiny cool metal anchor with a ring at the top.
+sound: A faint tink.
+looks: A little silver anchor, perfect for a necklace.
+
+name: Jewelry box
+touch: Smooth wood with a curved lid and soft velvet inside.
+sound: A tinkly tune when it opens.
+looks: A wooden box that still plays a song, with a tiny dancing seahorse.
+
+name: Sunken lantern
+touch: A metal frame with cool glass sides and a wire handle.
+sound: A drip and a clank.
+looks: A ship's lantern with red and green glass.
+
+name: Pirate's button
+touch: Big round and heavy, with four holes you can feel with your claw.
+sound: A soft click.
+looks: A brass button stamped with a tiny parrot wearing an eye patch.
+
+name: Shell necklace
+touch: A string of small smooth shells that clack softly together.
+sound: A gentle rattle like rain.
+looks: Pink and white shells on a cord.
+
+name: Toy submarine
+touch: A smooth little tin boat with a tiny propeller you can spin.
+sound: A whirr as the propeller turns.
+looks: A yellow toy sub, waiting for bath time.
+
+name: Crystal goblet
+touch: Thin, smooth glass with a long stem and a round bowl.
+sound: A pure ringing note when you tap it.
+looks: A sparkling clear goblet, perfect for a celebration.
+
+name: Map in a jar
+touch: A cool glass jar with a rolled paper map inside, dry and crinkly.
+sound: A pop as the lid comes off.
+looks: A hand drawn map of the cove, with an X marking the burrow.
+
+name: Golden key
+touch: A long smooth key with a fancy loop at the top.
+sound: A small jingle.
+looks: A gold key that might open a treasure chest someday.
+
+name: Dragon's egg geode
+touch: A rough round rock that feels like an egg, split open to smooth crystals inside.
+sound: A hollow clack when you tap the two halves together.
+looks: Plain gray outside, sparkling purple inside.

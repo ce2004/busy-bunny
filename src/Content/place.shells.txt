@@ -1,0 +1,99 @@
+name: Scallop shell
+touch: A fan shape with ridges that ripple out like a little hand fan.
+sound: A soft clack in your paw.
+looks: Peachy pink with a pale edge.
+
+name: Moon snail shell
+touch: Round and silky smooth, with a little spiral you can trace into the center.
+sound: A gentle tock against another shell.
+looks: Creamy white with a swirl of brown.
+
+name: Conch shell
+touch: Big and heavy, bumpy on the outside and glassy smooth inside.
+sound: Hold it to your ear and hear a soft ocean whoosh.
+looks: Pink and peach with a wide flared lip.
+
+name: Sand dollar
+touch: A flat round disc, light and slightly rough, with a star pattern you can feel.
+sound: A papery tap.
+looks: Pale and creamy with a five petal flower on top.
+
+name: Cowrie shell
+touch: Glossy smooth and rounded like a polished egg, with a toothy slit underneath.
+sound: A tiny click.
+looks: Speckled brown and cream, shiny as porcelain.
+
+name: Periwinkle
+touch: Small, round and smooth, about the size of a blueberry.
+sound: A soft rattle in a pile.
+looks: A little gray blue spiral.
+
+name: Cockle shell
+touch: A rounded heart shape with strong ridges like corduroy.
+sound: A bright clink.
+looks: Cream and soft brown stripes.
+
+name: Angel wing
+touch: Long, thin and delicate, with lacy ridges along it.
+sound: A whisper soft tap.
+looks: Pure white, shaped like a little wing.
+
+name: Whelk shell
+touch: A long spiral that winds to a point, with bumps along the twist.
+sound: A hollow knock when tapped.
+looks: Sandy tan with a creamy inside.
+
+name: Abalone shell
+touch: Bumpy outside and incredibly smooth inside, like glass.
+sound: A soft clink.
+looks: Rough outside, but inside it shines with rainbow colors.
+
+name: Limpet shell
+touch: A little cone shape, like a tiny hat, slightly rough on top.
+sound: A soft tick.
+looks: Gray with faint stripes radiating out.
+
+name: Olive shell
+touch: Long, smooth and shiny, like a polished bead.
+sound: A satisfying click between your claws.
+looks: Glossy with zigzag patterns of brown and gold.
+
+name: Jingle shell
+touch: Thin, smooth and almost see through.
+sound: A tiny jingle when you shake a few together.
+looks: Shimmery gold and silver.
+
+name: Turban shell
+touch: Round and bumpy, stacked in tight coils like a wrapped scarf.
+sound: A low clunk.
+looks: Green and brown with a pearly center.
+
+name: Mussel shell
+touch: Long and smooth, with a fine edge and gentle growth lines.
+sound: A crisp clack.
+looks: Deep blue black outside, pearly purple inside.
+
+name: Nautilus shell
+touch: Smooth curved spiral, round like a snail but much larger.
+sound: A soft hollow echo.
+looks: Cream with tiger stripes of red brown.
+
+name: Auger shell
+touch: Long, thin and pointed like a unicorn horn, with neat ridges in a spiral.
+sound: A light tick.
+looks: Speckled tan, very elegant.
+
+name: Kitten's paw shell
+touch: A small fan with rounded ridges that feel like toe beans.
+sound: A delicate clink.
+looks: Pink and white, shaped like a tiny cat paw.
+
+name: Lightning whelk
+touch: A big spiral that opens to the left, with knobby shoulders.
+sound: A deep hollow note when you blow across it.
+looks: Cream with brown zigzag stripes like lightning.
+
+name: Heart cockle
+touch: Two smooth halves that fit together into a perfect heart.
+sound: A gentle clack as they close.
+looks: Soft pink, the sweetest shell on the beach.

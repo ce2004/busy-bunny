@@ -1,0 +1,139 @@
+name: Self stirring teacup
+price: 25
+touch: A smooth warm mug with a tiny paddle that spins gently against your finger.
+sound: A soft swirling whir and a clink.
+looks: A round blue mug with a brass crank on the handle.
+plays: Coffee, stir
+
+name: Carrot launcher
+price: 40
+touch: A springy wooden tube with a padded cup on top and a lever that boings under your paw.
+sound: A spring twang, then a carrot thudding softly into a basket.
+looks: A red catapult painted with little orange carrots.
+plays: Space, launch
+
+name: Hug machine
+price: 60
+touch: Two big padded arms, warm and fuzzy, that close around you like a gentle sweater.
+sound: A slow, happy sigh of air from its bellows.
+looks: A cream colored contraption with mitten shaped hands.
+plays: Strings, sigh
+
+name: Sock finder
+price: 30
+touch: A small boxy gadget with a wiggly antenna that vibrates when you point it at a missing sock.
+sound: Beep, beep, beep, faster as you get closer.
+looks: A green box with a dial labeled lost, warm, warmer, found.
+plays: Space, two blips
+
+name: Nap alarm
+price: 20
+touch: A soft pillow with a velvety button in the middle that you press to snooze.
+sound: Instead of ringing, it plays a gentle lullaby to make naps longer.
+looks: A puffy lavender cushion with a sleepy face stitched on.
+plays: Soft piano, falling
+
+name: Puddle maker
+price: 35
+touch: A watering can with a wide square spout that leaves perfectly splashable puddles.
+sound: A cheerful glug and a splat.
+looks: A yellow can shaped like a duck, and the ducks approve.
+plays: Xylophone, bounce
+
+name: Thinking hat
+price: 45
+touch: A tall felt hat with a soft lining and tiny gears on the brim you can turn with a click.
+sound: A quiet tick, tick, tick while you think, then a ding when an idea arrives.
+looks: A purple top hat with brass cogs and a little lightbulb on top.
+plays: Singing bells, single
+
+name: Backwards umbrella
+price: 25
+touch: An umbrella that opens upward like a bowl, with a smooth curved inside to catch rain.
+sound: The pitter pat of drops collecting.
+looks: A spotted umbrella upside down, already full of fresh rainwater for the garden.
+plays: Pizzicato strings, sparkle
+
+name: Bubble cannon
+price: 30
+touch: A light plastic barrel with a soapy ring at the end and a squeezy trigger.
+sound: A soft fwoomp, then dozens of tiny pops.
+looks: A rainbow striped cannon surrounded by floating bubbles.
+plays: Space, pew
+
+name: Toast whistle
+price: 20
+touch: A warm metal toaster with a little whistle on the side.
+sound: A happy tweet when the toast is golden.
+looks: A shiny silver toaster with two perfect slices peeking out.
+plays: Flute, two up
+
+name: Gossip phone
+price: 50
+touch: A heavy old telephone with a curly cord and a dial that clicks around under your finger.
+sound: A little ring, then the squirrel's voice saying, you will never guess what.
+looks: A cherry red phone with a tiny acorn painted on it.
+plays: Space, warble
+
+name: Snail speed booster
+price: 40
+touch: A tiny padded seat with a soft strap, like a saddle the size of a walnut.
+sound: A teeny vroom, though it only goes a little bit faster.
+looks: A miniature red race car seat that Gerald tried once and liked.
+plays: Bunny, hop
+
+name: Pocket sunshine
+price: 55
+touch: A smooth round jar that feels warm against your cheek, like sitting in a sunny window.
+sound: A faint hum like bees in a meadow.
+looks: A small jar glowing soft golden light.
+plays: Piano and strings, rising
+
+name: Automatic cheering section
+price: 35
+touch: A small wooden box with a row of tiny felt hands that pat your paw.
+sound: A cheer and a little round of applause every time you finish something.
+looks: A box with painted faces, all smiling and waving.
+plays: Xylophone, four up
+
+name: Cloud pillow pump
+price: 45
+touch: A squishy bellows that fills a pillow until it feels like holding a cloud.
+sound: Puff, puff, puff, then a soft sigh.
+looks: A white pump with a hose and a pillow puffing up like a marshmallow.
+plays: Organ, chord low
+
+name: Crumb catcher bib
+price: 20
+touch: A wide stiff bib with a pocket at the bottom that catches every crumb.
+sound: A gentle rustle and a pitter of falling crumbs.
+looks: A checkered bib with a tiny broom tucked in the pocket.
+plays: Bunny, nibble
+
+name: Weather jar
+price: 50
+touch: A cool glass jar that gets warm for sun, damp for rain, and frosty for snow.
+sound: A tiny rumble of thunder or a tinkle of rain, depending on tomorrow.
+looks: A jar with a little swirling sky inside.
+plays: Cello, two down
+
+name: Hop counter
+price: 25
+touch: A little round clicker that you clip to your ear and clicks with every hop.
+sound: Click, click, click, and a ding at one hundred.
+looks: A brass counter with a tiny bunny on the dial.
+plays: Bunny, two hops
+
+name: Stargazing spoon
+price: 30
+touch: A long spoon with a tiny telescope built into the handle, cool and smooth.
+sound: A soft clink when you tap your bowl.
+looks: A silver spoon that lets you see stars in your soup.
+plays: Singing bells, sparkle
+
+name: Joy jumping boots
+price: 60
+touch: Springy rubber boots with soft cushioned soles that bounce under your feet.
+sound: Boing, boing, boing with every step.
+looks: Bright orange boots with coiled springs on the heels.
+plays: Bunny, binky

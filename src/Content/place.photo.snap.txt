@@ -1,0 +1,43 @@
+The photo strip slides out warm and glossy into your paw. It shows {day}: you and Bunny grinning in party hats, with a sign that says tasks done: {count}.
+
+Click, flash, whirr. The snapshot is from {day}, and in it Bunny is holding up a banner that reads {count} tasks finished.
+
+The photo paper feels smooth and still a little warm. On {day}, you finished {count} tasks, and the picture shows Bunny doing a big binky.
+
+A soft whir and a cheerful click. Here is {day}: you with your arms up, confetti in the air, and a scoreboard reading {count}.
+
+Your paw finds the edge of a fresh photo. It is {day}, and the caption says {count} tasks done, with Bunny hugging your leg.
+
+The booth curtain swishes shut behind you. Snap. The picture shows {day}, with a cake topped by candles spelling out {count}.
+
+Glossy and crisp, the snapshot remembers {day}. Bunny is wearing sunglasses and pointing at a sign: tasks finished, {count}.
+
+A gentle flash warms your face. The picture is of {day}: a trophy on the table and the number {count} written in frosting.
+
+The photo crinkles happily as Bunny waves it dry. It shows {day}, when you finished {count} tasks and the whole village cheered.
+
+Click, click. The strip shows {day} in four little frames: you working, you smiling, Bunny cheering, and a big {count} in glitter.
+
+You hold the snapshot, smooth as a leaf. On {day}, you got {count} tasks done, and in the photo the ducks are waving tiny flags.
+
+The booth hums and the picture slides out. It is {day}, and Bunny is balancing a stack of finished task cards, {count} high.
+
+Warm, shiny, and just printed. This photo is from {day}, with you in a crown and a tally on the wall of {count}.
+
+The camera clicks and the booth glows. Here is {day}: the squirrel photobombing, Bunny laughing, and {count} tasks checked off.
+
+A soft paper snapshot with rounded corners. It shows {day}, a day with {count} finished tasks and a very proud bunny.
+
+Flash. The picture shows {day} at the burrow, balloons tied to the chair and a banner saying {count} tasks, done.
+
+The photo feels thick and glossy in your paw. On {day}, you finished {count} tasks, and the hedgehog is clapping in the background.
+
+Whirr, click, done. This one is {day}: you and Bunny high fiving, with the number {count} glowing behind you.
+
+The strip curls a little as it cools. It remembers {day}, when you finished {count} tasks and Bunny threw carrot confetti.
+
+You trace the photo's edge with a paw. It is {day}: a sunny window, a cup of cocoa, and a checklist showing {count} done.
+
+The booth bell dings. Here is {day}, with Bunny holding a medal that says {count} and wearing it upside down.
+
+Snap. The picture glows warm from the booth: {day}, a big day, {count} tasks finished, and two very happy faces.

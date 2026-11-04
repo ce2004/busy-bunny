@@ -1,0 +1,34 @@
+id: tunnel1
+name: The Root Tunnel
+touch: Cool packed earth walls with soft tree roots curling out like friendly handrails.
+sound: Your own footsteps, muffled and cozy, and a faint drip of water.
+looks: A low round tunnel lit by glowing mushrooms.
+find: A smooth acorn cap, perfect for a tiny cup.
+
+id: tunnel2
+name: The Crystal Tunnel
+touch: Smooth cool walls with little crystal points that feel like bumpy glass under your paw.
+sound: A gentle tinkling, as if the crystals hum to each other.
+looks: A winding tunnel sparkling with pale purple crystals.
+find: A small clear crystal that feels warm when you hold it.
+
+id: tunnel3
+name: The Deep Spring Tunnel
+touch: Damp soft moss on the floor and a warm breeze flowing from somewhere ahead.
+sound: Water bubbling into an underground pool.
+looks: A wide tunnel ending at a glowing blue spring.
+find: A polished river pebble shaped like a heart.
+
+id: secret1
+name: The Starlight Room
+touch: Velvety soft walls and a floor of cushions that sink gently under your paws.
+sound: A faraway lullaby, like the stars themselves are humming.
+looks: A secret round room where the ceiling glitters with tiny lights like a night sky.
+find: A silver star that glows softly in the dark.
+
+id: secret2
+name: The Wishing Grotto
+touch: A warm smooth stone basin and air that feels like a soft blanket wrapping around you.
+sound: Bells chiming softly, and a whisper that sounds like your name.
+looks: A hidden grotto with a golden pool that shimmers with every color.
+find: A tiny golden key that opens nothing, but makes everyone smile.

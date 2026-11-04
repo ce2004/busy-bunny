@@ -1,0 +1,69 @@
+name: The swinging bookshelf
+from: library
+to: fireplace
+touch: Pull a certain book and the whole shelf swings open, its wooden edge smooth and warm.
+sound: A creak, a click, and the crackle of a fire beyond.
+looks: A narrow passage lit by the glow of the fireplace.
+
+name: The pantry chute
+from: pantry
+to: tea
+touch: A smooth wooden slide, polished by many happy bottoms.
+sound: A whoosh and a giggle as you slide.
+looks: A cozy chute that ends right beside the tea room table.
+
+name: The hidden hatch
+from: nook
+to: observatory
+touch: A small trapdoor under the reading cushion, with a ladder of smooth round rungs.
+sound: A soft thunk as the hatch opens and a creak of the ladder.
+looks: A ladder climbing up toward the twinkle of stars.
+
+name: The bathtub tunnel
+from: bath
+to: garden
+touch: A round tiled tunnel behind the tub, cool and smooth, opening to soft grass.
+sound: Dripping water, then birdsong.
+looks: A pale blue tunnel with a sunny garden at the end.
+
+name: The music box door
+from: music
+to: throne
+touch: A door with a crank you turn, and a velvety curtain on the other side.
+sound: A tinkly tune plays as the door opens.
+looks: A gold edged passage leading to the throne room.
+
+name: The root passage
+from: tunnel
+to: pantry
+touch: A low earthy path with soft roots hanging down like curtains.
+sound: The faint scent and sound of a jar lid twisting.
+looks: A short cozy tunnel ending behind the pantry shelves.
+
+name: The chimney stairs
+from: fireplace
+to: observatory
+touch: Warm stone steps that spiral up, smooth from many paws.
+sound: A soft echo as you climb.
+looks: A winding stair beside the chimney leading up to the telescope.
+
+name: The garden gate passage
+from: garden
+to: library
+touch: A vine covered gate with a smooth latch, then soft carpet underfoot.
+sound: The rustle of leaves, then a gentle hush of pages.
+looks: A leafy archway that opens behind the library's armchair.
+
+name: The teapot door
+from: tea
+to: nook
+touch: A round door shaped like a teapot, with a lid shaped handle you twist.
+sound: A soft pop like a cork.
+looks: A tiny round doorway that opens into the cozy reading nook.
+
+name: The throne room slide
+from: throne
+to: bath
+touch: Lift the throne's cushion to find a twisty slide, smooth and a little bouncy.
+sound: A wheeee and a soft splash landing.
+looks: A spiral slide ending in a basin of warm bubbles.

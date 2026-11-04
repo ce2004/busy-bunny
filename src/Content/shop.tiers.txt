@@ -1,0 +1,367 @@
+room: tunnel
+tier: 1
+name: The lantern-lit tunnel
+price: 50
+touch: Smooth packed walls now lined with polished pebbles and a soft runner rug along the floor.
+sound: Your hops land with a soft, muffled pat, and the lanterns tick quietly as they warm.
+looks: Little lanterns hang every few hops, lighting the earthy tunnel with a warm golden glow.
+
+room: tunnel
+tier: 2
+name: The grand entrance hall
+price: 120
+touch: Smooth stone arches overhead, a carved wooden door with a round brass knocker and a plush welcome mat.
+sound: The knocker gives a cheerful double knock, and a little welcome chime rings as you step in.
+looks: A grand entrance with stone arches, a bench for guests and a hanging sign with the burrow's name.
+
+room: nook
+tier: 1
+name: The cozy reading nook
+price: 55
+touch: A squashy beanbag, a fleecy blanket and a pile of books with soft, worn covers.
+sound: Pages turn with a gentle whisper, and the beanbag crunches softly as you settle in.
+looks: A snug corner with a reading lamp, a shelf of favorite books and moss curling around the window.
+
+room: nook
+tier: 2
+name: The grand library corner
+price: 140
+touch: Tall wooden shelves you can run your paw along, a rolling ladder and a deep leather armchair.
+sound: The ladder rolls with a smooth rumble, and the hedgehog hums happily as she sorts the shelves.
+looks: Shelves stretch to the ceiling, packed with books, with a big armchair and a globe by the window.
+
+room: pantry
+tier: 1
+name: The well-stocked pantry
+price: 50
+touch: Rows of cool glass jars, crinkly paper sacks of oats and bundles of carrots tied with twine.
+sound: Jar lids twist open with a pop, and a sack of oats shifts with a soft shush.
+looks: Neat shelves of labeled jars, dried herbs hanging from hooks and carrots stacked like orange firewood.
+
+room: pantry
+tier: 2
+name: The grand carrot cellar
+price: 110
+touch: Cool stone walls, wooden crates you can feel overflowing with carrots and a smooth tasting table.
+sound: Crates slide with a gentle scrape, and a carrot snaps with a crisp, happy crunch.
+looks: A huge cellar full of carrots of every size and color, with a little sign saying the finest in the village.
+
+room: tea
+tier: 1
+name: The cozy tea corner
+price: 55
+touch: A warm round teapot, a stack of tiny saucers and a woven mat under your paws.
+sound: The kettle sings softly, then tea pours in a gentle trickle.
+looks: A little table with a flowered teapot, tins of tea and a small vase of fresh mint.
+
+room: tea
+tier: 2
+name: The grand tea parlor
+price: 130
+touch: Plush velvet chairs, delicate china cups and a tiered stand of soft, sweet cakes.
+sound: Cups clink, spoons stir and friends chatter happily over a pot of tea.
+looks: An elegant parlor with lace tablecloths, a gleaming silver teapot and a window looking out on the garden.
+
+room: fireplace
+tier: 1
+name: The warm hearth
+price: 60
+touch: Warm stones around the fire, a thick hearth rug and a basket of soft knitted socks.
+sound: The fire pops and crackles, and a log settles with a sleepy sigh.
+looks: A stone hearth with a cheerful fire, stockings on hooks and a rocking chair close by.
+
+room: fireplace
+tier: 2
+name: The grand hearth room
+price: 150
+touch: A carved wooden mantel, a squishy sofa big enough for friends and a warm woolly throw.
+sound: A deep, cozy crackle fills the room, and a kettle hums on a hook over the flames.
+looks: A big fireplace with a carved mantel, candles along the top and comfy seats gathered round.
+
+room: bath
+tier: 1
+name: The bubbly bath grotto
+price: 65
+touch: Warm water, a fluffy towel on a heated rail and a squishy rubber duck.
+sound: Bubbles pop and fizz, and the duck squeaks when you give it a squeeze.
+looks: A cozy grotto with a deep tub full of bubbles and candles flickering in rocky alcoves.
+
+room: bath
+tier: 2
+name: The grand spa
+price: 160
+touch: Smooth warm stones to lie on, plush robes and soft mist on your whiskers.
+sound: Soft music, gently trickling water and the relaxed sigh of a steam room.
+looks: A sparkling spa with a bubbling pool, a steam room and baskets of fluffy towels.
+
+room: garden
+tier: 1
+name: The blooming clover garden
+price: 60
+touch: Thick, springy clover, soft petals and a cool little watering can.
+sound: Water sprinkles gently on the leaves, and a happy bee drifts by.
+looks: The clover is lush and green under the skylight, dotted with pink and white blossoms.
+
+room: garden
+tier: 2
+name: The grand indoor meadow
+price: 140
+touch: Tall soft grass, a mossy bench and a babbling stream you can dip your paw in.
+sound: Birdsong, a trickling stream and the quiet hum of bees in the flowers.
+looks: A whole meadow under a big glass dome, with a stream, a bench and butterflies everywhere.
+
+room: music
+tier: 1
+name: The cheerful music room
+price: 70
+touch: Smooth piano keys, a cool brass triangle and a soft padded stool.
+sound: A happy tune plinks on the piano, and the triangle gives a bright ting.
+looks: A cozy music room with a little piano, a drum and sheet music pinned to the wall.
+
+room: music
+tier: 2
+name: The grand concert hall
+price: 170
+touch: Plush seats in rows, a polished wooden stage and the smooth curve of a grand piano.
+sound: A full orchestra warms up, then the hall fills with warm, swelling music.
+looks: A grand hall with a stage, velvet curtains and a gleaming grand piano in the spotlight.
+
+room: observatory
+tier: 1
+name: The cozy star window
+price: 75
+touch: A smooth brass telescope, a cushioned window seat and a cool glass pane.
+sound: The telescope clicks into place, and a soft breeze whistles past the window.
+looks: A big round window with a shiny telescope and star charts pinned around it.
+
+room: observatory
+tier: 2
+name: The grand observatory
+price: 175
+touch: A huge telescope you turn with a smooth wheel, a reclining chair and a domed ceiling.
+sound: The dome slides open with a slow rumble, and the night is quiet and peaceful.
+looks: A domed observatory with a giant telescope, planets hanging overhead and the whole sky to explore.
+
+room: library
+tier: 1
+name: The well-loved library
+price: 80
+touch: Soft worn book spines, a smooth wooden desk and a cushioned reading chair.
+sound: Pages rustle, a clock ticks and the hedgehog whispers a book recommendation.
+looks: Tall shelves of books, a reading desk with a lamp and a cozy armchair in the corner.
+
+room: library
+tier: 2
+name: The grand book tower
+price: 180
+touch: A spiral staircase railing, polished wood under your paws and books you can pull from every side.
+sound: Your footsteps echo gently up the tower, and pages turn softly on every floor.
+looks: A tower of books rising floor after floor, with a spiral staircase and windows at the very top.
+
+room: throne
+tier: 1
+name: The shiny throne room
+price: 85
+touch: A padded velvet throne, smooth carved armrests and a soft rug leading up to it.
+sound: A little fanfare plays as Bunny sits down, and the cushion gives a happy puff.
+looks: A gleaming throne on a small platform, with a red carpet and banners saying Burrow Boss.
+
+room: throne
+tier: 2
+name: The grand royal hall
+price: 180
+touch: A golden throne with velvet cushions, a crown that fits just right and a long silky cape.
+sound: Trumpets play a grand fanfare, and the neighbors cheer when Bunny makes her entrance.
+looks: A royal hall with a sparkling chandelier, tall windows and a throne fit for the Burrow Boss.
+
+room: bedroom
+tier: 1
+name: The dreamy bedroom
+price: 60
+touch: A cloud-soft mattress, a weighted blanket and a pillow that stays cool all night.
+sound: A gentle music box plays a lullaby, and the blankets rustle softly.
+looks: A cozy bedroom with fairy lights, a bedside lamp and a fluffy rug by the bed.
+
+room: bedroom
+tier: 2
+name: The grand canopy bedroom
+price: 150
+touch: Silky canopy curtains, a huge pile of plush pillows and a mattress like sinking into a cloud.
+sound: The curtains swish closed, and the room goes perfectly quiet and calm.
+looks: A big canopy bed draped in soft fabric, with a reading nook and a window seat full of cushions.
+
+room: guest
+tier: 1
+name: The welcoming guest room
+price: 55
+touch: Fresh crisp sheets, a soft robe on a hook and a basket of snacks on the pillow.
+sound: The door opens with a friendly creak, and a little bell rings to say welcome.
+looks: A cheerful guest room with comfy beds, a vase of flowers and a welcome note for visitors.
+
+room: guest
+tier: 2
+name: The grand guest suite
+price: 130
+touch: Plush beds, a squishy sofa for movie nights and a soft rug big enough for everyone.
+sound: Friends laugh and chat, and a popcorn machine pops away happily.
+looks: A roomy suite with bunk beds, a sitting area and a shelf of board games for sleepovers.
+
+room: treasure
+tier: 1
+name: The glittering treasure room
+price: 70
+touch: Smooth gems, jingly coin bags and a velvet cloth you can drape over the chest.
+sound: Coins clink together, and gems tinkle as they roll in your paw.
+looks: The chest overflows with sparkly gems and shiny trinkets, lit by a warm lamp.
+
+room: treasure
+tier: 2
+name: The grand treasure vault
+price: 170
+touch: A heavy round vault door with a smooth turning wheel and piles of treasure that shift under your paws.
+sound: The vault door swings open with a deep, satisfying clunk, and treasure jingles everywhere.
+looks: A huge vault full of golden chests, sparkling crowns and piles of shiny buttons.
+
+room: art
+tier: 1
+name: The bright art studio
+price: 60
+touch: A sturdy easel, soft paintbrushes and a smooth palette with dabs of paint.
+sound: Brushes swish across canvas, and a jar of water clinks as you rinse them.
+looks: A sunny studio with an easel, jars of brushes and fresh paintings drying on a line.
+
+room: art
+tier: 2
+name: The grand art gallery
+price: 150
+touch: Smooth framed edges, a velvet rope and polished floors you can feel gleaming under your paws.
+sound: Visitors murmur kind things, and the squirrel says this one is her favorite.
+looks: A big gallery with framed paintings, sculptures on pedestals and soft spotlights on every piece.
+
+room: pool
+tier: 1
+name: The splashy pool room
+price: 75
+touch: Warm water, a slide that is smooth and slippery and a squishy inflatable float.
+sound: A happy whoosh down the slide, then a big splash and a giggle.
+looks: The pool now has a little slide, colorful floats and twinkly lights under the water.
+
+room: pool
+tier: 2
+name: The grand water park
+price: 170
+touch: Twisty slides, a lazy river that carries you along and warm water everywhere.
+sound: Splashes, happy squeals and the gentle rush of the lazy river.
+looks: An indoor water park with tall slides, a wave pool and a lazy river looping around.
+
+room: aquarium
+tier: 1
+name: The glowing aquarium
+price: 70
+touch: Smooth curved glass, cool to the touch, and a little window seat right beside it.
+sound: Bubbles rise softly, and the filter hums a peaceful tune.
+looks: Bigger tanks with colorful fish, glowing coral and a tiny treasure chest on the sand.
+
+room: aquarium
+tier: 2
+name: The grand ocean tunnel
+price: 165
+touch: A smooth glass tunnel curving all around you, cool and gently humming.
+sound: Deep, soft water sounds and the gentle swish of fish swimming overhead.
+looks: A glass tunnel you can walk through, with fish, turtles and swaying kelp all around.
+
+room: greenhouse
+tier: 1
+name: The blooming greenhouse
+price: 65
+touch: Warm misty air, velvety leaves and a little potting bench with soft soil.
+sound: A sprinkler hisses softly, and water drips from leaf to leaf.
+looks: More plants than ever, hanging baskets of flowers and a little bench for potting.
+
+room: greenhouse
+tier: 2
+name: The grand botanical garden
+price: 160
+touch: Winding paths of smooth stones, huge tropical leaves and a warm, humid breeze.
+sound: Birds chirp, a little fountain splashes and leaves rustle gently.
+looks: A huge glass palace of plants with trees, flowers from everywhere and a pond in the middle.
+
+room: gameroom
+tier: 1
+name: The buzzing game room
+price: 70
+touch: Chunky buttons, a smooth air hockey table and a squishy beanbag for resting between games.
+sound: The air hockey puck clacks, and the machines beep and chime cheerfully.
+looks: More arcade cabinets, an air hockey table and a prize counter full of plush carrots.
+
+room: gameroom
+tier: 2
+name: The grand arcade
+price: 160
+touch: A smooth bowling ball, padded racing seats and a ticket roll that keeps coming.
+sound: Pins tumble, racing games vroom and the prize bell rings when Bunny wins.
+looks: A full arcade with bowling, racing games and a big prize wall with a shiny trophy at the top.
+
+room: trophy
+tier: 1
+name: The shining trophy room
+price: 60
+touch: Polished cups, cool glass display cases and smooth framed certificates.
+sound: The glass cases close with a soft click, and a trophy gives a little ting.
+looks: Glass cases with spotlights showing off every badge and cup Bunny has earned.
+
+room: trophy
+tier: 2
+name: The grand hall of fame
+price: 150
+touch: Tall marble pillars, a smooth golden statue of Bunny and a plush velvet carpet.
+sound: A proud fanfare plays, and footsteps echo softly through the grand hall.
+looks: A grand hall of fame with a golden statue, rows of trophies and Bunny's name on the wall.
+
+room: kitchen
+tier: 1
+name: The cozy country kitchen
+price: 65
+touch: A big wooden table, a warm cast-iron stove and soft dish towels on a rail.
+sound: A pot bubbles, the oven hums and a timer dings when the muffins are ready.
+looks: A cheerful kitchen with a big stove, gingham curtains and a jar of cookies on the counter.
+
+room: kitchen
+tier: 2
+name: The grand chef's kitchen
+price: 155
+touch: A smooth marble island, copper pots that ring when tapped and a big pizza oven warm to the touch.
+sound: Pans sizzle, knives chop rhythmically and the pizza oven roars gently.
+looks: A huge kitchen with a marble island, a pizza oven and shelves of every ingredient imaginable.
+
+room: pottery
+tier: 1
+name: The busy pottery studio
+price: 60
+touch: Smooth glazed bowls, a faster wheel and a soft sponge for smoothing clay.
+sound: The wheel whirs steadily, and a finished bowl clinks onto the shelf.
+looks: Shelves of glazed pots, jars of colorful glaze and a new wheel in the middle.
+
+room: pottery
+tier: 2
+name: The grand craft workshop
+price: 140
+touch: A big kiln warm to the touch, a loom with soft yarn and tools for every craft.
+sound: The kiln hums, the loom clacks and happy crafting chatter fills the room.
+looks: A large workshop with a kiln, a weaving loom and tables full of crafts in progress.
+
+room: gym
+tier: 1
+name: The strong gym
+price: 70
+touch: Rubber mats firm underfoot, a padded bench and a sturdy squat rack with smooth hooks.
+sound: Plates clank on the bar, and a happy grunt follows a good lift.
+looks: A proper gym with a squat rack, a padded bench, more plates and a chalk bucket.
+
+room: gym
+tier: 2
+name: The grand training hall
+price: 160
+touch: A smooth wooden lifting platform, competition plates and a soft belt that fits just right.
+sound: Plates ring out on the platform, and the neighbors cheer for every new record.
+looks: A big hall with a lifting platform, a wall of records and a big board showing Bunny's best lifts.

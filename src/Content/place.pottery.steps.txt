@@ -1,0 +1,24 @@
+name: Centering the clay
+touch: Cool wet clay spins under your palms, wobbly at first, until you press steadily and it turns smooth and still beneath your paws.
+sound: The soft whir of the wheel and a wet shhh of slippery clay.
+looks: A smooth gray mound spinning perfectly in the middle.
+
+name: Opening it
+touch: Your thumbs press down gently into the center, feeling the clay give way as a soft hollow forms.
+sound: A quiet squish and the steady hum of the wheel.
+looks: A little well in the middle of the spinning clay.
+
+name: Pulling up the walls
+touch: One paw inside, one outside, you feel the wall rise slowly between your fingers, thinning and growing taller.
+sound: A wet glide and a gentle slip slap of water.
+looks: A cup shape rising from the wheel like magic.
+
+name: Trimming
+touch: The clay is firm now, like cool leather, and a little metal tool shaves smooth curls from the base.
+sound: A soft scraping and curls of clay plopping off.
+looks: A neat foot ring and a tidy bottom on your pot.
+
+name: Glazing
+touch: You dip the pot into a cool, silky glaze that feels like thick cream coating your paws.
+sound: A gentle glug as the pot goes in and drips back out.
+looks: A pot covered in a dull coat that will turn glossy and bright after firing.

@@ -1,0 +1,19 @@
+name: Saddle pad
+touch: A thick quilted pad, soft and padded, that you smooth onto her back just behind the shoulders.
+sound: A gentle flump as it settles.
+looks: A blue pad with white trim.
+
+name: Saddle
+touch: Heavy smooth leather, cool at first, with a deep seat and sturdy stirrups that clink as you lift it onto the pad.
+sound: The creak of leather and a soft thunk.
+looks: A brown saddle polished to a warm shine.
+
+name: Girth
+touch: A wide soft strap that goes under her belly, with buckles you tighten one hole at a time, snug but comfy.
+sound: A clink of buckles and a patient snort.
+looks: A fleece lined strap fastened neatly on both sides.
+
+name: Bridle and bit
+touch: Soft leather straps that slip over her ears, and a smooth metal bit warmed in your paw first so it feels nice in her mouth.
+sound: A gentle jingle of buckles and a soft chewing sound.
+looks: A tidy bridle with the reins hanging ready.

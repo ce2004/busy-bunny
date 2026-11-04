@@ -1,0 +1,39 @@
+name: Ocean blue
+touch: Glassy and smooth, like a wave frozen in place.
+looks: A deep blue that pools darker in the dips.
+
+name: Honey amber
+touch: Thick and glossy, smooth as a candy shell.
+looks: Warm golden brown, like honey in sunlight.
+
+name: Celadon green
+touch: Silky smooth with a faint crackle you can feel.
+looks: Soft jade green, calm as a pond.
+
+name: Speckled oatmeal
+touch: Satin smooth with tiny raised freckles.
+looks: Creamy beige with little brown speckles.
+
+name: Strawberry pink
+touch: Glossy and cool, perfectly even.
+looks: Sweet bright pink, like a milkshake.
+
+name: Midnight black
+touch: Deep and glassy, mirror smooth.
+looks: Shiny black that reflects the light like a pond at night.
+
+name: Snow white
+touch: Smooth and slightly matte, like a chalky seashell.
+looks: Clean bright white.
+
+name: Rainbow drip
+touch: Smooth with little ridges where the colors ran together.
+looks: Blue, purple and gold drips flowing down the sides.
+
+name: Lavender mist
+touch: Velvety matte, soft as a petal.
+looks: Pale purple with a gentle fog of white.
+
+name: Copper red
+touch: Glassy with a deep, smooth gloss.
+looks: A rich red that turns almost gold where it is thin.

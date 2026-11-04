@@ -1,0 +1,99 @@
+name: Rose quartz
+touch: Silky smooth and cool, with a gentle round shape that fits right in your paw.
+sound: A soft clink when it taps another stone.
+looks: Pale pink and cloudy, like strawberry milk.
+
+name: Tiger's eye
+touch: Glassy smooth with a slight weight, warming quickly in your paw.
+sound: A bright tick against the tumbler drum.
+looks: Golden brown bands that shimmer and shift when you turn it.
+
+name: Amethyst
+touch: Smooth with tiny flat faces you can feel, like a gem that has been gently rounded.
+sound: A clear little ting.
+looks: Deep purple, glowing like grape juice in sunlight.
+
+name: Moonstone
+touch: Slippery smooth, almost buttery, and cool like a moonlit night.
+sound: A quiet, soft click.
+looks: Milky white with a blue glow floating inside.
+
+name: Jasper
+touch: Smooth and solid with a matte, satiny feel.
+sound: A sturdy clack.
+looks: Brick red with swirly patterns like a little landscape.
+
+name: Agate
+touch: Glassy and cool with a slightly wavy surface along its bands.
+sound: A crisp clink.
+looks: Stripes of cream, blue and brown in rings like a tree trunk.
+
+name: Obsidian
+touch: Glass smooth and surprisingly light, like a polished mirror stone.
+sound: A sharp, pretty tink.
+looks: Shiny black that reflects your face.
+
+name: Green aventurine
+touch: Smooth with a faint sandy shimmer you can almost feel.
+sound: A soft tock.
+looks: Leafy green with tiny glitter flecks inside.
+
+name: Carnelian
+touch: Smooth and warm, like holding a sunny afternoon.
+sound: A cheerful clink.
+looks: Glowing orange, like a candle flame.
+
+name: Snowflake obsidian
+touch: Mirror smooth and cool, rounded into a perfect egg.
+sound: A quick ting.
+looks: Black with white flower shaped speckles like snowflakes.
+
+name: Sodalite
+touch: Smooth, heavy and cool, like a pebble from a deep river.
+sound: A low clunk.
+looks: Deep blue with white streaks like clouds in a night sky.
+
+name: Citrine
+touch: Smooth and glassy, warming fast against your paw.
+sound: A bright little ting.
+looks: Clear golden yellow, like lemonade in the sun.
+
+name: Unakite
+touch: Satiny smooth with a slight dimple in the middle, just right for your thumb.
+sound: A soft tap.
+looks: Speckled green and salmon pink, like a garden in a stone.
+
+name: Bloodstone
+touch: Smooth and dense with a calm, steady weight.
+sound: A firm click.
+looks: Dark green with tiny red freckles.
+
+name: Labradorite
+touch: Glassy smooth with a flat side that feels like a little window.
+sound: A gentle clink.
+looks: Gray until you turn it, then a flash of blue and green, like magic.
+
+name: Petrified wood
+touch: Smooth but you can still feel faint ridges where the tree grain used to be.
+sound: A hollow sounding tock, like knocking on wood.
+looks: Brown and amber rings, a tree that turned into stone.
+
+name: Howlite
+touch: Soft smooth and slightly chalky, like a pebble wrapped in silk.
+sound: A muffled tap.
+looks: White with thin gray lines like a map.
+
+name: Smoky quartz
+touch: Cool and glassy, with a weight that feels calm in your paw.
+sound: A clear chime against the jar.
+looks: See through brown, like a cup of tea held up to the light.
+
+name: Sunstone
+touch: Smooth and warm, with a faint sparkle you can almost feel.
+sound: A happy ting.
+looks: Peachy orange with glittering flecks that catch the light.
+
+name: River jade
+touch: Waxy smooth and cool, so soft feeling you will want to hold it all day.
+sound: A gentle low click.
+looks: Soft sea green, deep and calm.
