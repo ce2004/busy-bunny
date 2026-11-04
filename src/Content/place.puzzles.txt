@@ -1,0 +1,59 @@
+name: Bunny in a teacup
+touch: Thick sturdy pieces with a glossy finish, and the edge pieces have nice straight sides to start with.
+looks: A fluffy bunny peeking out of a giant floral teacup.
+
+name: Lighthouse at sunset
+touch: Smooth pieces with a slight linen texture, and the sky pieces feel all alike.
+looks: A red and white lighthouse glowing against an orange sky.
+
+name: Village market
+touch: Small chunky pieces with lots of knobby tabs to feel for.
+looks: A busy market with fruit stalls and the ducks shopping.
+
+name: Hot air balloons
+touch: Rounded fat pieces that click together satisfyingly.
+looks: Colorful balloons floating over green fields.
+
+name: Autumn forest path
+touch: Thin pieces with a soft matte surface, smooth under your paw.
+looks: A path covered in red and gold leaves.
+
+name: Cozy library
+touch: Firm pieces with raised spines on the book pieces you can feel.
+looks: The hedgehog's library, shelves full of books and a reading lamp.
+
+name: Starry night village
+touch: Glossy pieces with tiny raised star bumps.
+looks: The village rooftops under a sky full of stars.
+
+name: Garden of sunflowers
+touch: Big friendly pieces, and the sunflower centers have a bumpy texture.
+looks: Rows of tall sunflowers under a blue sky.
+
+name: Snowy cottage
+touch: Smooth cool feeling pieces with sparkly textured snow.
+looks: A little cottage with smoke curling from the chimney.
+
+name: Under the sea
+touch: Wavy shaped pieces that feel like they swim together.
+looks: Fish, coral and a curious octopus.
+
+name: Kittens in a basket
+touch: Soft feeling pieces with fuzzy textured fur areas.
+looks: Three kittens napping in a wicker basket.
+
+name: Train through the mountains
+touch: Long skinny pieces for the train tracks, easy to find by feel.
+looks: A red steam train crossing a bridge in the mountains.
+
+name: Rainbow over the pond
+touch: Curved pieces that follow the arch of the rainbow.
+looks: A bright rainbow reflecting in a calm pond with lily pads.
+
+name: Bakery window
+touch: Pieces with little raised bumps for the sprinkles on the cakes.
+looks: A shop window full of cupcakes, pies and carrot cake.
+
+name: Gerald's big day
+touch: A spiral shaped puzzle that you build from the outside in, like a shell.
+looks: Gerald the snail crossing a finish line, with everyone cheering.

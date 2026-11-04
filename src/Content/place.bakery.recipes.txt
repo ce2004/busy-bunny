@@ -1,0 +1,47 @@
+name: Carrot muffins
+carrots: 2
+touch: Soft fluffy muffins, warm in your paws, with little bumps of grated carrot inside.
+sound: The oven door creaks and the timer dings.
+looks: Golden muffins with orange flecks and a sugar crust.
+
+name: Carrot cake
+carrots: 4
+touch: A tall moist cake with thick smooth frosting you can sink a claw into.
+sound: A knife sliding gently through soft layers.
+looks: Three layers with cream cheese frosting and tiny frosting carrots on top.
+
+name: Carrot cookies
+carrots: 1
+touch: Chewy, soft centered cookies with crispy edges.
+sound: A satisfying crunch at the edges.
+looks: Round golden cookies with oats and raisins.
+
+name: Carrot bread
+carrots: 3
+touch: A heavy warm loaf with a crackly top and a soft spongy middle.
+sound: A hollow knock when you tap the bottom, which means it is done.
+looks: A brown loaf studded with carrot and walnuts.
+
+name: Carrot pancakes
+carrots: 2
+touch: Thin, springy pancakes, warm and soft, stacked in a squishy tower.
+sound: A sizzle as they flip in the pan.
+looks: A stack of golden pancakes with maple syrup dripping down.
+
+name: Carrot crumble
+carrots: 3
+touch: A crunchy, buttery topping over a soft sweet filling.
+sound: The bubbling of warm filling around the edges.
+looks: A golden crumble in a blue dish.
+
+name: Carrot donuts
+carrots: 2
+touch: Pillowy round donuts with a sticky glaze.
+sound: A gentle sizzle and then a happy crunch.
+looks: Orange glazed rings with a sprinkle of cinnamon.
+
+name: Carrot pie
+carrots: 4
+touch: A flaky crust and a silky smooth filling, like pumpkin pie.
+sound: The crust crackling as you cut into it.
+looks: A golden pie with a lattice top and a dollop of cream.

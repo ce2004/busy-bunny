@@ -1,0 +1,99 @@
+name: Daisy
+touch: A ring of thin smooth petals around a soft bumpy button center.
+sound: A tiny rustle as the stem bends.
+looks: White petals and a sunny yellow middle.
+
+name: Buttercup
+touch: Five waxy petals, smooth and cupped like a tiny bowl.
+sound: A faint whisper in the breeze.
+looks: Shiny yellow, so bright it seems to glow.
+
+name: Bluebell
+touch: Little bell shaped blossoms that dangle and sway when you brush them.
+sound: Almost nothing, but you would swear you hear a jingle.
+looks: Drooping blue bells along a curved stem.
+
+name: Clover blossom
+touch: A fluffy round ball of tiny petals, soft as a pom pom.
+sound: Bees humming happily all around it.
+looks: A pinky purple puff above three round leaves.
+
+name: Cornflower
+touch: Ruffled frilly petals with a spiky edge that tickles.
+sound: A dry crisp rustle.
+looks: Bright cornflower blue, the bluest flower in the meadow.
+
+name: Poppy
+touch: Thin crinkly petals like silk paper, with a fuzzy stem.
+sound: A soft flutter when the wind catches it.
+looks: Bold red with a dark center.
+
+name: Black eyed Susan
+touch: Long rough petals and a firm, domed center that feels like velvet.
+sound: A gentle rustle in the grass.
+looks: Golden yellow petals around a chocolate brown eye.
+
+name: Queen Anne's lace
+touch: A flat lacy umbrella of hundreds of tiny flowers, delicate and airy.
+sound: A soft swish as it sways.
+looks: White and lacy, like a doily in the field.
+
+name: Violet
+touch: Small heart shaped leaves and soft velvety petals close to the ground.
+sound: Quiet as a whisper.
+looks: Little purple blossoms hiding shyly in the grass.
+
+name: Lupine
+touch: A tall spike of small bumpy blossoms, like a soft corn cob.
+sound: A gentle rattle of seed pods.
+looks: A tower of purple and pink flowers.
+
+name: Wild rose
+touch: Five soft petals, a smooth center, and careful little bumps on the stem.
+sound: Bees buzzing in and out.
+looks: Simple pink roses with golden middles.
+
+name: Forget me not
+touch: Tiny round petals in clusters, each one as small as a raindrop.
+sound: Barely any sound at all, just a hush.
+looks: Sky blue flowers with little yellow eyes.
+
+name: Foxglove
+touch: Soft fuzzy bells you can slip a fingertip into, like a tiny glove.
+sound: A bumblebee humming inside one.
+looks: Tall spires of speckled purple bells. Lovely to look at, not for eating.
+
+name: Sunflower
+touch: A huge rough center full of seeds and big floppy petals around it.
+sound: Birds chirping as they wait for seeds.
+looks: Taller than Bunny, with a golden face that follows the sun.
+
+name: Dandelion
+touch: A soft fluffy ball that tickles and floats away when you blow it.
+sound: A gentle puff, and seeds drift off.
+looks: A white puffball of seeds, ready for a wish.
+
+name: Yarrow
+touch: Feathery soft leaves and a flat cluster of tiny flowers on top.
+sound: A soft swish in the breeze.
+looks: Creamy white clusters on tall stems.
+
+name: Primrose
+touch: Soft crinkled leaves and smooth round petals.
+sound: Birdsong in the hedge nearby.
+looks: Pale lemon yellow blossoms, the first flower of spring.
+
+name: Thistle
+touch: A soft silky purple tuft on top of a careful prickly base.
+sound: Goldfinches chirping as they visit.
+looks: A puffy purple crown, bold and proud.
+
+name: Morning glory
+touch: Smooth funnel shaped petals that feel like satin.
+sound: The soft rustle of twining vines.
+looks: Blue trumpets that open with the morning sun.
+
+name: Honeysuckle
+touch: Thin trumpet blossoms with long curly threads at the tip.
+sound: Hummingbirds whirring nearby.
+looks: Creamy yellow and pink flowers on twisting vines, smelling sweet.

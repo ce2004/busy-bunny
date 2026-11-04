@@ -1,0 +1,74 @@
+name: Moonpetal lily
+touch: Cool satiny petals that feel faintly dewy even on a dry day.
+sound: A soft hum when the greenhouse lights dim.
+looks: A white lily that glows silver after dark.
+
+name: Velvet fern
+touch: Fronds so soft and fuzzy they feel like petting a kitten.
+sound: A quiet rustle like a page turning.
+looks: Deep green fronds curled at the tips like question marks.
+
+name: Giggle grass
+touch: Thin wispy blades that tickle when you run your paw through them.
+sound: A sound almost like tiny giggles as they sway.
+looks: Pale green grass with little pink tips.
+
+name: Venus flytrap
+touch: Little hinged leaves with soft bristles along the edges, like tiny clams.
+sound: A small, polite snap when it closes on a crumb.
+looks: Green traps with rosy red insides.
+
+name: Teacup orchid
+touch: Waxy smooth petals curled into the shape of a cup.
+sound: A faint clink, as if someone set down a saucer.
+looks: Pale blue blooms shaped exactly like little teacups.
+
+name: Bunny tail cactus
+touch: A round puffy cactus covered in soft white fuzz instead of prickles.
+sound: Silent, but very fluffy.
+looks: Little round cottony balls in a clay pot.
+
+name: Starfruit vine
+touch: Smooth ridged fruit with five points you can count with your paw.
+sound: Leaves rustling on twisty stems.
+looks: Yellow star shaped fruit hanging from a climbing vine.
+
+name: Whisper willow bonsai
+touch: Tiny drooping branches as fine as hair, and a knobbly little trunk.
+sound: A soft shushing, like a gentle breeze.
+looks: A miniature weeping willow in a blue pot.
+
+name: Sensitive plant
+touch: Feathery leaves that fold up shyly when you touch them, then slowly open again.
+sound: A tiny whisper of leaves closing.
+looks: Delicate fern like leaves with pink puffball flowers.
+
+name: Pitcher plant
+touch: A smooth tube shaped leaf with a slick lip and a little lid.
+sound: A tiny drip inside.
+looks: Green and red jugs standing in a row.
+
+name: Snowdrop sparkle
+touch: Cool, crystal smooth petals that feel like frost on glass.
+sound: A faint tinkling, like tiny bells.
+looks: Small white flowers that glitter in the light.
+
+name: Lamb's ear
+touch: Thick silvery leaves that feel exactly like soft flannel.
+sound: A plush, quiet rustle.
+looks: Fuzzy silver green leaves in a cozy cluster.
+
+name: Hummingbird sage
+touch: Soft sticky leaves and long tube shaped blossoms.
+sound: A whirring buzz of hummingbird wings.
+looks: Bright magenta flowers on tall spikes.
+
+name: Rainbow eucalyptus sapling
+touch: Smooth, peeling bark like thin paper ribbons.
+sound: A crisp crackle as a strip of bark curls.
+looks: A small tree with bark striped green, orange, blue and purple.
+
+name: Lullaby moss
+touch: Springy, deep moss that sinks under your paw like a feather pillow.
+sound: Something like a soft hum, the kind that makes eyes heavy.
+looks: Glowing pale green moss that covers a whole stone.

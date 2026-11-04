@@ -1,0 +1,29 @@
+name: Curry comb
+touch: A rubber comb with soft knobbly teeth that you rub in small circles over the warm coat, loosening dust and hair.
+sound: A soft scritch, scritch, and a happy sigh from the pony.
+looks: Little clouds of dust and loose hair rising from the coat.
+
+name: Hard brush
+touch: Stiff bristles in a wooden handle that you flick in short strokes the way the hair grows, sweeping the dirt away.
+sound: A brisk swish, swish, swish.
+looks: The coat starting to look smooth and clean.
+
+name: Soft brush
+touch: Fluffy, gentle bristles that glide along the coat in long, slow strokes, as soft as stroking a cat.
+sound: A quiet whisper of bristles.
+looks: The coat shining like polished wood.
+
+name: Face cloth
+touch: A damp, warm cloth you wipe gently around her eyes and soft velvet nose.
+sound: A contented snuffle and a warm breath on your paw.
+looks: A clean, bright face with sleepy, happy eyes.
+
+name: Hoof pick
+touch: Lift each hoof by running your paw down the leg, then scrape gently from heel to toe with the little metal hook.
+sound: A scrape, scrape, and a clop as you set the hoof down.
+looks: Clean hooves, free of mud and pebbles.
+
+name: Mane and tail comb
+touch: A wide toothed comb you work gently through the long hair, holding it so nothing pulls.
+sound: A soft swishing tail and a happy nicker.
+looks: A silky mane and a flowing tail without a single tangle.

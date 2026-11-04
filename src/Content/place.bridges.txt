@@ -1,0 +1,49 @@
+name: Wobbly rope bridge
+touch: Thick bristly rope railings and wooden planks that sway gently, safe and springy under your feet.
+sound: Creak, creak, and a stream babbling below.
+looks: A rope bridge that leads across to the Whispering Woods.
+
+name: Old stone bridge
+touch: Cool rough stones, worn smooth on top, with moss tucked in the cracks.
+sound: Your footsteps echo softly under the arch.
+looks: A sturdy arched bridge crossing to Willow Meadow.
+
+name: Painted footbridge
+touch: Smooth glossy wood, warm from the sun, with rounded rails.
+sound: A cheerful hollow knock with every step.
+looks: A bright red little bridge leading over to the Lily Pond Gardens.
+
+name: Covered bridge
+touch: Shady cool air inside and wide wooden walls with smooth knots you can feel.
+sound: Rain pattering on the roof, cozy and muffled.
+looks: A barn like covered bridge opening onto Orchard Valley.
+
+name: Stepping stone bridge
+touch: Round flat stones, each one solid and warm, with cool water swirling between them.
+sound: A soft splish as the creek flows past.
+looks: A line of stones across the creek to Pebble Beach.
+
+name: Log bridge
+touch: One big fallen log, rough bark on the sides and a flat smooth top to walk on.
+sound: Woodpeckers tapping nearby.
+looks: A huge log bridging the gap to Mushroom Grove.
+
+name: Flower arch bridge
+touch: Soft petals and leafy vines brushing your ears as you pass under.
+sound: Bees humming among the blooms.
+looks: A bridge covered in climbing roses leading to the Butterfly Fields.
+
+name: Iron lattice bridge
+touch: Cool metal railings with a crisscross pattern you can trace with your paw.
+sound: A deep friendly ring when you tap the rail.
+looks: A tall old iron bridge reaching across to Lighthouse Point.
+
+name: Ice bridge
+touch: A smooth frosty railing and a crunchy snowy path, with warm mittens left out for travelers.
+sound: Snow squeaking softly underfoot and distant sleigh bells.
+looks: A glittering winter bridge leading to Frostberry Hills.
+
+name: Rainbow bridge
+touch: A smooth glassy surface that feels faintly warm and tingly, like sunlight on your paws.
+sound: A quiet, sparkling chime with each step.
+looks: A shimmering arc of colors crossing over to the Cloud Gardens.

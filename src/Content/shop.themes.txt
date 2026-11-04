@@ -1,0 +1,79 @@
+id: cabin
+name: Log cabin
+price: 55
+touch: Rough round log walls, a woolly plaid blanket and a sheepskin rug that sinks under your paws.
+sound: A crackling stove, the creak of old timber and a kettle starting to whistle.
+looks: The room turns into a snug log cabin with plaid curtains, antlered lamps and a stack of firewood by the door.
+plays: Stove, light
+
+id: seaside
+name: Seaside
+price: 60
+touch: Smooth driftwood shelves, a rope-wrapped mirror and a little dish of warm sand.
+sound: Waves roll softly in the distance, and a wind chime of shells clinks in the breeze.
+looks: The room fills with sea blues and sandy whites, striped cushions and a sailboat on the windowsill.
+plays: Strings, sigh
+
+id: starry
+name: Starry night
+price: 75
+touch: Velvety cushions, a cool smooth moon lamp and a soft blanket stitched with tiny raised stars.
+sound: A quiet, sparkly hum, like the stars are softly singing to each other.
+looks: The ceiling becomes a deep blue night sky, twinkling with stars and a crescent moon.
+plays: Space, orbit
+
+id: autumn
+name: Autumn
+price: 45
+touch: Crunchy dry leaves in a basket, a chunky knit throw and a smooth round pumpkin.
+sound: Leaves rustle at the window, and an apple pie bubbles somewhere nearby.
+looks: Warm oranges, reds and golds everywhere, with garlands of leaves and little pumpkins on every shelf.
+plays: Cello, falling
+
+id: cottage
+name: Cottage
+price: 50
+touch: Lacy doilies, a padded floral armchair and a teacup with a tiny curled handle.
+sound: A ticking cuckoo clock, a purring kettle and birdsong from the flower box outside.
+looks: The room becomes a sweet country cottage with flowery wallpaper, gingham curtains and a vase of daisies.
+plays: Piano, two up
+
+id: castle
+name: Castle
+price: 90
+touch: Cool, smooth stone walls, heavy velvet drapes and a carved wooden chair with a plush red cushion.
+sound: A trumpet fanfare echoes from far off, and the big wooden door closes with a grand thud.
+looks: Banners, tall arched windows and a gleaming suit of armor turn the room into a little castle hall.
+plays: Organ, chord high
+
+id: rainforest
+name: Rainforest
+price: 80
+touch: Huge waxy leaves, dangling soft vines and warm, damp air on your fur.
+sound: Rain patters on leaves, a frog chirps and a far-off bird calls a happy song.
+looks: Lush green plants fill every corner, with bright flowers and a little waterfall trickling down one wall.
+plays: Flute, sparkle
+
+id: chalet
+name: Snowy chalet
+price: 70
+touch: A thick fur-lined blanket, wooden skis on the wall and a warm mug of cocoa in your paws.
+sound: Snow softly thumps off the roof, and a fire pops and crackles in the hearth.
+looks: The room becomes a mountain chalet with frosted windows, wooden beams and snow drifting by outside.
+plays: Coffee, steam
+
+id: lantern
+name: Lantern festival
+price: 85
+touch: Light paper lanterns that crinkle when you touch them and silky ribbons tied in bows.
+sound: Gentle bells ring, and happy music drifts in from a festival somewhere outside.
+looks: Glowing paper lanterns in red, gold and pink hang from the ceiling, filling the room with warm light.
+plays: Singing bells, sparkle
+
+id: meadow
+name: Spring meadow
+price: 40
+touch: Soft grassy carpet, silky petals and a fuzzy cushion shaped like a bumblebee.
+sound: Birds chirp, bees buzz and a light breeze whispers through the flowers.
+looks: The room bursts into spring with pastel flowers, butterflies on the walls and sunshine through the window.
+plays: Pizzicato strings, rising

@@ -1,0 +1,1531 @@
+id: squashy-armchair
+name: Squashy armchair
+aisle: furniture
+room: library
+price: 70
+set: Bookworm set
+touch: Deep corduroy cushions that sink slowly when you sit, with wide arms just right for resting a book.
+sound: A long, contented whoosh of air as the seat settles.
+looks: A moss green armchair, a little lopsided in the friendliest way.
+plays: Cello, sigh
+
+id: garden-chairs
+name: Folding garden chairs
+aisle: furniture
+room: garden
+price: 45
+set: Garden party set
+touch: Smooth painted slats, warm from the sun, and a hinge that folds with one gentle push.
+sound: A wooden clack when they open, then a creak as someone sits.
+looks: Two cheerful chairs painted buttercup yellow.
+plays: Xylophone, two up
+
+id: rocking-chair
+name: Rocking chair
+aisle: furniture
+room: fireplace
+price: 60
+touch: Curved runners under polished oak, and a woven seat that rocks you forward and back.
+sound: A slow, steady creak, like a clock that is in no hurry.
+looks: Honey brown wood with a red plaid cushion.
+plays: Cello, bounce
+
+id: tunnel-bench
+name: Tunnel bench
+aisle: furniture
+room: tunnel
+price: 30
+touch: A low log bench, worn soft along the top by many sitting bunnies.
+sound: A hollow knock if you tap it, echoing down the tunnel.
+looks: A sturdy brown log with the bark still on the ends.
+plays: Bunny, thump
+
+id: nook-beanbag
+name: Nook beanbag
+aisle: furniture
+room: nook
+price: 35
+touch: Squishy and shifting, it hugs whatever shape you flop into.
+sound: A soft crunch of a thousand tiny beads rearranging.
+looks: A round lavender beanbag with a little bunny face stitched on.
+plays: Bunny, binky
+
+id: pantry-shelf
+name: Pantry shelf
+aisle: furniture
+room: pantry
+price: 40
+touch: Three smooth pine shelves with a raised lip so jars never roll off.
+sound: A cheerful clunk each time you set a jar down.
+looks: Pale wood with little carved carrots at the corners.
+plays: Coffee, two clinks
+
+id: tea-table
+name: Round tea table
+aisle: furniture
+room: tea
+price: 55
+touch: A cool marble top with a gently scalloped edge, sitting on three curly legs.
+sound: A clear chime when a cup touches the marble.
+looks: White stone on dark wood, small enough for two friends.
+plays: Coffee, clink
+
+id: velvet-footstool
+name: Velvet footstool
+aisle: furniture
+room: throne
+price: 50
+touch: Plush velvet that you can brush one way smooth and the other way fuzzy.
+sound: A tiny puff as your paws rest on it.
+looks: Royal purple with gold tassels on each corner.
+plays: Strings, chord high
+
+id: card-table
+name: Game night card table
+aisle: furniture
+room: gameroom
+price: 45
+touch: A felt top that feels like a short lawn, with raised wooden edges to stop dice escaping.
+sound: The soft patter of cards being dealt.
+looks: Bright green felt in a square of dark wood.
+plays: Pizzicato strings, bounce
+
+id: trophy-cabinet
+name: Glass trophy cabinet
+aisle: furniture
+room: trophy
+price: 80
+touch: Cool glass doors with a little brass knob, and shelves lined in soft felt.
+sound: A delicate tinkle when the doors swing open.
+looks: A tall cabinet that makes everything inside look important.
+plays: Singing bells, rising
+
+id: kitchen-stool
+name: Kitchen step stool
+aisle: furniture
+room: kitchen
+price: 20
+touch: Two grippy steps with rubber feet, steady as a rock under small paws.
+sound: A sturdy thunk as it lands on the floor.
+looks: A red stool with white polka dots.
+plays: Bunny, hop
+
+id: boat-cushion
+name: Boat cushion
+aisle: furniture
+room: boat
+price: 25
+touch: A thick canvas cushion with piping around the edge and a strap to tie it down.
+sound: A soft pat when you plop onto it.
+looks: Navy and white stripes, like a tiny sailor.
+plays: Bunny, two hops
+
+id: warm-white-lights
+name: Warm white string lights
+aisle: decor
+room: any
+price: 25
+touch: A long bendy wire dotted with smooth glass bulbs no bigger than a pea, barely warm.
+sound: A faint click when they switch on, then quiet.
+looks: A soft golden glow, like a row of tiny candles.
+plays: Singing bells, sparkle
+
+id: star-string-lights
+name: Star string lights
+aisle: decor
+room: outside
+price: 35
+set: Starlight set
+touch: Little five pointed stars made of frosted plastic, each point rounded so it never pokes.
+sound: A gentle buzz, almost too quiet to hear.
+looks: Silver blue stars twinkling along the fence.
+plays: Space, two blips
+
+id: berry-lights
+name: Berry string lights
+aisle: decor
+room: outside
+price: 30
+touch: Round bumpy bulbs that feel just like raspberries, strung on a soft green cord.
+sound: A tiny tick as each one wakes up.
+looks: Deep red berries glowing in the hedge.
+plays: Xylophone, sparkle
+
+id: lantern-lights
+name: Paper lantern string lights
+aisle: decor
+room: outside
+price: 40
+touch: Crinkly paper globes that squash a little and spring right back.
+sound: A papery rustle when the breeze passes through.
+looks: Pastel lanterns in pink, mint and lemon.
+plays: Flute, rising
+
+id: moon-fairy-lights
+name: Tiny moon fairy lights
+aisle: decor
+room: any
+price: 30
+touch: Smooth crescent moons with a soft rubbery feel, threaded on a thin copper wire.
+sound: Nothing at all, they shine in silence.
+looks: Pale moons glowing creamy white.
+plays: Soft piano, sparkle
+
+id: cloud-lights
+name: Cotton cloud lights
+aisle: decor
+room: any
+price: 35
+touch: Fluffy puffs of cotton wrapped around each bulb, soft as a bunny tail.
+sound: The quietest hum, like a cloud thinking.
+looks: White clouds lit from inside with a gentle glow.
+plays: Soft piano, rising
+
+id: blue-teapot
+name: Blue teapot
+aisle: decor
+room: tea
+price: 40
+set: Tea set
+touch: A round belly of glazed china, cool and slick, with a spout that curves like a swan's neck.
+sound: A hollow ring when you tap it, then a gurgle as it pours.
+looks: Cornflower blue with tiny white daisies.
+plays: Coffee, pour
+
+id: teacups
+name: Matching teacups
+aisle: decor
+room: tea
+price: 30
+set: Tea set
+touch: Thin china cups with loop handles just big enough for one paw.
+sound: A bright clink when they meet their saucers.
+looks: Two blue cups that match the teapot.
+plays: Coffee, two clinks
+
+id: tea-cozy
+name: Knitted tea cozy
+aisle: decor
+room: tea
+price: 20
+set: Tea set
+touch: Chunky wool with a pom pom on top, warm and squeezable.
+sound: A muffled hush as it slips over the pot.
+looks: Shaped like a sleeping bunny, ears and all.
+plays: Bunny, nibble
+
+id: garden-bunting
+name: Garden party bunting
+aisle: decor
+room: garden
+price: 25
+set: Garden party set
+touch: A long ribbon of cotton triangles, each with a neat hemmed edge.
+sound: A happy flutter whenever the wind blows.
+looks: Flags in every color strung between two trees.
+plays: Pizzicato strings, two up
+
+id: star-lamp
+name: Star projector lamp
+aisle: decor
+room: observatory
+price: 55
+set: Starlight set
+touch: A smooth dome full of tiny holes you can feel with a fingertip, sitting on a wooden base.
+sound: A slow whir as it turns.
+looks: It sprinkles stars across the ceiling, drifting gently round.
+plays: Space, orbit
+
+id: reading-lamp
+name: Reading lamp
+aisle: decor
+room: library
+price: 35
+set: Bookworm set
+touch: A bendy brass neck you can point anywhere, with a pull chain of little beads.
+sound: A satisfying click with each pull.
+looks: A green glass shade casting a pool of warm light.
+plays: Piano, single
+
+id: aquarium-castle
+name: Aquarium castle
+aisle: decor
+room: aquarium
+price: 30
+touch: Bumpy stone towers with tiny arched doors big enough for a fish to swim through.
+sound: Bubbles burbling out of the top turret.
+looks: A little grey castle with a flag on top.
+plays: Space, warble
+
+id: rubber-duck
+name: Rubber duck
+aisle: decor
+room: bath
+price: 10
+touch: Squeezy rubber with a flat bottom that bobs on the water.
+sound: A squeak that the ducks next door take as a friendly hello.
+looks: Classic sunny yellow with an orange beak.
+plays: Xylophone, bounce
+
+id: little-sail
+name: Little sail
+aisle: decor
+room: boat
+price: 45
+touch: Crisp canvas with stitched seams and a rope edge you can run your paw along.
+sound: A soft snap when it catches the breeze.
+looks: A white triangle sail with a carrot sewn in the corner.
+plays: Flute, two up
+
+id: boat-lantern
+name: Boat lantern
+aisle: decor
+room: boat
+price: 35
+touch: A cool metal frame with a ring handle, and smooth glass sides.
+sound: A gentle creak as it sways on its hook.
+looks: A warm orange glow bobbing on the water at dusk.
+plays: Singing bells, single
+
+id: boat-paint
+name: Fresh coat of boat paint
+aisle: decor
+room: boat
+price: 30
+touch: The boat sides go glassy smooth, with no more rough patches.
+sound: The swish of a wide brush, stroke after stroke.
+looks: A bright robin's egg blue with a white stripe.
+plays: Strings, rising
+
+id: patchwork-quilt
+name: Patchwork quilt
+aisle: bedding
+room: bedroom
+price: 60
+set: Cozy bed set
+touch: Squares of corduroy, cotton and soft flannel, each one a different texture to find.
+sound: A heavy, cozy flump as it settles over the bed.
+looks: Warm reds, golds and greens sewn together.
+plays: Soft piano, falling
+
+id: cloud-pillow
+name: Cloud pillow
+aisle: bedding
+room: bedroom
+price: 35
+set: Cozy bed set
+touch: So plump and squishy that your head sinks in and the sides puff up around your ears.
+sound: A sigh of feathers.
+looks: A big white pillow shaped like a cloud.
+plays: Soft piano, sigh
+
+id: flannel-sheets
+name: Flannel sheets
+aisle: bedding
+room: bedroom
+price: 40
+set: Cozy bed set
+touch: Brushed flannel that feels warm the moment you slide in.
+sound: A whisper of fabric when you wriggle.
+looks: Cream sheets with tiny blue stars.
+plays: Strings, sigh
+
+id: guest-quilt
+name: Guest bed quilt
+aisle: bedding
+room: guest
+price: 45
+touch: Light and puffy, with neat diamond stitching you can trace like a map.
+sound: A soft rustle as it is smoothed flat.
+looks: Pale sage green, freshly folded at the foot of the bed.
+plays: Strings, falling
+
+id: guest-pillows
+name: Guest pillows
+aisle: bedding
+room: guest
+price: 30
+touch: A pair of firm, springy pillows in cool cotton cases.
+sound: A pat pat as they are fluffed.
+looks: Two white pillows with lace edges.
+plays: Bunny, two hops
+
+id: lavender-pillow
+name: Lavender sachet pillow
+aisle: bedding
+room: guest
+price: 20
+touch: A tiny pillow full of dried lavender that crunches gently when squeezed.
+sound: A dry little crackle, like leaves.
+looks: Lilac linen tied with a ribbon.
+plays: Flute, sigh
+
+id: fluffy-towels
+name: Fluffy towels
+aisle: bedding
+room: hottub
+price: 30
+touch: Thick, loopy cotton that wraps all the way around and dries every whisker.
+sound: A soft fwump as one drops onto the bench.
+looks: A tall stack of towels in seafoam and white.
+plays: Bunny, binky
+
+id: beach-towel
+name: Striped beach towel
+aisle: bedding
+room: pool
+price: 25
+set: Beach day set
+touch: Big and velvety on one side, a little rough on the other for sandy paws.
+sound: A flap and a snap as it is shaken out.
+looks: Wide stripes of orange, pink and turquoise.
+plays: Pizzicato strings, single
+
+id: starry-blanket
+name: Glow in the dark blanket
+aisle: bedding
+room: observatory
+price: 45
+set: Starlight set
+touch: Minky soft fleece with raised stitched stars you can count with a paw.
+sound: The faint swish of fleece.
+looks: Midnight blue, and the stars glow green when the lights go out.
+plays: Singing bells, chord high
+
+id: picnic-blanket
+name: Picnic blanket
+aisle: bedding
+room: garden
+price: 35
+set: Garden party set
+touch: Woven wool on top and a waterproof back that feels slick and cool.
+sound: A big whoosh as it billows down onto the grass.
+looks: Red and white checks, the classic kind.
+plays: Flute, falling
+
+id: lap-blanket
+name: Weighted lap blanket
+aisle: bedding
+room: nook
+price: 50
+touch: Pleasantly heavy, like a gentle hug that stays put.
+sound: A soft, steady hush.
+looks: Charcoal grey knit with chunky ribs.
+plays: Cello, falling
+
+id: upright-piano
+name: Upright piano
+aisle: instruments
+room: music
+price: 130
+instrument: Piano
+touch: Smooth ivory keys that dip under your paw, and a cool wooden lid that folds back.
+sound: Bright, full notes that ring through the whole burrow.
+looks: Glossy walnut with brass pedals.
+plays: Piano, chord high
+
+id: felt-piano
+name: Felt piano
+aisle: instruments
+room: music
+price: 110
+instrument: Soft piano
+touch: The same lovely keys, but each one lands with a velvety give.
+sound: Hushed, gentle notes, as if the piano is whispering.
+looks: A small cream piano with a strip of red felt peeking out.
+plays: Soft piano, two down
+
+id: string-quartet
+name: String quartet stand
+aisle: instruments
+room: music
+price: 120
+instrument: Strings
+touch: Four music stands with smooth curved edges and a stack of bows resting in a velvet tray.
+sound: Long, warm notes from violins and violas playing together.
+looks: Dark wooden instruments gleaming under the lamp.
+plays: Strings, chord low
+
+id: plucked-violin
+name: Little plucked violin
+aisle: instruments
+room: music
+price: 75
+instrument: Pizzicato strings
+touch: A tiny violin with taut strings that spring back when plucked.
+sound: Bouncy little plinks, light as raindrops.
+looks: Reddish wood with a curly scroll at the top.
+plays: Pizzicato strings, four up
+
+id: cello
+name: Cello
+aisle: instruments
+room: music
+price: 115
+instrument: Cello
+touch: A big curving body taller than Bunny, with thick strings that hum under your paw.
+sound: Deep, rich notes you can feel in your chest.
+looks: Warm amber wood with a long silver spike at the bottom.
+plays: Cello, two down
+
+id: glass-bells
+name: Glass bells
+aisle: instruments
+room: music
+price: 85
+instrument: Singing bells
+touch: A row of cool glass bells hanging from a frame, each one a little smaller than the last.
+sound: Clear, shimmering tones that float and fade.
+looks: Pale blue glass that catches the light.
+plays: Singing bells, rising
+
+id: pump-organ
+name: Pump organ
+aisle: instruments
+room: music
+price: 125
+instrument: Organ
+touch: Two wide pedals you press in turn, and round wooden knobs above the keys.
+sound: A breathy, wheezy, wonderful hum that fills the room.
+looks: A tall carved cabinet with a little mirror on top.
+plays: Organ, chord low
+
+id: wooden-flute
+name: Wooden flute
+aisle: instruments
+room: music
+price: 60
+instrument: Flute
+touch: Light, smooth wood with six round holes that fit your paw pads.
+sound: A sweet, airy tune like a bird in the morning.
+looks: Pale maple with a ribbon tied near the end.
+plays: Flute, three down
+
+id: xylophone
+name: Xylophone
+aisle: instruments
+room: music
+price: 65
+instrument: Xylophone
+touch: Smooth wooden bars that get shorter as you go, and two mallets with rubber tips.
+sound: Bright, knocking notes that sound like happy footsteps.
+looks: Rainbow bars on a little wooden frame.
+plays: Xylophone, rising
+
+id: kitchen-drums
+name: Kitchen drum kit
+aisle: instruments
+room: music
+price: 70
+instrument: Drums
+touch: Upside down pots and pans of every size, plus a pair of wooden spoons.
+sound: Bongs, tings and thumps, loud and very cheerful.
+looks: A gleaming tower of borrowed cookware.
+plays: Bunny, thump
+
+id: honey-pot
+name: Honey pot
+aisle: food and treats
+room: pantry
+price: 20
+set: Tea set
+touch: A round clay pot with a lid, and a wooden dipper with grooves that hold the honey.
+sound: A slow drip, then a tiny tap of the lid.
+looks: Golden honey glowing in a brown pot.
+plays: Coffee, stir
+
+id: lemonade-jug
+name: Lemonade jug
+aisle: food and treats
+room: kitchen
+price: 20
+set: Garden party set
+touch: A cold glass jug, beaded with water, with ice that knocks against the sides.
+sound: Ice cubes clinking, then a fizzy pour.
+looks: Pale yellow lemonade with lemon slices floating on top.
+plays: Coffee, pour
+
+id: cocoa-tin
+name: Cocoa tin
+aisle: food and treats
+room: pantry
+price: 15
+set: Bookworm set
+touch: A cool metal tin with a lid that pops off with a satisfying tug.
+sound: A pop, then the scrape of a spoon inside.
+looks: A red tin with a cartoon mug on the front.
+plays: Coffee, steam
+
+id: carrot-cake
+name: Carrot cake
+aisle: food and treats
+room: kitchen
+price: 30
+touch: Soft, springy sponge with a thick swirl of frosting on top.
+sound: The gentle squish of a knife sliding in.
+looks: Orange flecked layers with tiny frosting carrots.
+plays: Bunny, nibble
+
+id: dandelion-tea
+name: Dandelion tea leaves
+aisle: food and treats
+room: pantry
+price: 12
+touch: A paper pouch of dry crinkly leaves that crumble a little between your paws.
+sound: A papery shuffle as you scoop some out.
+looks: Green and gold leaves with tiny yellow petals.
+plays: Coffee, percolate
+
+id: apple-crisps
+name: Apple crisps
+aisle: food and treats
+room: pantry
+price: 10
+touch: Thin, crunchy rounds, slightly sweet and a bit bumpy at the edges.
+sound: A loud, happy crunch.
+looks: Pale apple slices with red rims.
+plays: Bunny, nibble
+
+id: oat-cookies
+name: Jar of oat cookies
+aisle: food and treats
+room: kitchen
+price: 18
+touch: Chunky cookies, crisp outside and chewy in the middle, in a jar with a cork lid.
+sound: The squeak of the cork, then a crumbly crunch.
+looks: Golden brown cookies stacked high.
+plays: Coffee, clink
+
+id: strawberry-jam
+name: Strawberry jam
+aisle: food and treats
+room: pantry
+price: 15
+touch: A heavy little jar with a gingham cloth tied over the top.
+sound: A sticky pop as the lid comes off.
+looks: Ruby red jam with whole berries inside.
+plays: Coffee, stir
+
+id: parsley-bunch
+name: Fresh parsley bunch
+aisle: food and treats
+room: kitchen
+price: 10
+touch: Frilly, cool leaves on crisp stems, tied with garden twine.
+sound: A fresh crunch with every bite.
+looks: Bright green and bursting with freshness.
+plays: Bunny, nibble
+
+id: banana-chips
+name: Banana chips
+aisle: food and treats
+room: pantry
+price: 12
+touch: Hard little coins with a slightly waxy, sweet coating.
+sound: A crackle as the bag opens.
+looks: Golden rounds in a crinkly bag.
+plays: Bunny, two hops
+
+id: cinnamon-rolls
+name: Cinnamon rolls
+aisle: food and treats
+room: kitchen
+price: 25
+touch: Warm, pillowy spirals with sticky glaze on top.
+sound: The oven door, then a soft sizzle of sugar.
+looks: Golden swirls dusted with cinnamon.
+plays: Stove, sizzle
+
+id: sun-hat
+name: Floppy sun hat
+aisle: clothes and outfits
+room: bedroom
+price: 25
+set: Beach day set
+touch: Woven straw with a wide floppy brim and two holes cut for long ears.
+sound: A light swish when it flaps in the breeze.
+looks: Natural straw with a coral ribbon.
+plays: Flute, bounce
+
+id: bed-socks
+name: Fuzzy bed socks
+aisle: clothes and outfits
+room: bedroom
+price: 15
+set: Cozy bed set
+touch: Fluffy, stretchy socks with grippy dots on the soles.
+sound: A soft pad pad across the floor.
+looks: Pink socks with white clouds.
+plays: Soft piano, two down
+
+id: rain-boots
+name: Rain boots
+aisle: clothes and outfits
+room: bedroom
+price: 30
+touch: Smooth rubber boots that are bendy at the ankle and chunky at the toe.
+sound: A glorious splosh in every puddle.
+looks: Shiny green boots with frog eyes on the toes.
+plays: Pizzicato strings, bounce
+
+id: knitted-scarf
+name: Knitted scarf
+aisle: clothes and outfits
+room: bedroom
+price: 20
+touch: Long, squishy wool with fringe at both ends you can twist between your paws.
+sound: A soft swoosh as it wraps around.
+looks: Stripes of mustard and plum.
+plays: Strings, two up
+
+id: bow-tie
+name: Dapper bow tie
+aisle: clothes and outfits
+room: bedroom
+price: 15
+touch: Crisp silk with a tiny clip at the back.
+sound: A neat little snap as it fastens.
+looks: Red with white polka dots, very distinguished.
+plays: Piano, two up
+
+id: yellow-raincoat
+name: Yellow raincoat
+aisle: clothes and outfits
+room: bedroom
+price: 35
+touch: Slick, rustly fabric with big round buttons and a hood with ear pockets.
+sound: Raindrops pattering on the hood.
+looks: Bright sunshine yellow, easy to spot in a storm.
+plays: Xylophone, three down
+
+id: tiny-cape
+name: Tiny hero cape
+aisle: clothes and outfits
+room: bedroom
+price: 25
+touch: Silky fabric that swirls when you spin, tied with a soft velcro tab.
+sound: A dramatic flap with every zoom.
+looks: Bright red with a golden carrot on the back.
+plays: Space, launch
+
+id: overalls
+name: Denim overalls
+aisle: clothes and outfits
+room: bedroom
+price: 35
+touch: Sturdy denim with a big front pocket and two metal buckles.
+sound: The clink of buckles fastening.
+looks: Faded blue with a carrot patch on the knee.
+plays: Bunny, hop
+
+id: star-pajamas
+name: Star pajamas
+aisle: clothes and outfits
+room: bedroom
+price: 30
+set: Starlight set
+touch: Silky soft cotton with raised embroidered stars on the pocket.
+sound: Barely a whisper as you snuggle in.
+looks: Navy blue covered in tiny gold stars.
+plays: Space, beam
+
+id: sweater-vest
+name: Cozy sweater vest
+aisle: clothes and outfits
+room: bedroom
+price: 30
+touch: A thick cable knit with ridges you can follow like little roads.
+sound: A soft brush of wool.
+looks: Oatmeal colored with brown diamonds.
+plays: Cello, single
+
+id: swim-goggles
+name: Swim goggles
+aisle: clothes and outfits
+room: bedroom
+price: 15
+touch: Squishy rubber cups and a stretchy strap that fits around long ears.
+sound: A tiny snap as the strap lets go.
+looks: Clear lenses with a bright orange strap.
+plays: Space, blip
+
+id: carrot-seeds
+name: Carrot seeds
+aisle: garden and seeds
+room: garden
+price: 10
+touch: A crinkly paper packet full of seeds as tiny as grains of sand.
+sound: A dry shake like a little maraca.
+looks: A packet with a picture of a perfect carrot.
+plays: Xylophone, single
+
+id: sunflower-seeds
+name: Sunflower seeds
+aisle: garden and seeds
+room: garden
+price: 12
+touch: Smooth, striped seeds shaped like teardrops.
+sound: A rattle in the packet.
+looks: Big yellow sunflowers on the front.
+plays: Flute, rising
+
+id: clover-patch
+name: Clover patch
+aisle: garden and seeds
+room: outside
+price: 20
+touch: A soft carpet of round little leaves, cool and springy under your paws.
+sound: Bees humming happily over the flowers.
+looks: Bright green clover dotted with white blossoms.
+plays: Bunny, binky
+
+id: strawberry-plants
+name: Strawberry plants
+aisle: garden and seeds
+room: greenhouse
+price: 25
+touch: Fuzzy leaves and small, bumpy berries that grow plump and soft.
+sound: The rustle of leaves as you hunt for ripe ones.
+looks: Red berries hiding under green leaves.
+plays: Pizzicato strings, two up
+
+id: watering-can
+name: Watering can
+aisle: garden and seeds
+room: garden
+price: 18
+touch: A light metal can with a long spout and a rose cap full of tiny holes.
+sound: A gentle shower pattering on the soil.
+looks: Sage green with a dent that gives it character.
+plays: Coffee, pour
+
+id: tomato-vines
+name: Tomato vines
+aisle: garden and seeds
+room: greenhouse
+price: 22
+touch: Tall, fuzzy stems tied to a cane, with smooth round tomatoes hanging low.
+sound: A soft snap when a tomato is picked.
+looks: Bright red and orange tomatoes on green vines.
+plays: Xylophone, two up
+
+id: herb-pots
+name: Herb pots
+aisle: garden and seeds
+room: greenhouse
+price: 20
+touch: Three little clay pots with mint, basil and dill, each one a different leafy feel.
+sound: A faint crunch of soil when you press it down.
+looks: A row of terracotta pots on the windowsill.
+plays: Flute, single
+
+id: bird-bath
+name: Bird bath
+aisle: garden and seeds
+room: outside
+price: 40
+touch: A wide stone bowl, cool and a little gritty, with a smooth rim.
+sound: Small birds splashing and chirping.
+looks: Grey stone with moss growing at the base.
+plays: Singing bells, bounce
+
+id: garden-gnome
+name: Garden gnome
+aisle: garden and seeds
+room: outside
+price: 25
+touch: A smooth ceramic figure with a pointy hat and a round belly.
+sound: Silent, but he seems to be listening.
+looks: Red hat, white beard and a very confident smile.
+plays: Bunny, thump
+
+id: tulip-bulbs
+name: Tulip bulbs
+aisle: garden and seeds
+room: garden
+price: 15
+touch: Papery round bulbs, like tiny onions wearing jackets.
+sound: The soft dig of a trowel.
+looks: Pink and purple tulips that pop up in spring.
+plays: Soft piano, rising
+
+id: lemon-tree
+name: Little lemon tree
+aisle: garden and seeds
+room: greenhouse
+price: 45
+touch: Glossy leaves and smooth, waxy lemons that smell bright when you squeeze them.
+sound: Leaves rustling in the warm greenhouse air.
+looks: A small tree in a blue pot with yellow lemons.
+plays: Strings, two up
+
+id: pool-float
+name: Carrot pool float
+aisle: pool things
+room: pool
+price: 30
+touch: A big squeaky inflatable you can lie across, smooth and a little bouncy.
+sound: A gentle bob and slosh.
+looks: A giant orange carrot with green leaves.
+plays: Bunny, binky
+
+id: diving-board
+name: Diving board
+aisle: pool things
+room: pool
+price: 60
+touch: A long springy board with a grippy, sandpaper top.
+sound: A twang and a splash.
+looks: White with a blue stripe down the middle.
+plays: Space, launch
+
+id: pool-lights
+name: Pool lights
+aisle: pool things
+room: pool
+price: 45
+touch: Smooth round lights set into the pool walls, warm under your paw.
+sound: The quiet hum of the pool at night.
+looks: The water glows a soft turquoise.
+plays: Space, beam
+
+id: pool-noodle
+name: Pool noodle
+aisle: pool things
+room: pool
+price: 10
+touch: A long squishy foam tube that bends any way you like.
+sound: A squeaky rub when you squeeze it.
+looks: Lime green and very wiggly.
+plays: Pizzicato strings, bounce
+
+id: beach-ball
+name: Beach ball
+aisle: pool things
+room: pool
+price: 12
+set: Beach day set
+touch: Light and smooth, with seams you can feel running from top to bottom.
+sound: A hollow boing when you bop it.
+looks: Red, yellow, blue and white panels.
+plays: Xylophone, bounce
+
+id: sand-pail
+name: Sand pail and spade
+aisle: pool things
+room: pool
+price: 15
+set: Beach day set
+touch: A plastic bucket with a handle and a little spade with a rounded edge.
+sound: A scrape and a pat as you build.
+looks: A bright blue pail shaped like a castle tower.
+plays: Bunny, two hops
+
+id: pool-ladder
+name: Pool ladder
+aisle: pool things
+room: pool
+price: 35
+touch: Cool metal rails and wide steps with grippy treads.
+sound: A soft clang when you grab the rail.
+looks: Shiny silver curves at the pool edge.
+plays: Xylophone, four up
+
+id: hottub-jets
+name: Hot tub jets
+aisle: pool things
+room: hottub
+price: 70
+touch: Warm streams of bubbles that massage your back like tiny paws.
+sound: A happy rumble and burble.
+looks: Water dancing and fizzing in the tub.
+plays: Coffee, percolate
+
+id: hottub-lights
+name: Hot tub underwater lights
+aisle: pool things
+room: hottub
+price: 50
+touch: Smooth domes under the water, warm and glassy.
+sound: A soft click, then the hush of bubbles.
+looks: The water shifts slowly from pink to purple to blue.
+plays: Space, warble
+
+id: hottub-cover
+name: Hot tub cover
+aisle: pool things
+room: hottub
+price: 40
+touch: A thick padded lid with a soft vinyl top and a fold down the middle.
+sound: A big whump as it closes, keeping the warmth tucked in.
+looks: Chocolate brown with neat stitching.
+plays: Cello, single
+
+id: boat-oars
+name: Wooden oars
+aisle: pool things
+room: boat
+price: 35
+touch: Long smooth handles worn soft, with wide flat blades at the end.
+sound: A gentle splash and drip with every stroke.
+looks: Varnished wood with red tips.
+plays: Strings, bounce
+
+id: easel
+name: Painting easel
+aisle: crafts
+room: art
+price: 40
+touch: Three wooden legs and a ledge to rest a canvas on, with knobs that twist to adjust.
+sound: A wooden creak as it stands up.
+looks: Speckled with old paint in every color.
+plays: Piano, rising
+
+id: watercolor-tin
+name: Watercolor tin
+aisle: crafts
+room: art
+price: 20
+touch: A flat metal tin with little wells, each paint cake a smooth bump.
+sound: A swish of the brush in a water jar.
+looks: Twelve bright colors in neat rows.
+plays: Singing bells, sparkle
+
+id: clay-block
+name: Block of clay
+aisle: crafts
+room: pottery
+price: 15
+touch: Cool, heavy and smooth, it squishes beautifully between your paws.
+sound: A satisfying splat on the table.
+looks: Reddish brown and ready for anything.
+plays: Bunny, thump
+
+id: potters-wheel
+name: Potter's wheel
+aisle: crafts
+room: pottery
+price: 80
+touch: A round spinning plate with a foot pedal, and wet clay whirling under your paws.
+sound: A steady whir that speeds up and slows down.
+looks: A grey wheel splashed with clay.
+plays: Space, orbit
+
+id: glaze-jars
+name: Glaze jars
+aisle: crafts
+room: pottery
+price: 25
+touch: Small screw top jars, each glaze thick and silky like yogurt.
+sound: A clink of glass as you pick one.
+looks: Labels in braille and print, with colors from sea blue to plum.
+plays: Coffee, two clinks
+
+id: yarn-basket
+name: Yarn basket
+aisle: crafts
+room: art
+price: 25
+touch: A woven basket heaped with soft balls of yarn, some fuzzy, some smooth.
+sound: A soft thump as a ball rolls out.
+looks: Every color, all a little tangled.
+plays: Strings, two down
+
+id: button-jar
+name: Button jar
+aisle: crafts
+room: art
+price: 12
+touch: A glass jar full of buttons, round, square and star shaped, fun to run a paw through.
+sound: A clattery rattle like happy rain.
+looks: A rainbow of buttons in all sizes.
+plays: Xylophone, sparkle
+
+id: tactile-stickers
+name: Tactile sticker sheets
+aisle: crafts
+room: art
+price: 15
+touch: Raised stickers in felt, foam and glitter, each one a different texture.
+sound: A peel and a pat.
+looks: Hearts, carrots, stars and tiny bunnies.
+plays: Space, blip
+
+id: origami-paper
+name: Origami paper
+aisle: crafts
+room: art
+price: 10
+touch: Crisp square sheets that fold with sharp, neat creases.
+sound: A crisp crinkle with every fold.
+looks: Patterned papers in pink, gold and green.
+plays: Pizzicato strings, three down
+
+id: stamp-set
+name: Wooden stamp set
+aisle: crafts
+room: art
+price: 20
+touch: Chunky wooden blocks with rubber shapes on the bottom you can feel with a fingertip.
+sound: A firm thunk on the ink pad, then on the paper.
+looks: Leaves, moons and paw prints in neat rows.
+plays: Bunny, two hops
+
+id: bookmark-set
+name: Ribbon bookmark set
+aisle: books
+room: library
+price: 12
+set: Bookworm set
+touch: Silky ribbons with a smooth wooden bead at each end.
+sound: A whisper as they slide between pages.
+looks: Ribbons in every jewel color.
+plays: Soft piano, single
+
+id: carrot-book
+name: Big book of carrots
+aisle: books
+room: library
+price: 25
+touch: A thick book with a padded cover and raised carrot pictures on the front.
+sound: The heavy thud of a book that means business.
+looks: Orange cover with gold letters.
+plays: Piano, two down
+
+id: cozy-mystery
+name: Cozy mystery novel
+aisle: books
+room: nook
+price: 20
+touch: A soft paperback with a cracked spine that falls open to the good parts.
+sound: Pages flipping quickly toward the ending.
+looks: A teapot and a magnifying glass on the cover.
+plays: Pizzicato strings, three down
+
+id: poem-book
+name: Little book of poems
+aisle: books
+room: nook
+price: 15
+touch: A slim book with a cloth cover, smooth and a little worn at the corners.
+sound: A gentle rustle of thin pages.
+looks: Pale blue with a pressed flower inside.
+plays: Soft piano, sigh
+
+id: riddle-book
+name: Riddle book
+aisle: books
+room: library
+price: 15
+touch: A chunky square book with rounded corners and a ribbon to hold your place.
+sound: The squirrel giggling as she guesses wrong.
+looks: Bright purple with question marks dancing across it.
+plays: Xylophone, two up
+
+id: cookbook
+name: Burrow cookbook
+aisle: books
+room: library
+price: 20
+touch: A spiral bound book that lies flat, with pages wiped clean so often they feel waxy.
+sound: The flip of a well loved page.
+looks: Splashed with a little jam, as all good cookbooks are.
+plays: Stove, simmer
+
+id: bug-guide
+name: Field guide to friendly bugs
+aisle: books
+room: nook
+price: 18
+touch: A sturdy pocket book with a waterproof cover for muddy adventures.
+sound: Pages turning outside in the breeze.
+looks: Ladybugs and beetles drawn on every page.
+plays: Flute, two up
+
+id: touch-book
+name: Touch and feel storybook
+aisle: books
+room: nook
+price: 22
+touch: Every page has something to feel: fuzzy fur, bumpy bark, a smooth silky pond.
+sound: A soft swish with each page.
+looks: Thick board pages full of bright pictures.
+plays: Bunny, binky
+
+id: burrow-atlas
+name: Atlas of famous burrows
+aisle: books
+room: library
+price: 30
+touch: A wide heavy book with raised maps you can follow with a paw.
+sound: A slow creak as the big cover opens.
+looks: Old style maps with compasses in the corners.
+plays: Strings, chord low
+
+id: snail-manual
+name: Snail racing manual
+aisle: books
+room: library
+price: 15
+touch: A tiny book, barely bigger than a paw, with a shiny shell on the cover.
+sound: Almost silent, much like its author.
+looks: Signed by Gerald the snail, very slowly.
+plays: Cello, sigh
+
+id: pine-wreath
+name: Pine wreath
+aisle: seasonal
+room: any
+price: 30
+season: Winter
+touch: Bristly pine needles and smooth pinecones wound into a ring.
+sound: A crisp rustle when the door opens.
+looks: Deep green with a red velvet bow.
+plays: Singing bells, two down
+
+id: snowbunny-kit
+name: Snow bunny kit
+aisle: seasonal
+room: outside
+price: 20
+season: Winter
+touch: Two pebble eyes, a carrot nose and a knitted scarf, ready for packing snow around.
+sound: The crunch of fresh snow.
+looks: A snow bunny with very proud ears.
+plays: Xylophone, falling
+
+id: wool-mittens
+name: Wool mittens
+aisle: seasonal
+room: bedroom
+price: 15
+season: Winter
+touch: Thick, warm mittens with a cord to keep them together.
+sound: A soft clap of wool.
+looks: Cream with red snowflakes.
+plays: Soft piano, two up
+
+id: blossom-branch
+name: Blossom branch vase
+aisle: seasonal
+room: any
+price: 25
+season: Spring
+touch: Thin twigs with velvety petals, in a smooth glass vase.
+sound: Petals landing with the softest pat.
+looks: Pale pink cherry blossoms.
+plays: Flute, sparkle
+
+id: rainbow-kite
+name: Rainbow kite
+aisle: seasonal
+room: outside
+price: 30
+season: Spring
+touch: Light ripstop fabric on a thin frame, and a spool of string that tugs in the wind.
+sound: A flapping tail and a joyful hum of string.
+looks: A rainbow diamond high in the sky.
+plays: Flute, four up
+
+id: nest-box
+name: Bird nest box
+aisle: seasonal
+room: outside
+price: 20
+season: Spring
+touch: A small wooden house with a round door and a sloped roof.
+sound: Gentle peeping from inside.
+looks: Painted mint green with a tiny perch.
+plays: Pizzicato strings, sparkle
+
+id: hammock
+name: Garden hammock
+aisle: seasonal
+room: outside
+price: 45
+season: Summer
+touch: Soft cotton rope that cradles you and sways with the slightest push.
+sound: A quiet creak of rope and leaves rustling overhead.
+looks: Striped in sunny colors between two trees.
+plays: Strings, bounce
+
+id: ice-pop-maker
+name: Ice pop maker
+aisle: seasonal
+room: kitchen
+price: 20
+season: Summer
+touch: Cold plastic molds with little sticks that slide right in.
+sound: A satisfying pop as one slides out.
+looks: Pops in orange, pink and green.
+plays: Space, pew
+
+id: paper-fan
+name: Folding paper fan
+aisle: seasonal
+room: any
+price: 10
+season: Summer
+touch: Ridged paper that snaps open in a half circle, with a smooth bamboo handle.
+sound: A soft flutter of cool air.
+looks: Painted with waves and a little boat.
+plays: Flute, sigh
+
+id: gourd-basket
+name: Bumpy gourd basket
+aisle: seasonal
+room: any
+price: 20
+season: Fall
+touch: A basket of gourds, some smooth, some warty, some twisted like little hats.
+sound: A hollow knock when you tap one.
+looks: Orange, cream and speckled green.
+plays: Xylophone, three down
+
+id: leaf-rake
+name: Leaf rake
+aisle: seasonal
+room: outside
+price: 18
+season: Fall
+touch: A wooden handle and a fan of springy tines.
+sound: The crackly scrape of leaves, then a big leaf pile crunch.
+looks: A red rake beside a golden heap of leaves.
+plays: Bunny, binky
+
+id: cider-jug
+name: Apple cider jug
+aisle: seasonal
+room: kitchen
+price: 22
+season: Fall
+touch: A heavy clay jug with a thumb loop, warm from the stove.
+sound: A slow glug glug as it pours.
+looks: Amber cider with a cinnamon stick.
+plays: Stove, simmer
+
+id: jack-o-lantern
+name: Grinning jack o lantern
+aisle: seasonal
+room: outside
+price: 25
+when: 10-31
+touch: A smooth pumpkin with a ridged surface and a carved, friendly face.
+sound: A soft flicker from the little light inside.
+looks: Orange and glowing with a goofy smile.
+plays: Organ, two down
+
+id: holiday-tree
+name: Holiday tree
+aisle: seasonal
+room: any
+price: 60
+when: 12-25
+touch: Soft fir branches, with smooth round ornaments and a felt star on top.
+sound: Ornaments chiming softly when brushed.
+looks: Green and twinkling with gold and red.
+plays: Singing bells, sparkle
+
+id: heart-garland
+name: Heart garland
+aisle: seasonal
+room: any
+price: 15
+when: 02-14
+touch: Puffy felt hearts strung on a ribbon, each one squeezable.
+sound: A soft swish when they sway.
+looks: Hearts in red, pink and white.
+plays: Piano, two up
+
+id: pinwheels
+name: Red, white and blue pinwheels
+aisle: seasonal
+room: outside
+price: 15
+when: 07-04
+touch: Crisp foil petals on a stick that spin when you blow on them.
+sound: A happy whirring flutter.
+looks: Stars and stripes spinning in the sun.
+plays: Space, orbit
+
+id: noisemakers
+name: New year noisemakers
+aisle: seasonal
+room: any
+price: 10
+when: 01-01
+touch: Paper horns that unroll with a puff, and a sparkly cone hat with a soft elastic.
+sound: A silly honk that makes everyone laugh.
+looks: Gold and silver, covered in confetti.
+plays: Space, two blips
+
+id: four-leaf-clover
+name: Four leaf clover pot
+aisle: seasonal
+room: any
+price: 20
+when: 03-17
+touch: A tiny clay pot with soft clover, and somewhere in there, one leaf with four petals.
+sound: A cheerful little jingle of luck.
+looks: Bright green clover in a gold pot.
+plays: Singing bells, two up
+
+id: golden-carrot
+name: Golden carrot
+aisle: rare finds
+room: trophy
+price: 120
+rare: yes
+touch: Heavy and cool, with every root line and leaf carved in fine detail.
+sound: A deep, rich ring when tapped.
+looks: Gleaming gold from tip to top.
+plays: Singing bells, chord high
+
+id: meteorite-chip
+name: Meteorite chip
+aisle: rare finds
+room: observatory
+price: 100
+rare: yes
+touch: Surprisingly heavy for its size, bumpy on one side and polished smooth on the other.
+sound: A tiny tick when set down, as if it is still traveling.
+looks: Dark metal with a silvery shine where it was cut.
+plays: Space, warble
+
+id: music-box
+name: Antique music box
+aisle: rare finds
+room: music
+price: 90
+rare: yes
+touch: A small wooden box with a brass crank you wind with careful turns.
+sound: A tinkling waltz that slows gently to a stop.
+looks: Inlaid wood with a tiny dancing bunny inside the lid.
+plays: Xylophone, sparkle
+
+id: crystal-geode
+name: Crystal geode
+aisle: rare finds
+room: treasure
+price: 85
+rare: yes
+touch: Rough and rocky outside, and inside a cave of pointy, smooth crystals.
+sound: A bright tink when tapped.
+looks: Grey stone opening onto sparkling purple.
+plays: Singing bells, rising
+
+id: treasure-map
+name: Old treasure map
+aisle: rare finds
+room: treasure
+price: 75
+rare: yes
+touch: Soft, crinkly parchment with a raised wax seal and stitched paths you can follow.
+sound: A crackle as it unrolls.
+looks: Faded ink with a big X where the carrots are buried.
+plays: Organ, rising
+
+id: velvet-crown
+name: Velvet crown
+aisle: rare finds
+room: throne
+price: 110
+rare: yes
+touch: Plush velvet with smooth gemstones and two openings for royal ears.
+sound: A soft jingle of tiny bells along the rim.
+looks: Deep red velvet with a gold band.
+plays: Organ, chord high
+
+id: fossil-shell
+name: Fossil shell
+aisle: rare finds
+room: treasure
+price: 80
+rare: yes
+touch: A stone spiral with ridges as crisp as the day the sea made them.
+sound: Hold it to your ear and hear a faint ocean hush.
+looks: Sandy colored stone with a perfect swirl.
+plays: Cello, two down
+
+id: glass-float
+name: Glass fishing float
+aisle: rare finds
+room: boat
+price: 70
+rare: yes
+touch: A smooth glass ball wrapped in a net of knotted rope.
+sound: A hollow chime when it bumps the boat.
+looks: Sea green glass full of tiny bubbles.
+plays: Singing bells, bounce
+
+id: silver-tea-spoon
+name: Silver tea spoon
+aisle: bonus
+room: any
+price: 0
+set: Tea set
+bonus: yes
+touch: A tiny cool spoon with a bunny ear handle that fits just right.
+sound: A sweet tinkle against a teacup.
+looks: Polished silver that shines like a little moon.
+plays: Coffee, stir
+
+id: moon-nightlight
+name: Moon nightlight
+aisle: bonus
+room: any
+price: 0
+set: Cozy bed set
+bonus: yes
+touch: A smooth round moon that warms gently in your paws.
+sound: A faint lullaby when you give it a squeeze.
+looks: A soft yellow glow that keeps the bedroom cozy.
+plays: Soft piano, falling
+
+id: daisy-crown
+name: Daisy crown
+aisle: bonus
+room: any
+price: 0
+set: Garden party set
+bonus: yes
+touch: A ring of woven stems with soft petals all around.
+sound: The gentle rustle of flowers.
+looks: White daisies with sunny centers, perfect between two ears.
+plays: Flute, two up
+
+id: pocket-comet
+name: Pocket comet
+aisle: bonus
+room: any
+price: 0
+set: Starlight set
+bonus: yes
+touch: A smooth glass orb with a silky tail of ribbon trailing behind.
+sound: A soft whoosh when you swoop it through the air.
+looks: A glowing blue comet with a shimmering tail.
+plays: Space, launch
+
+id: seashell-chime
+name: Seashell wind chime
+aisle: bonus
+room: any
+price: 0
+set: Beach day set
+bonus: yes
+touch: Smooth and ridged shells strung on twine from a piece of driftwood.
+sound: A clattery, gentle chime in every breeze.
+looks: Pearly pink and white shells swaying together.
+plays: Singing bells, sparkle
+
+id: golden-bookmark
+name: Golden bookmark
+aisle: bonus
+room: any
+price: 0
+set: Bookworm set
+bonus: yes
+touch: A thin metal bookmark with a bunny cut out at the top you can trace with a paw.
+sound: A tiny ting as it slips into a book.
+looks: Shiny gold that marks your place in style.
+plays: Piano, sparkle

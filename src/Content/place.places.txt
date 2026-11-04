@@ -1,0 +1,329 @@
+id: place.room.bedroom
+touch: Thick quilted blankets, three squashy pillows and a mattress that sinks just enough under your paws.
+sound: The quiet rustle of covers and a slow, sleepy sigh from the pillows as you flop down.
+looks: A round bed tucked into a cozy earth alcove, piled high with patchwork blankets in soft blues and creams.
+plays: Soft piano, sigh
+
+id: place.room.guest
+touch: A neatly made bed with crisp sheets, a folded spare blanket at the foot and a fluffy rug underneath.
+sound: Faint giggles linger from the last sleepover, and the door creaks open with a friendly squeak.
+looks: A tidy little room with two small beds, a jug of water on the side table and a welcome sign in curly letters.
+plays: Piano, two up
+
+id: place.room.treasure
+touch: Heavy rounded wood bound with cool metal bands, and a lid with a big ring handle that takes both paws to lift.
+sound: The lid opens with a long, creaky groan, then a happy jingle of trinkets inside.
+looks: A big old treasure chest in the middle of the room, glinting with shiny buttons, ribbons and lost acorns.
+plays: Singing bells, sparkle
+
+id: place.room.art
+touch: Rough canvas, lumpy clay figures and smooth painted pebbles lined up along low shelves for you to feel.
+sound: Paper rustles on the walls whenever a breeze sneaks in, like the pictures are whispering to each other.
+looks: Every wall is covered in things Bunny made: paintings, drawings and little sculptures, all proudly on display.
+plays: Xylophone, bounce
+
+id: place.room.pool
+touch: Warm water lapping at your toes, smooth tiles around the edge and a squishy pool noodle floating by.
+sound: Gentle splashes echo off the ceiling, with a soft plop every time a drip falls.
+looks: A sparkling blue pool lit from below, with a little ladder and a duck-shaped float bobbing in the corner.
+plays: Strings, rising
+
+id: place.room.aquarium
+touch: Cool glass that hums faintly under your paw, and a tiny ripple when a curious fish bumps the other side.
+sound: Steady bubbling from the filters, like a hundred tiny fizzy drinks being poured at once.
+looks: Glowing tanks line the walls, full of the pond's fish swishing their tails through green waving plants.
+plays: Singing bells, falling
+
+id: place.room.greenhouse
+touch: Warm, damp air wraps around you, and soft fuzzy leaves brush your ears as you pass.
+sound: Water drips from big leaves onto the gravel, and a misting fan sighs on and off.
+looks: Glass walls full of rare plants that bloom all year, with bright flowers in every color you can name.
+plays: Flute, rising
+
+id: place.room.gameroom
+touch: Chunky arcade buttons that click under your paw, a springy joystick and a coin slot worn smooth.
+sound: Cheerful beeps, a little fanfare from one machine and a happy jingle when someone wins.
+looks: A tiny arcade with blinking cabinets, a claw machine full of plush carrots and a high score board.
+plays: Space, two blips
+
+id: place.room.trophy
+touch: Cool metal cups, smooth ribbon rosettes and little badges with raised letters you can trace.
+sound: A gentle clink when two trophies bump, and the polishing cloth squeaks as it shines them.
+looks: Shelves of badges, cups and framed records, each one a reminder of something Bunny got done.
+plays: Organ, chord high
+
+id: place.room.kitchen
+touch: A smooth wooden counter, a big wooden spoon and a warm oven door you can feel from a step away.
+sound: Pots bubble, a pan sizzles and the oven timer ticks along like a patient little clock.
+looks: A busy kitchen with copper pans hanging up, jars of oats and a bowl of carrots waiting to be chopped.
+plays: Stove, sizzle
+
+id: place.room.pottery
+touch: Cool wet clay that squishes between your paws and a pottery wheel that spins smoothly when you press the pedal.
+sound: The wheel whirs softly, and the clay makes a slippery slap as it is shaped.
+looks: A craft room with clay-smudged aprons, wobbly bowls drying on racks and a kiln in the corner.
+plays: Cello, single
+
+id: place.room.gym
+touch: The barbell is cool and knurled under your paws, the plates are heavy and round, and chalk leaves your paws soft and dry.
+sound: Plates clank onto the bar, and a little puff of chalk whooshes as Bunny claps her paws.
+looks: A sturdy gym with a barbell on a rack, a stack of plates, a chalk bowl and a mirror for checking form.
+plays: Bunny, thump
+
+id: place.garden
+touch: Soft crumbly soil, feathery carrot tops and the firm round shoulder of a carrot poking up out of the ground.
+sound: Leaves rustle in the breeze, and a carrot pops free with a satisfying little tug.
+looks: Neat rows of carrot plots just outside the burrow, green tops waving and orange tips peeking through.
+plays: Bunny, nibble
+
+id: place.village
+touch: Smooth cobblestones underfoot and a stone fountain rim, cool and wet where the water splashes over.
+sound: Chatter from the neighbors, the fountain splashing and the squirrel sharing the latest news.
+looks: A cheerful square with colorful shopfronts, flower boxes and a fountain right in the middle.
+plays: Piano and strings, chord high
+
+id: place.market
+touch: Smooth shopping basket handles, cool glass jars on the shelves and crinkly bags of seeds.
+sound: A cart wheel squeaks, the door bell jingles and someone hums along to the shop music.
+looks: A village store with tidy aisles of snacks, garden tools and treats, all labeled in big friendly letters.
+plays: Pizzicato strings, bounce
+
+id: place.bakery
+touch: Warm crusty loaves, a sticky bun that leaves sugar on your paw and a floury counter.
+sound: The oven door thumps shut, bread crackles as it cools and the bell over the door rings.
+looks: Golden loaves and frosted carrot cakes fill the window, and a little puff of flour hangs in the air.
+plays: Stove, light
+
+id: place.teahouse
+touch: A warm round teacup that fits snug in your paws and a soft cushion on a low wooden bench.
+sound: A kettle sings, then tea pours with a gentle trickle and cups clink softly together.
+looks: A quiet tea house with paper lanterns, steaming teapots and shelves of tins with leafy labels.
+plays: Coffee, pour
+
+id: place.farmers
+touch: Bumpy squash, smooth apples, and bundles of herbs tied with rough twine.
+sound: The rooster calls out the deals of the day while paper bags rustle and coins clink.
+looks: A wooden stall under a striped awning, piled with fresh vegetables, jams and honey jars.
+plays: Pizzicato strings, two up
+
+id: place.lemonade
+touch: A cold, sweaty pitcher, a slice of lemon that squirts when squeezed and a wobbly little table.
+sound: Ice cubes clink in the pitcher, and Bunny calls out, fresh lemonade, nice and cold.
+looks: A small hand-painted stand with a yellow sign, paper cups stacked high and a jar for coins.
+plays: Coffee, two clinks
+
+id: place.workshop
+touch: Smooth gears, springy coils and a wrench that fits perfectly in your paw.
+sound: Gentle whirring, a cheerful clank and a ding when one of the inventions works.
+looks: A cluttered workshop full of half-built gadgets, blueprints pinned to the walls and a tinkering bench.
+plays: Space, warble
+
+id: place.clocktower
+touch: Worn wooden stairs that wind upward and a thick bell rope, scratchy and twisted.
+sound: The clock ticks deep and slow, and the village bell rings out a big round bong.
+looks: A tall stone tower with a huge clock face, its hands pointing proudly over the square.
+plays: Singing bells, single
+
+id: place.station
+touch: A smooth wooden bench, a paper ticket with a punched hole and the metal rail of the platform.
+sound: A distant whistle, then a gentle chug as the little train rolls in and sighs to a stop.
+looks: A small red-brick station with a clock, a ticket window and a train painted bright green.
+plays: Organ, rising
+
+id: place.museum
+touch: Lumpy cardboard monsters with bent paper horns and googly eyes that wobble when you tap them.
+sound: Footsteps echo on the polished floor, and one monster lets out a squeaky defeated toot when you press its nose.
+looks: Silly cardboard bosses of hard tasks Bunny beat, each on a pedestal with a little plaque saying what it was.
+plays: Organ, chord low
+
+id: place.nightowl
+touch: Plush velvet armchairs, a warm mug of something sweet and a soft knitted throw over your lap.
+sound: Quiet jazz on the radio, low chatter and the owl softly hooting hello to each late guest.
+looks: A cozy late-night spot with dim lamps, a starry painted ceiling and the owl wiping cups behind the counter.
+plays: Soft piano, chord low
+
+id: place.cocoa
+touch: A steaming mug that warms both paws and a squishy marshmallow bobbing on top.
+sound: Milk bubbles in a pot, and the spoon clinks as the cocoa gets a good stir.
+looks: A little striped stand with a big pot of cocoa, jars of marshmallows and a sign shaped like a mug.
+plays: Coffee, stir
+
+id: place.well
+touch: Cool, rough stones around the rim and a smooth coin warming in your paw before you drop it.
+sound: A tiny plink far below, then a soft ripple, as if the well is saying thank you.
+looks: An old stone wishing well with a little wooden roof and ivy curling up its sides.
+plays: Singing bells, two down
+
+id: place.stable
+touch: A warm, velvety horse nose nudging your paw, a soft mane and fresh straw underfoot.
+sound: A happy whinny, a gentle snort and hooves shuffling on the straw.
+looks: A snug wooden stable with a hay loft, a water trough and Bunny's own horse peeking over the stall door.
+plays: Strings, bounce
+
+id: place.pond
+touch: Cool water on your toes from the dock, smooth wooden planks and a rope tied to a tiny boat.
+sound: Frogs croak, the ducks quack to each other and water laps against the little boat.
+looks: A calm pond ringed with reeds, lily pads floating on top and a small rowboat waiting at the dock.
+plays: Flute, two down
+
+id: place.cove
+touch: Warm sand between your toes, smooth pebbles and the cool fizz of a wave rushing over your feet.
+sound: Waves roll in and out, and a gull calls somewhere overhead.
+looks: A sheltered beach cove with golden sand, tide pools and shells scattered along the shore.
+plays: Strings, sigh
+
+id: place.lighthouse
+touch: A spiral iron railing, cool and smooth, and a breezy window ledge at the very top.
+sound: Wind whistles around the tower, and the big lamp turns with a slow, steady hum.
+looks: A white and red striped lighthouse on the point of the cove, its light sweeping gently over the water.
+plays: Space, beam
+
+id: place.woods
+touch: Soft grass that tickles your ankles, crunchy leaves and rough tree bark under your paw.
+sound: Birds chirp from every branch, and the wind rustles through the leaves.
+looks: Open meadows that roll into leafy woods, with dappled sunlight dancing on the path.
+plays: Flute, four up
+
+id: place.fireflies
+touch: Cool evening grass, damp with dew, and the faint tickle of a firefly landing on your nose.
+sound: Crickets sing softly, and the meadow hums with a gentle evening quiet.
+looks: A dark meadow sparkling with hundreds of fireflies, blinking like tiny lanterns.
+plays: Singing bells, sparkle
+
+id: place.meadow
+touch: Silky petals, fuzzy clover heads and tall stems that bend as you brush past.
+sound: Bees buzz lazily from flower to flower, and a breeze sighs through the grass.
+looks: A wide meadow bursting with wildflowers, purple, yellow and white as far as you can see.
+plays: Pizzicato strings, sparkle
+
+id: place.mushrooms
+touch: Spongy mushroom caps, some smooth and some bumpy, and soft moss in a perfect ring.
+sound: A hush hangs here, broken only by a tiny drip and a soft, magical chime.
+looks: Tall glowing mushrooms tower over the path, and a fairy ring of little ones circles a mossy clearing.
+plays: Xylophone, sparkle
+
+id: place.creek
+touch: Smooth, cool stepping stones, chilly water running over your toes and a knotted rope swing.
+sound: The creek babbles happily, and the rope swing creaks before a big, joyful splash.
+looks: A clear creek winding through the trees, stepping stones across it and a rope swing on a sturdy branch.
+plays: Bunny, binky
+
+id: place.cave
+touch: Cool, smooth stone walls and a sandy floor that is soft under your paws.
+sound: Say hello and the cave says hello back, again and again, softer each time.
+looks: A wide, friendly cave with glittering crystals in the walls and a lantern by the entrance.
+plays: Cello, three down
+
+id: place.waterfall
+touch: Cool mist on your whiskers and slippery rocks worn smooth by the water.
+sound: A steady, rushing roar that fills your ears and makes everything else feel peaceful.
+looks: A hidden waterfall tumbling down mossy cliffs into a clear pool, with a rainbow in the spray.
+plays: Strings, falling
+
+id: place.secretgarden
+touch: Velvety rose petals, a winding vine on an old stone wall and soft moss on a hidden bench.
+sound: Water trickles from a small fountain, and the roar of the waterfall fades to a gentle hush.
+looks: A walled garden behind the waterfall, full of climbing roses, secret paths and a little stone bench.
+plays: Piano and strings, rising
+
+id: place.hammock
+touch: Woven rope that cradles you and sways gently every time you shift.
+sound: Leaves rustle overhead, and the hammock creaks softly as it rocks.
+looks: A striped hammock strung between two big shady trees, with a pillow already waiting.
+plays: Soft piano, falling
+
+id: place.stretch
+touch: A soft, cushy mat warmed by the sun and a smooth foam block for your paws.
+sound: Quiet, peaceful breathing and a soft wind chime tinkling by the window.
+looks: A sunny corner with a lavender mat, a folded blanket and a little plant on the windowsill.
+plays: Singing bells, sigh
+
+id: place.hotspring
+touch: Warm, silky water up to your chin and smooth stones around the edge.
+sound: Gentle bubbling and the soft drip of steam collecting on the rocks.
+looks: A steamy rock pool tucked among the trees, with wisps of mist curling up into the air.
+plays: Coffee, steam
+
+id: place.bridges
+touch: Smooth wooden planks underfoot and a rope railing, rough and sturdy in your paw.
+sound: The planks thump gently with each hop, and water burbles far below.
+looks: A row of bridges stretching off to new places, each one with a little sign pointing the way.
+plays: Bunny, two hops
+
+id: place.herbs
+touch: Fuzzy sage, soft feathery dill and mint leaves that leave your paw smelling fresh.
+sound: Leaves rustle as you brush past, and a bee bumbles happily nearby.
+looks: Neat raised beds of herbs, each with a small wooden label, and a watering can by the gate.
+plays: Flute, two up
+
+id: place.orchard
+touch: Smooth round apples, rough branches and soft grass scattered with fallen leaves.
+sound: A thud as an apple drops, and branches creak gently in the breeze.
+looks: Rows of fruit trees heavy with red apples and golden pears, with a ladder leaned against one trunk.
+plays: Piano, four up
+
+id: place.hive
+touch: The smooth wooden hive box, warm from the sun, and a sticky drop of honey on your paw.
+sound: A steady, friendly buzz, like the whole hive is humming a tune.
+looks: A white wooden beehive at the edge of the meadow, with bees zipping in and out of the doorway.
+plays: Strings, two up
+
+id: place.hills
+touch: Springy grass on a gentle slope and a cool breeze ruffling your fur.
+sound: Wind sweeps over the hilltops, and a faraway sheep bleats.
+looks: Rolling green hills stretching to the sky, dotted with daisies and a winding path.
+plays: Piano, rising
+
+id: place.stars
+touch: A soft picnic blanket on cool grass and the chilly night air on your nose.
+sound: Quiet crickets, a gentle breeze and nothing else, just peaceful calm.
+looks: A hilltop under a sky full of stars, with a telescope pointed up at the moon.
+plays: Space, orbit
+
+id: place.sled
+touch: Crunchy cold snow, a smooth wooden sled and a soft scarf wrapped around your neck.
+sound: Snow hisses under the runners, and everyone whoops as they zoom down.
+looks: A snowy hill with sled tracks zigzagging down and a snowbunny waving at the bottom.
+plays: Xylophone, falling
+
+id: place.treehouse
+touch: A rope ladder that sways a little, smooth wooden floorboards and a windowsill to lean on.
+sound: Leaves whisper all around, and a bird sings right outside the window.
+looks: A treehouse high in an old oak, with a lookout window, a flag and a view over the whole village.
+plays: Pizzicato strings, four up
+
+id: place.atv
+touch: A padded seat, chunky handlebars and a splash of cool mud on your paws.
+sound: The engine purrs, tires squelch through puddles and everyone laughs at the mud.
+looks: Winding dirt trails through the woods, with little round all-terrain vehicles splattered in mud.
+plays: Stove, whoosh
+
+id: place.balloon
+touch: The woven basket edge, rough and sturdy, and a warm whoosh of air from the burner above.
+sound: The burner roars softly, then everything goes quiet and peaceful as you float.
+looks: A grassy field with a bright striped hot air balloon rising gently into the sky.
+plays: Space, launch
+
+id: place.tunnels
+touch: Cool, packed earth walls, smooth from many hops, and roots that tickle your ears.
+sound: Your hops thump softly, and somewhere ahead a cozy echo hums back.
+looks: Winding tunnels under the burrow, lit by little lanterns and decorated with pebbles.
+plays: Bunny, hop
+
+id: place.hottub
+touch: Warm bubbling water, smooth deck boards and jets that massage your back.
+sound: Bubbles fizz and rumble, and the jets hum like a happy purr.
+looks: A round hot tub on a wooden deck outside the burrow, with steam rising and fairy lights strung above.
+plays: Stove, simmer
+
+id: place.map
+touch: Raised hills, carved rivers and tiny bumps for every building, all smooth wood you can trace with your paws.
+sound: Your paws whisper across the wood, and a little bell chimes when you find a new place.
+looks: A big table map of the whole world Bunny knows, every hill and path carved in raised wood.
+plays: Xylophone, two up
+
+id: burrow
+touch: A round door of smooth wood that swings open under your paw, then cool packed earth and a soft rug just inside.
+sound: Your own footsteps going quiet on the rug, a kettle somewhere down the hall, and Bunny thumping hello.
+looks: A snug hillside home with a green round door, warm lamplight in every room and tunnels winding off to each one.
+plays: Bunny, two hops

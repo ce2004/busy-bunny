@@ -1,0 +1,23 @@
+set: Tea set
+bonus: silver-tea-spoon
+touch: Collect the teapot, cups, cozy and honey pot, and a little silver spoon appears on the saucer for free.
+
+set: Cozy bed set
+bonus: moon-nightlight
+touch: With the quilt, cloud pillow, flannel sheets and bed socks all together, a warm moon nightlight joins the bedroom as a gift.
+
+set: Garden party set
+bonus: daisy-crown
+touch: Once the chairs, bunting, picnic blanket and lemonade are out, the ducks weave a daisy crown just for Bunny.
+
+set: Starlight set
+bonus: pocket-comet
+touch: Gather the star lights, star lamp, glowing blanket and star pajamas, and a pocket comet drops in to say hello.
+
+set: Beach day set
+bonus: seashell-chime
+touch: With the beach ball, sun hat, beach towel and sand pail, a seashell wind chime washes up as a present.
+
+set: Bookworm set
+bonus: golden-bookmark
+touch: When the armchair, reading lamp, bookmarks and cocoa are all in place, the hedgehog sends over a golden bookmark.

@@ -1,0 +1,119 @@
+name: Clover Junction
+touch: Warm wooden platform boards that creak softly under your feet, and a railing worn smooth by many paws.
+sound: A bell ringing as the train sighs to a stop.
+looks: A tiny green station with clover growing between the rails.
+souvenir: A four leaf clover pressed flat in a small glass frame.
+
+name: Teakettle Hollow
+touch: Steamy warm air on your whiskers and a smooth stone path down into the valley.
+sound: Kettles whistling from every cottage window.
+looks: A little valley town where every chimney puffs like a teapot.
+souvenir: A thimble sized teapot that really pours.
+
+name: Puddleby
+touch: Damp air, soft mossy ground, and the cool splash of a puddle around your toes.
+sound: Rain drumming gently on tin roofs.
+looks: A cheerful rainy town full of colorful umbrellas.
+souvenir: A tiny pair of rubber boots on a keychain.
+
+name: Haystack Hills
+touch: Sun warmed hay that prickles pleasantly and smells sweet when you squeeze it.
+sound: Cows mooing slowly in the distance.
+looks: Golden hills dotted with round hay bales like giant cinnamon rolls.
+souvenir: A small woven straw bunny.
+
+name: Lanternbrook
+touch: The cool metal of lantern posts and a rippling stream you can dip your paw into.
+sound: A brook burbling under a little stone bridge.
+looks: A riverside town lit by hundreds of paper lanterns at dusk.
+souvenir: A folded paper lantern that opens like an accordion.
+
+name: Muffin Corners
+touch: A warm breeze that smells of baking, and a crumbly cobblestone street.
+sound: Oven doors opening and a cheerful bakery bell.
+looks: Four bakeries on four corners, all painted pastel.
+souvenir: A muffin shaped pin cushion, soft and squishy.
+
+name: Pinecone Pass
+touch: Cool mountain air, rough bark on the station posts, and sticky little pinecones.
+sound: Wind whooshing through tall pines.
+looks: A snug town tucked high in a mountain forest.
+souvenir: A pinecone painted gold with a ribbon loop.
+
+name: Seashell Bay
+touch: Gritty warm sand and a salty breeze that ruffles your fur.
+sound: Waves rolling in and gulls calling.
+looks: A seaside town with striped beach huts.
+souvenir: A spiral shell that sounds like the ocean when held to your ear.
+
+name: Honeycomb Heights
+touch: Smooth hexagon tiles on the station floor, slightly warm and waxy.
+sound: Busy happy buzzing from the hives.
+looks: A hillside town with golden houses shaped like honeycomb cells.
+souvenir: A small jar of honey with a wooden dipper.
+
+name: Snowdrop Station
+touch: Fresh soft snow that squeaks and crunches, and a woolly scarf left for travelers.
+sound: Sleigh bells jingling down the lane.
+looks: A white snowy town with frosty windows glowing warm.
+souvenir: A snow globe with a tiny bunny inside.
+
+name: Fiddlesticks
+touch: Smooth polished wood everywhere, from benches to doorframes.
+sound: Fiddle music drifting from the town square.
+looks: A musical village where every house has a painted note on the door.
+souvenir: A tiny wooden fiddle that fits in your palm.
+
+name: Mossy Bottom
+touch: Squishy, springy moss as soft as a carpet under your feet.
+sound: Frogs croaking a slow, happy song.
+looks: A green damp hollow with houses tucked under giant mushrooms.
+souvenir: A smooth stone with a moss heart painted on it.
+
+name: Windmill Way
+touch: A steady breeze tugging at your ears and a smooth wooden windmill blade.
+sound: The creak and whoosh of turning sails.
+looks: A row of white windmills along a sunny ridge.
+souvenir: A paper pinwheel that spins when you blow on it.
+
+name: Buttercup Meadow
+touch: Silky flower petals brushing your legs as you walk through tall grass.
+sound: Bees and crickets humming together.
+looks: A meadow town glowing yellow with buttercups.
+souvenir: A little sachet of dried buttercup petals.
+
+name: Cozy Creek
+touch: Smooth river stones and a soft quilt draped over the station bench.
+sound: A creek giggling over rocks.
+looks: A tiny town of quilted cottages along a winding creek.
+souvenir: A patchwork square of soft quilted fabric.
+
+name: Acorn Ridge
+touch: Bumpy acorn caps underfoot and a sturdy oak railing.
+sound: Squirrels chattering cheerfully in the branches.
+looks: A ridge town built among huge old oak trees.
+souvenir: An acorn cap whistle that toots when you blow it.
+
+name: Starfall Village
+touch: Cool night air and smooth silver railings that tingle a little.
+sound: Wind chimes ringing softly in the dark.
+looks: A hilltop village where shooting stars fall every night.
+souvenir: A small glow in the dark star for your ceiling.
+
+name: Pumpkin Patch Crossing
+touch: Big round pumpkins with bumpy ridges and curly stems.
+sound: Leaves crunching and a scarecrow's coat flapping.
+looks: An autumn town surrounded by orange pumpkin fields.
+souvenir: A mini pumpkin candle that smells like spice.
+
+name: Bramblewick
+touch: Soft blackberry leaves and smooth twig fences along the lanes.
+sound: Birds singing in the hedgerows.
+looks: A cozy hedgerow town with berry bushes everywhere.
+souvenir: A tiny jar of blackberry jam with a gingham lid.
+
+name: Sleepy Hollow End
+touch: The plush, velvety seat of the last stop's waiting room, perfect for a nap.
+sound: A soft lullaby from the station's music box.
+looks: The very last town on the line, with pillows on every bench.
+souvenir: A soft sleep mask embroidered with little moons.

@@ -1,0 +1,49 @@
+name: Muddy meadow run
+touch: The handlebars buzz in your paws and warm mud splatters your boots as you roll along slowly.
+sound: A happy engine rumble and a big squelchy splash.
+looks: Bunny grinning in a mud speckled helmet.
+
+name: Creek splash
+touch: Cool water sprays your legs as the wheels roll gently through the shallow creek.
+sound: A rumble, a splash, and Bunny's delighted laugh.
+looks: Sparkling water spraying in a rainbow behind you.
+
+name: Pine forest trail
+touch: The seat bounces softly over roots, and pine needles brush your arms.
+sound: A steady purr of the engine and birds in the trees.
+looks: Tall green pines on both sides of a winding trail.
+
+name: Pumpkin field loop
+touch: A smooth gentle ride along soft dirt rows, the sun warm on your back.
+sound: The engine humming and leaves crunching under the tires.
+looks: Orange pumpkins as far as you can see.
+
+name: Puddle hopping
+touch: Little bumps and splashes, one after another, and your fur gets wonderfully muddy.
+sound: Splash, splash, splash, and the engine going vroom.
+looks: Bunny covered in mud and very proud of it.
+
+name: Sunset ridge
+touch: A slow, steady climb, then a calm cruise with the breeze in your ears.
+sound: A low rumble and the hush of the evening wind.
+looks: A pink and gold sky over the village.
+
+name: Sandy dunes
+touch: A soft floaty ride over warm sand, the tires sinking gently.
+sound: A whooshing rumble and sand pattering on your helmet.
+looks: Rolling golden hills of sand near the cove.
+
+name: Orchard lane
+touch: An easy smooth ride, with apple blossoms drifting onto your shoulders.
+sound: A soft engine putter and bees buzzing nearby.
+looks: Rows of fruit trees in full bloom.
+
+name: Riverbank ramble
+touch: A bumpy, cheerful ride over little stones and soft grass, with cool mist on your nose.
+sound: The river rushing and the engine rumbling along.
+looks: A green bank with ducks waving as you pass.
+
+name: Leaf pile path
+touch: The wheels roll softly through deep piles of leaves that tickle your legs.
+sound: A crunchy crackle and a gentle rumble.
+looks: Red and gold leaves flying up in a cheerful swirl.

@@ -1,0 +1,43 @@
+Cool soil crumbles off as you tug, and pop, out comes a carrot. Harvest total: {count}.
+
+The leafy tops are rough in your paws. One firm pull, a happy pop, and your basket count reaches {count}.
+
+Crunchy, earthy, and heavy in your paw. Carrots pulled today: {count}.
+
+You grip the feathery leaves and lean back. Pop. Bunny counts them up and shouts, "{count}."
+
+Damp dirt between your toes and carrots in your basket. Today's harvest: {count}.
+
+The carrots slide out of the soil with a satisfying shloop. Bunny tallies the haul: {count}.
+
+Smooth, cool, and a little bumpy. That is the feel of a fresh carrot. Your harvest count is {count}.
+
+Tug, wiggle, pop. The garden gave up its treasure, and the basket holds {count}.
+
+Your basket gets heavier with every pull. Carrots harvested: {count}, and Bunny is drooling a little.
+
+Earthy smell, crunchy sound. Bunny does a binky over the harvest: {count} in all.
+
+The soil lets go with a soft pop. You brush off the dirt and add it to the pile. Total: {count}.
+
+Leafy tops tickle your nose as you pull. Carrot harvest complete, with a count of {count}.
+
+Your paws are muddy and proud. The carrots are piled up, and the count is {count}.
+
+Plump, firm, and ready to eat. Today's carrot count: {count}. The bakery will be pleased.
+
+A long tug and a happy pop. Bunny lines them up in a row and counts out loud: {count}.
+
+Cool roots, warm sun, full basket. Carrots harvested today: {count}.
+
+You feel the carrot wiggle loose and slip free. Bunny writes it down: harvest number {count}.
+
+The basket thumps down, heavy and full. Inside are your carrots, {count} by Bunny's careful count.
+
+Pop, pop, pop goes the garden. When the popping stops, the basket count reads {count}.
+
+Shake off the soil, feel the crunch, smell the sweetness. Carrots pulled: {count}. What a harvest.
+
+The squirrel peeks over the fence to see the haul. Carrots harvested: {count}, and she is telling everyone.
+
+Rough leaves, smooth roots, and a full basket on your hip. Bunny cheers for the harvest: {count}.

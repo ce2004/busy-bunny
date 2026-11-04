@@ -1,0 +1,59 @@
+name: Meadow loop
+ground: grass
+touch: A gentle easy rhythm, the saddle rocking you like a hammock and tall grass brushing your feet.
+sound: Soft muffled thuds of hooves on grass.
+looks: Wide green fields with wildflowers everywhere.
+
+name: Orchard lane
+ground: dirt
+touch: A steady walk with the warm sun on your back and apple leaves brushing your ears.
+sound: Clop, clop, clop on packed earth.
+looks: Rows of apple trees heavy with red fruit.
+
+name: Quarry path
+ground: gravel
+touch: A careful slow walk, the pony picking her steps with sure, steady feet.
+sound: A crunch, crunch, crunch of gravel under each hoof.
+looks: A pale winding path between gray stone walls.
+
+name: Beach canter
+ground: sand
+touch: A smooth bouncy canter, the salty wind ruffling your fur.
+sound: Soft thumps in the sand and waves rolling in.
+looks: A long golden beach stretching to the lighthouse.
+
+name: Creek crossing
+ground: creek
+touch: Cool water splashing up to your ankles as the pony wades in, calm and careful.
+sound: Splish, splash, and the gurgle of the stream.
+looks: A shallow sparkling creek with smooth stones on the bottom.
+
+name: Covered bridge ride
+ground: bridge
+touch: A slow, steady walk, the bridge floor firm under the pony's feet.
+sound: Hollow echoing clops on the wooden boards.
+looks: The old red covered bridge over the river.
+
+name: Winter wonderland
+ground: snow
+touch: A cozy slow ride with cold air on your nose and a warm pony under you.
+sound: Soft crunching squeaks of hooves in fresh snow.
+looks: Snow covered pines and a frosty white trail.
+
+name: Autumn woods
+ground: leaves
+touch: A gentle sway as you ride under trees, leaves drifting onto your shoulders.
+sound: A crispy rustling crunch with every step.
+looks: A forest of red, orange and gold.
+
+name: Hilltop sunset
+ground: grass
+touch: A steady climb, leaning forward a little, then a slow walk along the top.
+sound: Quiet hooves on soft grass and birds singing goodnight.
+looks: The whole village below glowing in the sunset.
+
+name: Village road
+ground: dirt
+touch: A relaxed amble with friendly neighbors waving as you pass.
+sound: Hooves clopping and the rooster crowing hello.
+looks: The main road past the bakery and the library.
