@@ -1,0 +1,411 @@
+from: hazel
+
+Dear {name},
+
+The library is lovely and quiet this week. The new books arrived in a big crate, and the paper smelled crisp and fresh when I opened it. Some of the pages still stick together a little, which I find charming.
+
+I have saved a book for you about a bunny who builds a boat out of a teacup. It sank, but only a little, and the bunny was very proud. Come by whenever you like. The comfy chair is waiting, and so is the tea.
+
+Warmly,
+Hazel
+===
+from: otis
+
+Hello you two,
+
+It is three in the morning as I write this, which is the middle of my day. The post office is very peaceful. Just me, the tick of the big clock, and the soft shuffle of envelopes.
+
+Pip sent herself a letter this week to see how fast the mail is. It was very fast. She lives next door.
+
+I hope you are both resting well. I am going to go to bed now, at breakfast time, like a sensible owl.
+
+Yours, with a yawn,
+Otis
+===
+from: pip
+
+Dear {name},
+
+Big news from The Acorn Gazette! Rocco has bought a new comb for his tail feathers. It is red and very fancy, and he has been fluffing his feathers all day. You can hear him humming about it from the bakery.
+
+Also, Dot the duck found a shiny button in the pond. Nobody knows whose it is. I am investigating. I will report back.
+
+Write and tell me any news you have, big or small. Small news is my favorite news.
+
+Your friend,
+Pip
+===
+from: rocco
+
+Dear {name},
+
+Did you hear my crow this morning? I tried a new one. It goes up at the end, like a question. Cock a doodle doo? Everyone said it was very modern.
+
+The sunrise was warm and pink, and the dew on the fence felt cool under my feet. A perfect morning for a rooster.
+
+I hope you slept well, and that my crow woke you gently. If it did not, well, there is always tomorrow.
+
+Proudly,
+Rocco
+===
+from: clover
+
+Hello you two,
+
+The stable is cozy this week. Bramble put fresh straw down, and it crunches and rustles every time I lie down. It smells like a summer field.
+
+I have a whole bucket of apples, cool and shiny. I saved two of the best ones for you. One is very round. The other is a funny shape, like a little heart.
+
+Come visit whenever you want. I will be here, swishing my tail and munching. There is always room by the gate.
+
+Gently,
+Clover
+===
+from: bramble
+
+Dear {name},
+
+Hm hm hmm. That is me humming as I write. I fixed the squeaky gate by the market this week. It does not squeak anymore. Now it just goes click, which is much more polite.
+
+The pumpkins in my garden are getting big and bumpy. One of them is nearly as round as you. I mean that as a compliment.
+
+If anything in your burrow needs fixing, just knock. My toolbox is always ready, and it clanks hello.
+
+Your friend,
+Bramble
+===
+from: fennel
+
+Dear {name},
+
+Choir practice was a triumph this week! Mrs. Teasel sang only half a beat behind everyone, which is a new record. We all cheered.
+
+The village hall smelled of warm cocoa, and the floorboards creaked along with the music. I believe the floor would like to join the choir.
+
+Next month's talent show is coming soon. If you would like to do anything at all, even just wave from the front row, you are most welcome. Your waving is excellent.
+
+With a grand bow,
+Fennel
+===
+from: goldie
+
+Hello you two,
+
+This letter is from {goldie}. Bramble is holding the pen, because paws are not good at pens, but the words are all hers.
+
+She says the sun was warm on the porch this week, and she napped in it three times. She says the leaves on the path crunch nicely now. She says her harness got a new polish and jingles extra bright.
+
+Mostly she says she is glad you are both here. Bramble says she wagged the whole time he wrote this.
+
+With a wag,
+{goldie}
+===
+from: hazel
+
+Hello you two,
+
+It snowed a little last night, and now the library windows are frosty and cool to touch. I have moved my reading chair close to the fire. The logs pop and hiss, and the warmth makes my spectacles slide down my nose.
+
+I am reading a book about stars. Did you know some stars are so far away that they seem to wink? I think they are just being friendly.
+
+Do come and warm your paws by my fire soon.
+
+Warmly,
+Hazel
+===
+from: otis
+
+Dear {name},
+
+A very important parcel arrived this week. It was round and squishy and addressed to Gerald the snail. I delivered it myself. It was a new leaf, the soft fuzzy kind. Gerald was thrilled, I think. It is hard to tell with snails.
+
+The night was clear, and the moon was very bright. I sorted the mail by moonlight and hummed to myself. Hoo, hoo.
+
+I hope your days are gentle. Mine are mostly asleep.
+
+Yours, sleepily,
+Otis
+===
+from: pip
+
+Hello you two,
+
+The button mystery is solved! It belongs to Bramble's coat. He did not even notice it was missing. He hummed all the way home with it.
+
+In other news, the bakery made cinnamon rolls so soft and warm that Dot ate two and then took a nap on the bench outside. The whole street smelled sweet all afternoon.
+
+Write back with your news. I promise not to put it in the Gazette unless you say yes. Probably.
+
+Your friend,
+Pip
+===
+from: rocco
+
+Hello you two,
+
+I have a secret to tell you, and only you. On Sundays, I sleep in. Just a little. Just until the sun is warm on the roof.
+
+Nobody knows. The village thinks the sun simply rises later on Sundays. Please do not tell Pip, or it will be on the front page.
+
+The rest of the week I crow right on time, loud and proud. You can count on me. Except Sundays.
+
+Your friend, and a very well-rested rooster,
+Rocco
+===
+from: clover
+
+Dear {name},
+
+It rained this week, a soft, steady rain. I stood under the stable roof and listened to it patter on the wood. It sounded like a thousand tiny drums.
+
+Afterward, the meadow was wet and squishy, and it smelled like fresh grass. I rolled in it. Bramble had to brush me for an hour. I liked the brushing very much.
+
+I hope you have something cozy to listen to this week, too.
+
+Gently,
+Clover
+===
+from: bramble
+
+Hello you two,
+
+I built a new bench by the pond this week. The wood is smooth now, I sanded it for ages, and it is warm when the sun hits it. Fennel has already tried it. He says it is perfect for dramatic sighing.
+
+My toolbox lost a screw, then found it again in my pocket. That happens a lot.
+
+There is a spot on the bench saved for you two, any time.
+
+Hm hm hmm,
+Bramble
+===
+from: fennel
+
+Hello you two,
+
+The talent show was a wonder! Pip juggled acorns. Dot did a very elegant waddle. Gerald the snail crossed the stage, and it only took twenty minutes. We gave him a standing ovation the whole way.
+
+The lanterns swayed, the crowd laughed, and the cider was warm and spicy. I bowed so many times that my crown fell off twice.
+
+I hope you heard our cheering all the way from the burrow.
+
+With a flourish,
+Fennel
+===
+from: goldie
+
+Dear {name},
+
+{goldie} asked Hazel to write this one. Hazel says {goldie} sat very still and listened, the way she does.
+
+She went for a long, slow walk this week, all the way around the pond. The water lapped at the stones, and the ducks said hello. Her harness jingled the whole way.
+
+She wants you to know that whenever you go for a walk, she would love to come along. Hazel says she thumped her tail when I wrote that part.
+
+With a gentle wag,
+{goldie}
+===
+from: hazel
+
+Dear {name},
+
+A little mystery at the library this week. Someone returned a book with a tiny knitted bookmark inside it. It is soft and green, and it feels like moss. Nobody knows who made it.
+
+I have put it on my desk, where I can touch it while I read. It is very cozy. If you hear of a secret knitter, do tell me.
+
+The fire is crackling as I write. I hope you are warm too.
+
+Warmly,
+Hazel
+===
+from: otis
+
+Hello you two,
+
+The mail bag was so heavy this week that I had to fly twice. Everyone is writing letters. I suspect Pip started a rumor that letters make you lucky.
+
+I do not mind. I like the sound of letters landing in the sorting bins. Pat, pat, pat. Like gentle rain made of paper.
+
+There is a letter for you in the stack, I think. It smells like carrots. It may be from yourself.
+
+Yours, with only one eye open,
+Otis
+===
+from: pip
+
+Dear {name},
+
+Gazette headline this week: Fennel Practices Opera at Dawn, Rocco Not Pleased. Rocco says there can only be one loud thing in the morning, and it is him.
+
+They have agreed to sing a duet next week instead. I have bought a front row seat. It is a log, but it is a nice log.
+
+Also, the bakery is trying a carrot muffin. I thought of you immediately.
+
+Your friend,
+Pip
+===
+from: rocco
+
+Dear {name},
+
+Today I crowed so beautifully that a little bird on the fence clapped her wings. At least, I think she was clapping. She might have been stretching. I choose clapping.
+
+The barnyard straw is crunchy and the morning air is crisp and cool. My comb is looking very fine. I checked my reflection in the pond. Twice.
+
+I hope your morning was a good one, whatever time it started.
+
+With my finest crow,
+Rocco
+===
+from: clover
+
+Hello you two,
+
+The first frost came this week. The grass crunched like toast under my hooves. My breath made little clouds, and I pretended I was a dragon. A very gentle dragon who only breathes apple steam.
+
+Bramble gave me a new blanket. It is thick and warm and has a pattern of little stars. I love it very much.
+
+I hope you have a warm blanket too, and an apple, and a good long rest.
+
+Gently,
+Clover
+===
+from: bramble
+
+Dear {name},
+
+I planted bulbs this week. They are small and papery, and they rustle in your paw like dry leaves. In spring, they will be tulips. That is a long wait, but bulbs are patient, and so am I.
+
+I also fixed Hazel's wobbly table. It is steady now. She put a teapot on it right away to celebrate.
+
+If you would like some bulbs for outside your burrow, I have extra. Hm hm hmm.
+
+Your friend,
+Bramble
+===
+from: fennel
+
+Dear {name},
+
+The choir is learning a new song this week. It is about a cloud that wanted to be a pillow. It is very moving. I sighed so happily at rehearsal that my music stand fluttered.
+
+Dot hit a high note so high that the windows hummed. Mrs. Teasel hit it a bit later, but she hit it.
+
+You are always welcome to come and sit in the front row. We sing better with friends listening.
+
+With great feeling,
+Fennel
+===
+from: goldie
+
+Hello you two,
+
+This is {goldie}'s letter, and Fennel is writing it, in his very best handwriting.
+
+She says the rug by the fire at the tea house is the softest rug in the village. She tested it all afternoon. She says the tea house cat purred at her, and she wagged back.
+
+She also says, and Fennel insists this is a direct quote, that she hopes you are both cozy. She will come by soon for a walk, harness jingling.
+
+With a big, warm wag,
+{goldie}
+===
+from: hazel
+
+Hello you two,
+
+Winter reading by the fire has begun. Every evening, a few neighbors come by with blankets, and I read a chapter aloud. The fire pops, someone always sneezes, and Rocco always falls asleep first.
+
+There is a cushion waiting for you, the round one with the tassel. It is very squishy. I think you would like it.
+
+I hope your week has had some quiet moments in it. Those are the best place for a good book.
+
+Warmly,
+Hazel
+===
+from: otis
+
+Dear {name},
+
+I found a lost glove on my night shift. It is woolly and blue and still a little warm, as if someone just took it off. I have hung it on the post office door, so the owner can find it.
+
+The snow muffled everything last night. The village was so quiet I could hear the stars. They do not say much, but they are good company.
+
+I hope you are sleeping well. I am about to start.
+
+Yours, drowsily,
+Otis
+===
+from: pip
+
+Hello you two,
+
+Breaking news: Marlow the seal turned on the lighthouse a little early this week, just because the fog looked cozy. The light swept over the whole village, slow and golden. Everyone stopped to watch.
+
+Marlow says the lighthouse likes to be useful even on soft, sleepy evenings. I put that on the front page. It was a slow news week, but a nice one.
+
+Tell me your news! I have a fresh acorn pencil.
+
+Your friend,
+Pip
+===
+from: rocco
+
+Hello you two,
+
+I have been practicing a quieter crow for snowy mornings. It goes cock a doodle hush. It is for when the village needs to wake up very gently.
+
+Hazel says it is my finest work. Otis says it is still too loud. Otis says that about everything before noon.
+
+The snow is soft on my feathers and the coop is warm and smells like hay. I hope your mornings are gentle too.
+
+Your friend,
+Rocco
+===
+from: clover
+
+Dear {name},
+
+Tonight the stars are out and the stable is warm. I can hear the wind brushing past the door, soft as a whisper. Bramble hung a little bell on my gate, and it tinkles when the breeze comes by.
+
+Someone left a knitted apple on my fence post this morning. It is red and squishy, and I think it is the nicest thing anyone has ever made me. I do not know who left it.
+
+Gently, and with a happy swish,
+Clover
+===
+from: bramble
+
+Hello you two,
+
+Something nice happened. I opened my toolbox and found a tiny knitted cozy wrapped around my favorite hammer. It is warm and soft, and now the hammer does not clank so loudly. It just goes thup.
+
+I hum louder than the hammer now. That seems fair.
+
+I hope your week has had some small surprises in it, the good kind.
+
+Your friend, hm hm hmm,
+Bramble
+===
+from: fennel
+
+Hello you two,
+
+Our winter concert is coming! The hall is decorated with paper snowflakes, and they rustle when the door opens. The stage smells like fresh pine.
+
+I have written a short solo for myself. It is only eleven minutes long. Hazel says that is not short. I say art cannot be rushed.
+
+I would love it if you came. You can sit in the front row with a warm cocoa and clap at any moment you like.
+
+With a sweeping bow,
+Fennel
+===
+from: goldie
+
+Dear {name},
+
+Clover is writing this for {goldie}, very carefully, with the pencil in her teeth. Some letters are wobbly. Clover says sorry, and also that she did her best.
+
+{goldie} wants you to know the snow is perfect for rolling in. She wants you to know the fire at your burrow is her favorite fire. And she wants you to know that she is always, always glad to see you.
+
+She jingled her harness at the end. Clover thinks that was her signature.
+
+With love and a jingle,
+{goldie}

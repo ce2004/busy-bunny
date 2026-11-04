@@ -1,0 +1,143 @@
+name: the snow bunting
+season: Winter
+sound: A tinkly twitter, like sleigh bells far away.
+touch: The flurry of small wings stirs the frosty air right past your whiskers.
+story: It flew down from the snowy north and says the village smells like cinnamon from miles away. It told Bunny that every snowflake it passed was different, just like every day.
+
+name: the cardinal
+season: Winter
+sound: A clear whistle that goes cheer cheer cheer.
+touch: A tiny warm flutter as it lands on the fence beside you.
+story: It stays close all winter and visits the bakery window every morning. It told Bunny that bright things show up best on gray days.
+
+name: the chickadee
+season: Winter
+sound: A cheerful chick a dee dee dee.
+touch: Its little feet tickle when it hops onto your paw for a seed.
+story: It comes from the pine woods beyond the hill. It told Bunny that small birds stay cozy by puffing up and taking things one hop at a time.
+
+name: the waxwing
+season: Winter
+sound: A high, thin trill, soft as a whisper.
+touch: The silky brush of its feathers as it shuffles along the branch.
+story: A whole flock came from the far forests to eat Bramble's winter berries. They told Bunny that sharing a berry makes it taste twice as good.
+
+name: the snowy owl
+season: Winter
+sound: A low, gentle hoo, quieter than Otis.
+touch: A soft gust of air from its huge silent wings.
+story: It visited from the tundra to see its cousin Otis at the post office. It told Bunny that night is just day taking a nap.
+
+name: the redpoll
+season: Winter
+sound: A bubbly chatter that sounds like giggling.
+touch: The flutter of a dozen tiny wings landing all at once.
+story: It came south with its friends to see the village lights. It told Bunny that everything is easier with a flock.
+
+name: the swallow
+season: Spring
+sound: A twittering chatter that loops and swoops.
+touch: The quick breeze of wings zipping past your ears.
+story: It flew all the way from warm faraway lands to build a nest under the stable roof. It told Bunny that a home is built one beakful at a time.
+
+name: the robin
+season: Spring
+sound: A sweet cheerily cheer up cheerio.
+touch: The soft hop of its feet across the dewy grass near your paws.
+story: It came back from the south to tell everyone that spring has arrived. It told Bunny that early mornings are full of surprises.
+
+name: the bluebird
+season: Spring
+sound: A soft, warbly tur a lee.
+touch: The light tap of its feet on the garden fence.
+story: It came from the meadows across the river to nest in the old oak. It told Bunny that happiness often lands quietly.
+
+name: the warbler
+season: Spring
+sound: A bright, fast sweet sweet sweet I am so sweet.
+touch: The tiny tremble of a branch as it lands right above you.
+story: It passed through on its way north and stopped for the bakery crumbs. It told Bunny that even a short visit can make a whole day better.
+
+name: the cuckoo
+season: Spring
+sound: A clear, friendly cuck oo, just like a clock.
+touch: The rustle of leaves stirring as it settles in the hedge.
+story: It comes from far across the sea every spring. It told Bunny it once tried to set the market clock by its own song, and it was only three minutes off.
+
+name: the wren
+season: Spring
+sound: A long, bubbly song that seems far too big for such a small bird.
+touch: The tiniest flutter, lighter than a leaf landing.
+story: It flew in from the wild hedges to nest in Bunny's garden gate. It told Bunny that small voices can fill a whole valley.
+
+name: the hummingbird
+season: Summer
+sound: A soft buzzing hum, like a happy bee.
+touch: A tiny warm breeze from wings beating too fast to count.
+story: It zipped up from sunny lands far to the south to sip from the lavender. It told Bunny that you can rest and still be busy.
+
+name: the oriole
+season: Summer
+sound: A rich, flutey whistle that rolls like a creek.
+touch: The gentle sway of the branch as it hangs from its woven nest.
+story: It came from tropical forests to weave a hanging nest in the willow. It told Bunny that patience makes the best homes.
+
+name: the goldfinch
+season: Summer
+sound: A bouncy per chick o ree that sounds like a little laugh.
+touch: The bob of a sunflower head as it lands on top.
+story: It came from the far fields to feast on Bramble's sunflower seeds. It told Bunny that sunny days are for sharing.
+
+name: the tern
+season: Summer
+sound: A sharp, happy kee arr over the water.
+touch: The salty breeze of wings sweeping low over the pond.
+story: It flew all the way from the far edge of the world, the longest trip of any bird. It told Marlow and Bunny that every long journey is made of short flaps.
+
+name: the barn owl
+season: Summer
+sound: A soft, breathy shush, like a secret.
+touch: Feathers so soft they feel like warm air.
+story: It came to stay in the hay loft over summer. It told Bunny that some birds do their best work when it is quiet and dark, and that is just fine.
+
+name: the purple martin
+season: Summer
+sound: A gurgly chirrup that sounds like chatting.
+touch: The bustle of air as a whole family swoops by together.
+story: It came from the southern rivers to live in the birdhouse Bramble built. It told Bunny that a good neighbor is the best gift.
+
+name: the goose
+season: Fall
+sound: A friendly honk honk, all together in a V.
+touch: A big whoosh of wings passing overhead.
+story: The flock rested at the pond on their way south. They told Bunny that taking turns at the front makes the trip easier for everyone.
+
+name: the sandhill crane
+season: Fall
+sound: A rolling, wooden garoo garoo.
+touch: The tall swish of long legs through the meadow grass.
+story: It came from the northern marshes and danced in the meadow at dawn. It told Bunny that a little dance makes any day lighter.
+
+name: the blue jay
+season: Fall
+sound: A bold jay jay, and sometimes a sweet little bell note.
+touch: The patter of acorns it drops on the roof.
+story: It came from the oak woods to stash acorns all over the village. It told Bunny it never remembers where they all are, and that is how new oaks grow.
+
+name: the junco
+season: Fall
+sound: A sweet, trilling tinkle, like a tiny sewing machine.
+touch: The soft hop of little feet scratching in the fallen leaves.
+story: It arrived from the north woods just as the leaves turned. It told Bunny that cozy season is the best season.
+
+name: the swan
+season: Fall
+sound: A soft trumpet call that echoes over the water.
+touch: The wide, gentle wave its wings send across the pond.
+story: It stopped at the pond on the way to a warm lake in the south. It told Bunny that graceful just means calm and steady.
+
+name: the meadowlark
+season: Fall
+sound: A flutey, tumbling song that goes see you soon, see you soon.
+touch: The gentle swish of tall grass parting as it hops through.
+story: It came from the wide prairies and sang from the top of a hay bale all afternoon. It told Bunny that the trick to a long trip is to stop and sing along the way.

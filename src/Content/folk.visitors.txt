@@ -1,0 +1,71 @@
+who: a traveling hedgehog musician
+line: Soft fiddle music drifts across the green as a prickly little hedgehog tunes up by the fountain. Hazel says he is her cousin and he plays every song a little too fast.
+
+who: a family of hot air balloon mice
+line: A warm whoosh and a gentle hiss announce a tiny balloon landing in the meadow. The mice hand out sugared nuts that crunch and sparkle on the tongue.
+
+who: a peddler badger with a jingling cart
+line: Little bells clink and wooden wheels creak as a cheerful peddler rolls into the market. Everything on the cart is smooth, polished and slightly mysterious.
+
+who: a storytelling tortoise from the hills
+line: A slow, deep voice fills the library as an old tortoise settles onto the soft rug. Everyone gathers close to hear her tell the tale of the mountain that liked to hum.
+
+who: a troupe of dancing mice
+line: Tiny tapping feet patter across the bandstand like rain on a roof. The mice twirl in soft felt skirts, and Fennel cheers louder than anyone.
+
+who: a sleepy bear who sells honey
+line: A warm, sweet smell and a big rumbly yawn arrive at the bakery door. The bear leaves jars of sticky golden honey and naps on the porch until teatime.
+
+who: Juniper, the pen pal from Willowmere
+line: A soft, familiar hug and a happy squeal fill the burrow as Juniper hops in from the train station. She brings a bag of crunchy Willowmere toffee to share.
+
+who: a band of traveling crickets
+line: A bright chirping chorus starts up in the tall grass at dusk. Everyone lies back on cool blankets and listens until the stars come out.
+
+who: a kite maker fox
+line: Crisp paper and smooth bamboo crinkle in the fox's paws as she unpacks her kites. By afternoon the whole hill is full of snapping, fluttering color.
+
+who: a gentle giant moose
+line: The ground thumps softly as a kind moose ambles into the village. He lets the ducklings ride on his antlers, which feel like smooth branches.
+
+who: a seal friend of Marlow's
+line: Splashes and cheerful barks echo from the lighthouse as Marlow's old friend paddles in. She brings a bucket of shells that click and clatter like music.
+
+who: a weaver spider with a velvet voice
+line: Silky threads, soft as a whisper, glide through her many hands as she weaves. By evening she has made a tiny shawl for every neighbor who wants one.
+
+who: a parade of geese
+line: Honking, flapping and the slap of webbed feet fill the lane as the geese march through. They are very serious about their parade and very bad at staying in a line.
+
+who: a baker raccoon from the next valley
+line: The warm, buttery smell of fresh pie floats over the green before anyone sees him. He shares crumbly slices that are still hot in the middle.
+
+who: a lantern-carrying firefly family
+line: A soft hum and a warm, flickering glow drift into the meadow at night. The fireflies light the path home for everyone, one gentle blink at a time.
+
+who: a juggling squirrel, Pip's uncle
+line: The thump and patter of acorns being caught fills the village green. Pip says her uncle once juggled eleven acorns and a teacup, and nobody doubts it.
+
+who: a painter otter
+line: Wet brushes swish and tap on canvas by the pond as the otter sets up her easel. She paints everyone a little picture and lets them feel the bumpy paint once it dries.
+
+who: a choir of frogs from the far pond
+line: Deep, rumbly croaks and bright high peeps blend together across the water. Fennel is so delighted that he joins in and hits his highest note ever.
+
+who: a mole who runs a traveling tea cart
+line: The clink of tiny cups and a steamy whistle come up from a hole in the green. The mole pops out with warm mint tea and cookies that taste like honey.
+
+who: a pair of hummingbird acrobats
+line: A quick, buzzing whir zips past everyone's ears as the hummingbirds loop over the bandstand. They finish with a bow on top of Rocco's head, and Rocco pretends not to be thrilled.
+
+who: a wandering goat with a bell
+line: A soft clonk, clonk, clonk comes up the road as a friendly goat arrives. She nibbles politely at the hedges and gives the softest head bumps in the village.
+
+who: a magician rabbit in a velvet cape
+line: The swish of a soft velvet cape and a pop of confetti fill the tea house. The magician pulls a carrot out of an empty teacup, and everyone talks about it for the rest of the week.
+
+who: Dot's cousins, a flock of ducks on holiday
+line: Happy quacking and lots of splashing fill the pond as Dot's cousins paddle in. They bring a picnic of crunchy seeds and a very long story about their trip.
+
+who: a mail carrier pigeon on a grand tour
+line: A flurry of soft feathers and a polite coo arrive at the post office. Otis and the pigeon swap stories over warm cocoa until well past sunrise.

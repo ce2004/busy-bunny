@@ -1,0 +1,677 @@
+puzzle: The lost lantern
+intro: Cool earth brushes your paws, and somewhere below a clock ticks softly. Hazel has asked {name} to light the old reading room under the burrow so she can read there on rainy days. The lantern is somewhere in the tunnels, waiting to be found.
+start: burrow
+goal: lantern
+win: reading
+winline: You set the lantern on the reading table, and warm light spills over the soft old chairs. {name} flops onto a cushion with a happy sigh. Hazel will love reading down here.
+
+room: burrow
+name: Bunny's burrow
+touch: The floor is packed earth, smooth and a little warm, with a soft rug by the bed.
+sound: The quiet tick of a little clock and {name} breathing slow and happy.
+looks: A round, cozy room with a hole in the floor and a ladder of roots leading down.
+exits: down hall
+items: none
+locked: none
+
+room: hall
+name: The root hall
+touch: Thick roots run along the walls like smooth wooden railings.
+sound: Your steps make a soft pat pat, and a cool breeze hums from the south.
+looks: A long, snug hall with paths going north, east, and south, and the root ladder going up.
+exits: up burrow, north cellar, east nook, south reading
+items: none
+locked: south
+
+room: cellar
+name: The root cellar
+touch: Cool, dry air, and wooden shelves with rough edges under your paws.
+sound: A tiny drip somewhere, slow and steady, like a sleepy drum.
+looks: Shelves of old jars and baskets, mostly empty, with a doorway to the east.
+exits: south hall, east pantry
+items: key
+locked: none
+
+room: pantry
+name: The old pantry
+touch: The floor is scattered with dry, crinkly leaves that crunch softly.
+sound: The leaves rustle, and a hook on the wall clinks when you brush it.
+looks: A small pantry with a hook on the wall and doorways west and south.
+exits: west cellar, south nook
+items: lantern
+locked: none
+
+room: nook
+name: The listening nook
+touch: The walls curve in close and feel soft with moss.
+sound: Every sound here comes back gently, like the room is listening and humming along.
+looks: A tiny round nook with a mossy seat, open to the west and north.
+exits: west hall, north pantry
+items: pinecone
+locked: none
+
+room: reading
+name: The old reading room
+touch: Soft armchairs with worn velvet arms, and a wide table with a smooth top.
+sound: A hush so deep you can hear the pages of old books sigh on their shelves.
+looks: Tall shelves of books and a reading table, waiting for a light.
+exits: north hall
+items: none
+locked: none
+
+item: lantern
+name: a little tin lantern
+touch: Cool tin with a curly wire handle and a glass window that is smooth and clean.
+sound: The handle squeaks a friendly squeak when you lift it.
+looks: A round tin lantern with a candle inside, ready to glow.
+use: reading
+useline: none
+opens: none
+
+item: key
+name: a small brass key
+touch: Smooth and heavy for its size, with a loop at the top just right for a paw.
+sound: It jingles with a bright little ring.
+looks: A shiny brass key with a tiny hedgehog stamped on it.
+use: hall
+useline: The brass key turns with a soft click, and the old door to the south swings open.
+opens: south
+
+item: pinecone
+name: a plump pinecone
+touch: Bumpy scales that tickle your paw pads, dry and light.
+sound: It rattles softly when you shake it, like a tiny maraca.
+looks: A brown pinecone, round and very pleased with itself.
+use: none
+useline: none
+opens: none
+
+hint: Somewhere in the root hall there is a door that will not budge yet.
+
+hint: Doors in these tunnels usually want a key, and keys like cool, quiet shelves.
+
+hint: Try the root cellar, north of the hall, and feel along the shelves.
+
+hint: The lantern is in the pantry with the crunchy leaves, east of the cellar.
+
+hint: Take the key and the lantern, use the key in the root hall, go south, and use the lantern.
+
+puzzle: Gerald's great escape
+intro: Soft moss squishes under your paws, and you hear a slow, happy slurp somewhere far off. Gerald the snail has wandered off on a very slow adventure, and he is probably getting hungry. Find Gerald and bring him something crunchy and green.
+start: burrow
+goal: lettuce
+win: moss
+winline: Gerald munches the lettuce with a tiny, delighted crunch. He says this was the best adventure of his whole week, and also the slowest. {name} giggles and sits beside him while he finishes his snack.
+
+room: burrow
+name: Bunny's burrow
+touch: Your soft bed, a woolly blanket, and the cool edge of the hole in the floor.
+sound: {name} thumps its foot once, ready for a search.
+looks: The cozy burrow with a root ladder leading down.
+exits: down tunnel
+items: none
+locked: none
+
+room: tunnel
+name: The crossing tunnel
+touch: Smooth earth walls, and a little trail of something shiny and slick along the floor.
+sound: A soft echo, and the faint drip of water to the west.
+looks: Four ways meet here: up to the burrow, and tunnels going north, east, and west.
+exits: up burrow, north fern, east pantry, west spring
+items: none
+locked: none
+
+room: pantry
+name: The vegetable pantry
+touch: Cool air and baskets woven from twigs, bumpy under your paws.
+sound: Baskets creak gently, and something leafy rustles.
+looks: A little pantry full of baskets, with the way out to the west.
+exits: west tunnel
+items: lettuce
+locked: none
+
+room: spring
+name: The little spring
+touch: Cool water bubbles over smooth stones, and the air feels fresh on your whiskers.
+sound: A cheerful burble, like the spring is telling a joke.
+looks: A small spring in a stone bowl, with the tunnel back to the east.
+exits: east tunnel
+items: stool
+locked: none
+
+room: fern
+name: The fern hollow
+touch: Feathery fern fronds brush your ears, and a wooden gate stands to the north with its latch up high.
+sound: Ferns swish, and from beyond the gate comes a slow, happy humming.
+looks: A green hollow full of ferns, with a little gate to the north.
+exits: south tunnel, north moss
+items: shell
+locked: north
+
+room: moss
+name: The mossy room
+touch: Moss as thick as a pillow covers everything, damp and springy.
+sound: A tiny voice humming a very slow song.
+looks: A soft green room, and in the middle sits Gerald, looking hopeful.
+exits: south fern
+items: none
+locked: none
+
+item: lettuce
+name: a crisp lettuce leaf
+touch: Cool and crinkly, with a crunchy rib down the middle.
+sound: It crackles softly when you fold it.
+looks: A bright green leaf, fresh as morning.
+use: moss
+useline: none
+opens: none
+
+item: stool
+name: a little wooden stool
+touch: Three short legs and a smooth round seat, light enough to carry.
+sound: It knocks a friendly knock when you set it down.
+looks: A small stool painted with tiny yellow flowers.
+use: fern
+useline: You stand on the stool, reach the high latch, and the gate swings open with a creak.
+opens: north
+
+item: shell
+name: a spiral shell
+touch: Smooth and cool, with a curl that winds round and round.
+sound: Hold it close and it whispers like a faraway breeze.
+looks: A pale spiral shell, a little like Gerald's, but empty.
+use: none
+useline: none
+opens: none
+
+hint: Gerald loves a snack, so see what is in the pantry.
+
+hint: The shiny trail leads north, toward the fern hollow.
+
+hint: The gate latch in the fern hollow is too high to reach, so you need something to stand on.
+
+hint: There is a little stool by the spring, west of the crossing tunnel.
+
+hint: Take the lettuce and the stool, use the stool in the fern hollow, go north, and use the lettuce.
+
+puzzle: The humming pipe
+intro: A deep, friendly hum buzzes through the floor and tickles your paws. Bramble says an old pipe under the burrow needs a little tightening, but Bramble's toolbox has gone missing somewhere in the tunnels. Find the toolbox and bring it to the humming pipe.
+start: burrow
+goal: toolbox
+win: pipe
+winline: You open the toolbox, and Bramble's wrench is right on top. One gentle twist, and the hum softens into a happy purr. {name} wiggles its nose like it fixed the pipe all by itself.
+
+room: burrow
+name: Bunny's burrow
+touch: The floor buzzes faintly under your paws, like a cat purring under the rug.
+sound: A low hum rises from below.
+looks: The cozy burrow, with the root ladder leading down.
+exits: down landing
+items: none
+locked: none
+
+room: landing
+name: The tunnel landing
+touch: A wide, smooth floor with a woven mat that is scratchy and warm.
+sound: The hum is louder to the east, and a soft echo comes from the south.
+looks: A roomy landing with ways east, west, and south, and the ladder going up.
+exits: up burrow, east pipe, west store, south well
+items: button
+locked: none
+
+room: pipe
+name: The humming pipe room
+touch: A long copper pipe runs along the wall, warm and buzzing under your paw.
+sound: Hmmmmm, a steady hum, like the pipe is trying to remember a song.
+looks: A snug room with a shiny pipe and one wobbly joint.
+exits: west landing
+items: none
+locked: none
+
+room: store
+name: The storeroom
+touch: Stacks of smooth wooden crates, and a door to the north with stiff, rough hinges.
+sound: The hinges creak when you push the door, but it will not open.
+looks: A tidy storeroom with a stubborn little door to the north.
+exits: east landing, north shed
+items: none
+locked: north
+
+room: well
+name: The old well room
+touch: A low stone ring, cool and bumpy, with a rope ladder tied to it.
+sound: Water drips far below with a soft plink.
+looks: A round room with a shallow old well, and a way down beside it.
+exits: north landing, down cistern
+items: oilcan
+locked: none
+
+room: cistern
+name: The cistern
+touch: Cool, smooth stone, and a puddle that splashes gently around your toes.
+sound: Plink, plink, plonk, the drips make a little tune.
+looks: A small stone room with a shallow puddle, and the way back up.
+exits: up well
+items: ladder
+locked: none
+
+room: shed
+name: Bramble's root shed
+touch: Pegs on the wall, garden gloves, and a workbench smooth from years of paws.
+sound: A wind chime made of spoons tinkles softly overhead.
+looks: Bramble's cozy workshop, with a little loft high up.
+exits: south store, up loft
+items: none
+locked: up
+
+room: loft
+name: The little loft
+touch: Soft hay and a blanket folded just so.
+sound: The hay crunches and whispers when you move.
+looks: A tiny loft tucked under the roots, with a box in the corner.
+exits: down shed
+items: toolbox
+locked: none
+
+item: toolbox
+name: Bramble's toolbox
+touch: A wooden box with a smooth handle and a clasp that clicks.
+sound: Tools rattle inside with a busy jingle.
+looks: A green toolbox with a badger painted on the lid.
+use: pipe
+useline: none
+opens: none
+
+item: oilcan
+name: a little oil can
+touch: A tin can with a long, thin spout, slightly slippery on the outside.
+sound: It glugs softly when you tip it.
+looks: A small red oil can with a dented, friendly face.
+use: store
+useline: You oil the stiff hinges, and the north door swings open without a single squeak.
+opens: north
+
+item: ladder
+name: a folding step ladder
+touch: Light wooden rungs that fold flat, smooth and a little bouncy.
+sound: It clacks open with a cheerful snap.
+looks: A small ladder, just tall enough for a bunny.
+use: shed
+useline: You unfold the ladder under the loft, and now you can climb right up.
+opens: up
+
+item: button
+name: a big wooden button
+touch: Round and smooth, with four little holes you can feel with one claw.
+sound: It clacks when you tap it on the floor.
+looks: A brown button, probably from Bramble's gardening coat.
+use: none
+useline: none
+opens: none
+
+hint: Bramble usually keeps the toolbox somewhere high and cozy.
+
+hint: The storeroom door is just stiff, and squeaky hinges love a little oil.
+
+hint: The oil can is in the well room, and the cistern below it has something you can climb.
+
+hint: Use the oil can in the storeroom, then use the ladder in Bramble's shed.
+
+hint: Climb up to the loft, take the toolbox, and use it in the humming pipe room east of the landing.
+
+puzzle: The secret jam cellar
+intro: The air smells sweet, like berries warmed in the sun, and something sticky clings to your paw. The bakery needs one last jar of jam for the village picnic, and the old jam cellar is hidden somewhere under the burrow. Find the jam and send it up through the bakery hatch.
+start: burrow
+goal: jam
+win: hatch
+winline: You lift the jar up through the hatch, and a floury paw takes it with a happy squeak. Moments later, the smell of fresh jam tarts drifts down the tunnel. {name} licks its lips and does a little hop.
+
+room: burrow
+name: Bunny's burrow
+touch: The cozy floor, and a breeze from the east that smells faintly of berries.
+sound: {name} sniffs loudly, very interested in that smell.
+looks: The burrow, with a low tunnel heading east.
+exits: east passage
+items: none
+locked: none
+
+room: passage
+name: The sweet passage
+touch: Smooth walls, and a faint sticky spot where someone once spilled something tasty.
+sound: Soft clinks from the south, and muffled oven sounds from the north.
+looks: A crossroads of tunnels going north, south, east, and back west.
+exits: west burrow, north hatch, south larder, east bend
+items: none
+locked: none
+
+room: hatch
+name: Under the bakery hatch
+touch: Warm air pours down from a wooden hatch above, and the floor is dusted with soft flour.
+sound: Up above, pans clatter and someone hums while kneading dough.
+looks: A small room right under the bakery, with a square hatch in the ceiling.
+exits: south passage
+items: none
+locked: none
+
+room: larder
+name: The cool larder
+touch: Chilly stone shelves, and a row of hooks with little cloth bags on them.
+sound: The bags sway and bump softly, and a jar lid rattles.
+looks: A cool, tidy larder with the way back north.
+exits: north passage
+items: key
+locked: none
+
+room: bend
+name: The crooked bend
+touch: The tunnel twists here, and a round door to the east has a lock shaped like a berry.
+sound: The berry smell is strongest here, sweet and warm.
+looks: A twisty bend with ways west and south, and a round red door to the east.
+exits: west passage, south roots, east jamroom
+items: none
+locked: east
+
+room: roots
+name: The root garden
+touch: Little roots dangle from the ceiling and tickle your ears like soft fringe.
+sound: The roots swish gently whenever you move.
+looks: A small garden room full of hanging roots, with the way back north.
+exits: north bend
+items: spoon
+locked: none
+
+room: jamroom
+name: The secret jam cellar
+touch: Rows of cool glass jars, smooth and round, each one with a cloth cap tied with string.
+sound: Jars clink softly together like a tiny wind chime.
+looks: Shelf after shelf of jam, red and purple and gold.
+exits: west bend
+items: jam
+locked: none
+
+item: jam
+name: a jar of strawberry jam
+touch: Cool, smooth glass, heavy in your paws, with a cloth cap tied with a bow.
+sound: It makes a soft, gloopy shift when you tilt it.
+looks: A jar of bright red jam with a label that says picnic.
+use: hatch
+useline: none
+opens: none
+
+item: key
+name: a strawberry key
+touch: A wooden key carved like a strawberry, with tiny bumps for seeds.
+sound: It clicks lightly against your claws.
+looks: A little red key with a green leafy top.
+use: bend
+useline: The strawberry key fits the berry lock perfectly, and the round door rolls open.
+opens: east
+
+item: spoon
+name: a wooden spoon
+touch: Smooth, with a long handle and a little scoop worn soft from stirring.
+sound: It taps a happy rhythm on the wall.
+looks: A wooden spoon with a faint purple stain from years of jam.
+use: none
+useline: none
+opens: none
+
+hint: Follow your nose; the berry smell is strongest east of the passage.
+
+hint: The round red door has a lock shaped like a berry, so look for a berry key.
+
+hint: Cool larders are great places to keep keys, and there is one south of the passage.
+
+hint: Use the strawberry key at the crooked bend, then go east for the jam.
+
+hint: Take the jam back to the passage, go north under the bakery hatch, and use the jam.
+
+puzzle: The music box in the roots
+intro: A thin, tinkly tune drifts through the roots, then stops halfway through. Fennel lost the choir's old music box down in the tunnels, and practice is not the same without it. Find the music box and play it in the echo chamber.
+start: burrow
+goal: musicbox
+win: echo
+winline: You wind the music box, and its tune fills the echo chamber, bouncing sweetly off every wall. Far above, you hear Fennel and the choir start singing along. {name} sways its ears to the music.
+
+room: burrow
+name: Bunny's burrow
+touch: Your soft bed, and the root ladder, smooth and cool, leading down.
+sound: A faraway tinkle of music, there and then gone.
+looks: The cozy burrow with the way down.
+exits: down roothall
+items: none
+locked: none
+
+room: roothall
+name: The great root hall
+touch: Huge roots arch overhead, and you can wrap both paws around them.
+sound: Every footstep rings softly, and the echo is loudest to the north.
+looks: A tall hall with roots like a ceiling of branches, and ways north, east, and west.
+exits: up burrow, north echo, east tangle, west spring
+items: feather
+locked: none
+
+room: echo
+name: The echo chamber
+touch: The walls are smooth and round, like the inside of a big bowl.
+sound: Say hello and the room says hello, hello, hello right back.
+looks: A round chamber with a little stand in the middle, waiting for something.
+exits: south roothall
+items: none
+locked: none
+
+room: spring
+name: The bubbling spring
+touch: Cool water bubbles up over pebbles, and the air is fresh and damp.
+sound: A merry blub blub blub that sounds a bit like laughing.
+looks: A little spring in a ring of stones, with ways east and north.
+exits: east roothall, north mush
+items: comb
+locked: none
+
+room: mush
+name: The mushroom ring
+touch: Soft round mushrooms, spongy and cool, sit in a perfect circle.
+sound: It is very quiet here, just a gentle hush, like the mushrooms are napping.
+looks: A ring of pale mushrooms with the way back south.
+exits: south spring
+items: knob
+locked: none
+
+room: tangle
+name: The root tangle
+touch: Fine roots knot together in a soft, springy curtain to the east.
+sound: The roots creak gently when you push them, but they do not part.
+looks: A cozy corner where roots have grown into a tangle, with the hall back to the west.
+exits: west roothall, east little
+items: none
+locked: east
+
+room: little
+name: The little round room
+touch: A tiny round room with a smooth wooden hatch in the floor, and a hole where its knob should be.
+sound: The music is closer now, a sleepy tinkle from below.
+looks: A cozy round room with a hatch in the floor.
+exits: west tangle, down deep
+items: none
+locked: down
+
+room: deep
+name: The deep nest
+touch: Soft feathers and wool line this little nest, warm as a sweater.
+sound: A faint, slow tinkle, like the music box is half asleep.
+looks: A snug nest under the roots, with the way back up.
+exits: up little
+items: musicbox
+locked: none
+
+item: musicbox
+name: the choir's music box
+touch: A small wooden box with carved notes on the lid and a little crank on the side.
+sound: When you turn the crank, it plays a few sweet, tinkly notes.
+looks: A honey colored box painted with a frog conductor.
+use: echo
+useline: none
+opens: none
+
+item: comb
+name: a wide wooden comb
+touch: Long, smooth teeth that feel nice on your paw pads.
+sound: The teeth make a soft zip when you run a claw along them.
+looks: A wooden comb, perfect for untangling things gently.
+use: tangle
+useline: You comb through the roots gently, and they part like a soft curtain to the east.
+opens: east
+
+item: knob
+name: a round door knob
+touch: A smooth wooden knob with a little peg on the back.
+sound: It clunks softly when you set it down.
+looks: A polished knob, just the size of a hole in a hatch.
+use: little
+useline: You push the knob into the hatch, give it a twist, and the hatch lifts open.
+opens: down
+
+item: feather
+name: a fluffy feather
+touch: So soft it barely feels like anything, and it tickles your nose.
+sound: Almost silent, just a whisper when you wave it.
+looks: A gray feather, maybe dropped by Otis on his way to work.
+use: none
+useline: none
+opens: none
+
+hint: The music sounds like it is coming from somewhere past the roots to the east.
+
+hint: The root tangle is soft, and it only needs a gentle combing to part.
+
+hint: The comb is by the bubbling spring, and the mushroom ring north of it has a knob.
+
+hint: Use the comb in the root tangle, then use the knob in the little round room.
+
+hint: Go down to the deep nest, take the music box, and use it in the echo chamber north of the great root hall.
+
+puzzle: The midnight mail tunnel
+intro: Paper rustles softly in a cool breeze, and a sleepy hoo echoes somewhere far away. Otis dropped a very important letter down the old mail tunnel, and it needs to go out tonight. Find the letter and send it up the post office chute.
+start: burrow
+goal: letter
+win: chute
+winline: You slip the letter into the chute, and it whooshes up with a happy flutter. From far above, Otis calls down a grateful hoo. {name} yawns a big proud yawn; a job well done.
+
+room: burrow
+name: Bunny's burrow
+touch: The cozy floor, and the root ladder smooth under your paws.
+sound: A sleepy hoo drifts up from somewhere below.
+looks: The burrow at night, with a lamp glowing softly and the way down.
+exits: down junction
+items: none
+locked: none
+
+room: junction
+name: The mail junction
+touch: Little wooden signs on posts, their carved letters bumpy under your paw.
+sound: A breeze whistles softly from the west, carrying the sound of fluttering paper.
+looks: A tidy crossing with signs pointing east, west, south, and up.
+exits: up burrow, east sorting, west chute, south rails
+items: none
+locked: none
+
+room: chute
+name: The post office chute
+touch: A smooth wooden chute leads upward, and a soft breeze blows up through it.
+sound: Whoosh, the air hums up the chute toward the post office.
+looks: A cozy little room with a chute in the ceiling and a sign that says outgoing mail.
+exits: east junction
+items: none
+locked: none
+
+room: sorting
+name: The sorting nook
+touch: Tiny cubbies line the wall, each one smooth inside and just big enough for a letter.
+sound: Paper whispers, and a little brass bell sways and tings.
+looks: A snug nook full of cubbies, with the way back west.
+exits: west junction
+items: token
+locked: none
+
+room: rails
+name: The little cart rails
+touch: Two thin metal rails run along the floor, cool and smooth, and a small gate to the south has a coin slot.
+sound: A tiny mail cart rocks on the rails with a soft clack.
+looks: A long tunnel with cart rails, ways north and east, and a gate to the south.
+exits: north junction, east stacks, south bend
+items: none
+locked: south
+
+room: stacks
+name: The parcel stacks
+touch: Soft paper parcels tied with string, and the bumpy coils of a rope.
+sound: Parcels creak and settle, like they are getting comfy.
+looks: Neat piles of parcels, with the rails back to the west.
+exits: west rails
+items: rope, postcard
+locked: none
+
+room: bend
+name: The far bend
+touch: A wide hole in the floor with a sturdy hook beside it, smooth and strong.
+sound: Below, a single piece of paper flutters in the breeze.
+looks: The end of the rails, with a hole going down and the gate back north.
+exits: north rails, down hollow
+items: none
+locked: down
+
+room: hollow
+name: The letter hollow
+touch: Soft leaves cover the floor, and on top of them sits a crisp envelope.
+sound: The envelope rustles with every little breeze.
+looks: A small leafy hollow, cozy and quiet, with the way back up.
+exits: up bend
+items: letter
+locked: none
+
+item: letter
+name: Otis's important letter
+touch: A thick envelope with a bumpy wax seal and smooth, heavy paper.
+sound: It crinkles softly, very important sounding.
+looks: A cream envelope sealed with a little owl stamp.
+use: chute
+useline: none
+opens: none
+
+item: token
+name: a post office token
+touch: A thin round coin with a raised owl on one side.
+sound: It rings a tiny ting when you flick it.
+looks: A shiny silver token, good for one gate.
+use: rails
+useline: You drop the token in the slot, it clinks inside, and the little gate swings open to the south.
+opens: south
+
+item: rope
+name: a coil of soft rope
+touch: Fuzzy and strong, coiled in loops that spring back when you squeeze them.
+sound: It swishes softly as it uncoils.
+looks: A long rope with a knot at one end for climbing.
+use: bend
+useline: You tie the rope to the hook, and now you can climb safely down into the hollow.
+opens: down
+
+item: postcard
+name: a postcard
+touch: Stiff card, smooth on one side and a little rough where the stamp is.
+sound: It flaps gently when you wave it.
+looks: A postcard of the pond that says wish you were here.
+use: none
+useline: none
+opens: none
+
+hint: The letter must have rolled somewhere past the cart rails.
+
+hint: The rail gate has a coin slot, so look for something round to drop in it.
+
+hint: The sorting nook east of the junction has a token, and the parcel stacks have a rope.
+
+hint: Use the token at the cart rails, then use the rope at the far bend.
+
+hint: Climb down, take the letter, go back to the junction, head west to the chute, and use the letter.

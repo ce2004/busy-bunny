@@ -1,0 +1,143 @@
+title: Who took Hazel's reading glasses?
+setup: Hazel reached for her reading glasses this morning and found only an empty little case. She has been squinting at the library books ever since, and the whole village wants to help. Who could have borrowed them?
+suspects: Pip, Rocco, Gerald, Fennel
+culprit: Fennel
+clue1: Someone heard a tiny splash of pond water by the library door at dawn.
+clue2: The glasses case smelled faintly of water lilies.
+clue3: Whoever borrowed them needed to read very small writing, like the notes on sheet music.
+clue4: A damp, webbed footprint was found on the library windowsill.
+clue5: The choir has been practicing a brand new song with very tiny printed notes.
+right: It was Fennel! He borrowed the glasses to read the tiny notes of a surprise song the choir wrote for Hazel. He hands them back, the choir sings it for her right there, and Hazel laughs so hard her prickles wiggle.
+kind: Everyone chuckles, and the neighbor you named laughs and says it would have been a clever plan. Then Fennel hops forward, holding the glasses, and admits he borrowed them to read the notes of a surprise song for Hazel. The choir sings it on the spot, and Hazel beams.
+
+title: Who took Rocco's morning bell?
+setup: Rocco keeps a little brass bell to ring after his morning crow, just for extra style. This morning it was gone from its hook, and Rocco had to crow twice to make up for it. Where did the bell go?
+suspects: Dot, Clover, Bramble
+culprit: Clover
+clue1: A soft jingle was heard coming from the meadow just after sunrise.
+clue2: There was a bit of straw caught on the empty bell hook.
+clue3: Whoever borrowed it is tall enough to reach a high hook without a ladder.
+clue4: Hoofprints lead from the hook toward the stable.
+clue5: Someone at the stable has been practicing a fancy trot that needs a jingle to keep the beat.
+right: It was Clover! She borrowed the bell to tie on her bridle for a surprise parade in Rocco's honor. She trots out jingling, and Rocco is so proud he crows three times in a row.
+kind: The neighbor you named laughs and says they cannot even reach that hook. Then Clover trots up, jingling, and explains she borrowed the bell for a surprise parade in Rocco's honor. Rocco puffs up his feathers, delighted.
+
+title: Who took Pip's newspaper?
+setup: Every morning Pip sets out a fresh copy of the village newspaper on the green. Today the whole stack vanished before anyone could read it. Pip is fluttering about, very curious.
+suspects: Otis, Mrs. Teasel, Dot, Bramble
+culprit: Otis
+clue1: The newspapers disappeared very early, while most of the village was still asleep.
+clue2: A single soft gray feather was found where the stack used to be.
+clue3: Whoever took them knows how to fold paper very neatly.
+clue4: Someone heard a sleepy hoo near the green before sunrise.
+clue5: The post office lamp was on all night, and there were scissors and glue on the counter.
+right: It was Otis! He borrowed every copy to cut out Pip's best stories and glue them into a scrapbook as a thank you for years of news. Pip is so touched she reads the whole scrapbook out loud, and everyone cheers.
+kind: The neighbor you named laughs and says they were fast asleep all night. Then Otis shuffles forward with a big scrapbook made from Pip's best stories, a thank you gift for years of news. Pip squeaks with joy and reads it out loud.
+
+title: Who took the bakery's rolling pin?
+setup: The bakery's favorite rolling pin was missing this morning, and the bread came out a little lumpy. Nobody minds lumpy bread, but everyone wants to know where the pin went. The baker has a hunch it is somewhere nearby.
+suspects: Bramble, Gerald, Pip
+culprit: Bramble
+clue1: Whoever borrowed it was seen carrying something long and wooden toward the garden.
+clue2: A smudge of fresh garden soil was found on the bakery counter.
+clue3: The borrower is good at fixing and making things.
+clue4: Someone heard hammering and humming late last night.
+clue5: A toolbox was left by the bakery door, with a little sawdust inside.
+right: It was Bramble! The rolling pin had a crack, so Bramble borrowed it to sand it smooth and carve a tiny wheat pattern on the handles. The baker is thrilled, and the very next loaf comes out perfect.
+kind: The neighbor you named laughs and says they cannot even lift a rolling pin. Then Bramble steps in with the pin, freshly sanded and carved with tiny wheat stalks, a surprise repair for the baker. Everyone gathers to admire it.
+
+title: Who took the tea house teapot?
+setup: The tea house's big flowered teapot was not on its shelf this afternoon. Tea was served from a soup pot, which everyone agreed was very funny. Still, the teapot must be somewhere.
+suspects: Mrs. Teasel, {goldie}, Dot, Rocco
+culprit: Mrs. Teasel
+clue1: Whoever took it moved very slowly, since a cup was knocked over only a little.
+clue2: There is a slow, careful trail in the dust leading out the back door.
+clue3: The borrower has been planning a tea party for a very old friend.
+clue4: Someone saw a shell shaped shadow under the meadow tree, next to a picnic blanket.
+clue5: Gerald turns one hundred snail years old this week, and his oldest friend has been baking tiny cakes.
+right: It was Mrs. Teasel! She borrowed the teapot for a surprise tea party for Gerald, her oldest and slowest friend. She invites the whole village, and the party lasts all afternoon because nobody is in a hurry.
+kind: The neighbor you named laughs and says they would have dropped a teapot that big. Then Mrs. Teasel slowly steps forward and admits she borrowed the teapot for a surprise tea party for Gerald. She invites everyone, and the party is lovely.
+
+title: Who took Fennel's conductor's baton?
+setup: Fennel waves a little wooden baton to lead the choir. Tonight it was missing, so he had to conduct with a cattail, which made everyone giggle. Where could the baton be?
+suspects: Pip, Hazel, Dot
+culprit: Dot
+clue1: Someone heard a cheerful quack near the choir stand after practice.
+clue2: A tiny white feather was stuck to the music stand.
+clue3: The borrower has been practicing something in secret down by the reeds.
+clue4: Little webbed footprints lead from the stand to the pond.
+clue5: The ducklings have been very quiet lately, like they are saving up a surprise song.
+right: It was Dot! She borrowed the baton to teach her ducklings a little song for Fennel. They waddle up and quack it perfectly, and Fennel claps so hard he nearly falls off his lily pad.
+kind: The neighbor you named laughs and says they cannot carry a tune in a bucket. Then Dot paddles over with the baton and her ducklings, who quack a little song they learned just for Fennel. Fennel is overjoyed.
+
+title: Who took the library's big atlas?
+setup: The library's giant atlas, the one with all the maps, has gone missing from its stand. Hazel is not worried, just very curious. She says books always find their way home.
+suspects: Otis, Clover, Pip, Gerald
+culprit: Gerald
+clue1: Whoever borrowed it has been reading it for a very long time, very slowly.
+clue2: There is a faint, shiny trail across the library floor.
+clue3: The borrower has been dreaming about a big trip.
+clue4: Someone saw a tiny shell next to an open book under the reading lamp.
+clue5: The atlas page about the far side of the pond is marked with a lettuce leaf.
+right: It was Gerald! He borrowed the atlas to plan a grand trip to the far side of the pond, which will take him most of the summer. The whole village signs up to pack him snacks, and Gerald blushes all the way to his antennae.
+kind: The neighbor you named laughs and says they already know every road by heart. Then Gerald slowly pokes his head out from behind the atlas and admits he is planning a grand trip to the far side of the pond. Everyone offers to pack him snacks.
+
+title: Who took Clover's ribbons?
+setup: Clover keeps a box of bright ribbons for braiding her mane on special days. Today the box was empty, and Clover is wondering if it is a special day she forgot about. The village is on the case.
+suspects: Hazel, Pip, Bramble
+culprit: Pip
+clue1: Whoever took them is quick and loves to climb.
+clue2: A few acorn shells were found beside the empty ribbon box.
+clue3: Someone saw ribbons fluttering high up in the trees around the green.
+clue4: The borrower always knows everybody's news, including that the stable turns ten today.
+clue5: A bushy tail was spotted tying a bow on the highest branch.
+right: It was Pip! She borrowed the ribbons to decorate the whole village green for the stable's big anniversary. Clover trots out to find bows on every branch, and everyone dances.
+kind: The neighbor you named laughs and says they would get tangled in ribbons in a second. Then Pip scampers down from a tree and explains she borrowed them to decorate the green for the stable's big anniversary. Clover is so happy she prances.
+
+title: Who took the post office stamp?
+setup: Otis came in for his night shift and found his favorite owl stamp missing from the counter. Letters are piling up, unstamped but patient. Otis says he is more curious than anything.
+suspects: {goldie}, Rocco, Hazel
+culprit: {goldie}
+clue1: The stamp pad has a big, round smudge on it, much bigger than a stamp.
+clue2: A few soft golden hairs were found on the post office mat.
+clue3: The borrower is warm and steady and always thinking of others.
+clue4: Someone heard happy tail thumps from behind the post office.
+clue5: Every neighbor got a card today, each one stamped with an owl and a big golden paw print.
+right: It was {goldie}! The stamp was borrowed to make thank you cards for every neighbor, each one signed with a paw print. Otis is so pleased he hangs one above his desk.
+kind: The neighbor you named laughs and says their paws are far too busy today. Then {goldie} pads forward, tail wagging, and explains the stamp went on thank you cards for every neighbor. Otis hangs one above his desk with a happy hoo.
+
+title: Who took the village green's picnic blanket?
+setup: The big checkered picnic blanket that always sits folded by the green is gone. Everyone had to sit on the grass for lunch, which was surprisingly comfy. Still, someone has it.
+suspects: Rocco, Mrs. Teasel, Fennel, Bramble
+culprit: Rocco
+clue1: Whoever took it was up very, very early in the morning.
+clue2: A bright red feather was found where the blanket usually sits.
+clue3: The borrower has been practicing something loud and proud.
+clue4: Someone saw a big shape draped in checkers on top of the barn.
+clue5: The blanket is now a cape, perfect for a grand morning performance.
+right: It was Rocco! He borrowed the blanket to wear as a cape for a surprise sunrise show for the whole village. He crows his grandest crow, the cape flaps, and everyone applauds.
+kind: The neighbor you named laughs and says they would never be up that early. Then Rocco struts out wearing the blanket as a cape and announces a surprise sunrise show for everyone. He crows his grandest crow, and the village applauds.
+
+title: Who took Bramble's watering can?
+setup: Bramble went to water the vegetable patch and found the old green watering can missing. The vegetables are fine, they had a little rain, but Bramble is puzzled. Who needed a watering can?
+suspects: Hazel, Otis, Dot, Clover
+culprit: Hazel
+clue1: Whoever borrowed it walked softly, with small careful steps.
+clue2: The library windowsill is wet this morning.
+clue3: The borrower has been growing something secret.
+clue4: A few prickly bits of fluff were found on the watering can's hook.
+clue5: There is a tiny garden of flowers hidden behind the library, spelling out a thank you to Bramble.
+right: It was Hazel! She borrowed the watering can to grow a flower garden spelling thank you, for all the shelves Bramble fixed this year. Bramble is so moved he needs to sit down on his toolbox.
+kind: The neighbor you named laughs and says they do not even know which end the water comes out of. Then Hazel peeks out and shows everyone the hidden flower garden that spells thank you to Bramble. Bramble is delighted.
+
+title: Who took the choir's lanterns?
+setup: The choir sings by lantern light on summer evenings, but tonight every lantern was gone from the pond. Fennel is not upset, just puzzled. The village wants to know who needed so many lanterns.
+suspects: Pip, Otis, {goldie}, Gerald
+culprit: Otis
+clue1: Whoever borrowed them needed lots of light late at night.
+clue2: A long gray feather was found by the lantern hooks.
+clue3: The borrower works while everyone else sleeps.
+clue4: Someone saw lights glowing all the way down the road to the post office.
+clue5: The post office path is now lined with lanterns, leading to a midnight snack party.
+right: It was Otis! He borrowed the lanterns to light the path for a midnight snack party, so the whole village could keep him company on his night shift. Everyone comes with blankets and cocoa, and the choir sings by the post office.
+kind: The neighbor you named laughs and says they are always in bed by sundown. Then Otis hoots softly and admits he borrowed the lanterns to light the way to a midnight snack party for everyone. The choir sings, and the cocoa is warm.

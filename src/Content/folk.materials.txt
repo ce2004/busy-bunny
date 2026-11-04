@@ -1,0 +1,47 @@
+name: twigs
+touch: Thin, dry and light, with little knobbly bumps along each one.
+sound: They snap with a crisp pop and rattle together in a bundle.
+
+name: yarn
+touch: Soft and springy, with a gentle twist you can feel when it runs through your paws.
+sound: A quiet fuzzy whisper as the ball unrolls.
+
+name: buttons
+touch: Small, smooth and round, each with little holes you can poke a claw into.
+sound: They clatter like tiny raindrops in a tin.
+
+name: pinecones
+touch: Bumpy, woody scales that tickle your paw pads.
+sound: A dry crackle when you squeeze one.
+
+name: ribbon
+touch: Silky and cool on one side, slightly grainy on the other.
+sound: A soft swish as it slides through a loop.
+
+name: acorn caps
+touch: Little rough cups with a tiny stem on top, like miniature hats.
+sound: A light clicky tap when you stack them.
+
+name: driftwood
+touch: Silky smooth and surprisingly light, worn soft by the sea.
+sound: A hollow, friendly knock when two pieces meet.
+
+name: felt
+touch: Thick, fuzzy and soft, with no stretch at all.
+sound: Almost silent, just a soft pff when you fold it.
+
+name: beads
+touch: Round and glassy, rolling around in your paw like peas.
+sound: They tinkle and click as they slide onto a string.
+
+name: moss
+touch: Springy, damp and cushiony, like a tiny green pillow.
+sound: A soft squish and nothing more.
+
+name: bark
+touch: Rough and ridged on the outside, smooth on the inside.
+sound: A crunchy crackle when it bends.
+
+name: feathers
+touch: So light they barely feel like anything, with soft edges that tickle your nose.
+sound: A whisper so faint you have to hold your breath to hear it.

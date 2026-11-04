@@ -1,0 +1,143 @@
+season: Winter
+fabric: thick flannel
+touch: Brushed soft and warm, like a favorite pair of pajamas.
+sound: A quiet fuzzy hush when you smooth it.
+theme: The week the burrow stayed toasty and the to-do list got shorter.
+
+season: Winter
+fabric: cable knit wool
+touch: Raised braids you can follow with one claw from top to bottom.
+sound: A soft woolly rub, almost a purr.
+theme: The week of steady little steps, one after another.
+
+season: Winter
+fabric: snowflake print cotton
+touch: Smooth and crisp, with tiny stitched snowflakes you can feel.
+sound: A light crinkle when it folds.
+theme: The week the snow fell softly and so did the tasks.
+
+season: Winter
+fabric: velvet
+touch: So plush it changes direction under your paw.
+sound: Nearly silent, like a whisper behind a door.
+theme: The week Bunny brewed cocoa and you crossed off something big.
+
+season: Winter
+fabric: fleece
+touch: Thick, light and cloud soft.
+sound: A gentle swish as it drapes.
+theme: The week the village had its candle evening and everyone stayed cozy.
+
+season: Winter
+fabric: tartan wool
+touch: Slightly scratchy, sturdy and warm, with a woven grid.
+sound: A cozy rasp when two patches rub.
+theme: The week you kept going even when it was frosty out.
+
+season: Spring
+fabric: gingham cotton
+touch: Light and smooth with a tidy woven feel.
+sound: A crisp little flap in the breeze.
+theme: The week the first buds opened and so did a brand new list.
+
+season: Spring
+fabric: eyelet lace
+touch: Soft cotton with little round holes you can poke a claw through.
+sound: A light airy rustle.
+theme: The week of fresh starts and open windows.
+
+season: Spring
+fabric: floral chintz
+touch: Glossy and smooth, cool to the touch.
+sound: A soft slippery swish.
+theme: The week the meadow bloomed and Bramble planted carrots.
+
+season: Spring
+fabric: seersucker
+touch: Bumpy puckered stripes, like little rows in a garden.
+sound: A cheerful crinkly rustle.
+theme: The week of rain showers and finished tasks.
+
+season: Spring
+fabric: soft chambray
+touch: Light and worn smooth, like a well loved shirt.
+sound: A gentle flutter.
+theme: The week the birds came back and sang about you.
+
+season: Spring
+fabric: pastel corduroy
+touch: Soft ridges in neat rows that hum under your paw.
+sound: A zippy little brrp when you run a claw across it.
+theme: The week of lists and little wins in neat rows.
+
+season: Summer
+fabric: linen
+touch: Cool, crisp and slightly nubby.
+sound: A dry papery rustle.
+theme: The week of long sunny days and lemonade breaks.
+
+season: Summer
+fabric: striped canvas
+touch: Sturdy and smooth, like a beach chair.
+sound: A firm flap when you shake it out.
+theme: The week of the seaside trip and the seashell postcards.
+
+season: Summer
+fabric: soft muslin
+touch: Thin and airy, like a summer breeze you can hold.
+sound: Almost silent, a faint whisper.
+theme: The week you took it easy and still got things done.
+
+season: Summer
+fabric: terry cloth
+touch: Loopy and fluffy, like a beach towel.
+sound: A soft whump when it lands.
+theme: The week of the pond splash and Fennel's outdoor concert.
+
+season: Summer
+fabric: sunflower print cotton
+touch: Smooth with a little embroidered sunflower in the middle.
+sound: A light crinkle.
+theme: The week the sunflowers grew taller than the stable.
+
+season: Summer
+fabric: denim
+touch: Sturdy and thick, with raised seams along the edges.
+sound: A tough little scuff when you rub it.
+theme: The week of the big project that you finished.
+
+season: Fall
+fabric: corduroy
+touch: Thick ridges, soft and warm.
+sound: A rumbly whirr when you rub along it.
+theme: The week the leaves turned and you turned in something big.
+
+season: Fall
+fabric: tweed
+touch: Nubbly and rough in a cozy way, flecked with little bumps.
+sound: A soft scratchy whisper.
+theme: The week of library afternoons and quiet focus.
+
+season: Fall
+fabric: quilted cotton
+touch: Puffy little squares that squish under your paw.
+sound: A soft pillowy pat.
+theme: The week of the harvest fair and apple crumble.
+
+season: Fall
+fabric: suede
+touch: Velvety and smooth with a gentle grip.
+sound: A muted rub, almost no sound at all.
+theme: The week the pumpkins arrived at the market.
+
+season: Fall
+fabric: knitted acorn patch
+touch: Chunky knit with a raised acorn stitched in the middle.
+sound: A woolly hush.
+theme: The week Bramble raked leaves into a pile and everyone jumped in.
+
+season: Fall
+fabric: plaid flannel
+touch: Warm and brushed, soft as a hug.
+sound: A soft fuzzy swish.
+theme: The week of crisp mornings and warm cocoa evenings.

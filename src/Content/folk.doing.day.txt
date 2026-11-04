@@ -1,0 +1,51 @@
+{name} is patting down warm, crumbly soil in the garden. Each pat goes thump, thump, like a tiny drum.
+
+{name} is sitting in a patch of sun on the doorstep, fur warm as toast. It is humming a tune it made up and keeps changing the ending.
+
+{name} is crunching a carrot very slowly to make it last. The crunch echoes all the way down the burrow.
+
+{name} is helping Bramble sort bolts from his clanking toolbox. So far it has sorted them into big ones and shiny ones, which Bramble says is not a real system.
+
+{name} is rolling a smooth, cool pebble between its paws by the pond. Every so often it tosses one in just to hear the plip.
+
+{name} is fluffing the cushions in the reading nook. Each one goes poof and sends up a little cloud of soft fluff.
+
+{name} is sweeping the front step with a scratchy broom. Swish, swish, and then a pause to admire its work.
+
+{name} is at the bakery, nose pressed to the warm glass. It can hear the oven door creak and smell cinnamon everywhere.
+
+{name} is feeding Gerald the snail a cool, damp lettuce leaf. Gerald is eating at full speed, which is not very fast.
+
+{name} is lying in the meadow grass, which tickles its ears. It is listening to the bees buzz and pretending to understand them.
+
+{name} is reading The Acorn Gazette, the paper crinkling in its paws. Pip wrote a whole column about a stray mitten that turned up in the bakery, so it is a big news day.
+
+{name} is visiting Clover at the stable. Clover's nose is velvety and warm, and she just made a happy snort at an apple.
+
+{name} is practicing hops on the village green. Most land with a soft bump, and one ended in a very dramatic roll.
+
+{name} is wrapped in a scarf that is slightly too long, walking to the market. The end of it keeps swishing along the cobbles behind it.
+
+{name} is stacking firewood by the burrow door. Each log is rough under its paws and goes clonk on the pile.
+
+{name} is writing a letter to Juniper in Willowmere. The pencil scratches, and it has drawn a carrot in the corner for decoration.
+
+{name} is at the library, turning crisp pages very carefully. Hazel peeks over her spectacles every time it turns one too loudly.
+
+{name} is helping Dot's ducklings line up for a walk. They are all peeping at once and nobody is in a line.
+
+{name} is shelling peas into a bowl. Each pod pops open with a tiny snap, and a few peas mysteriously go missing into its mouth.
+
+{name} is splashing its paws in the cool, shallow edge of the pond. The water goes plish, and a frog nearby says ribbit as if to agree.
+
+{name} is up on the hill with the wind ruffling its fur. It is listening to Rocco crow from far away and rating it out of ten.
+
+{name} is kneading dough at the kitchen table, flour soft and powdery on its paws. Its nose has flour on it too, but nobody has said anything.
+
+{name} is at the tea house, holding a warm cup in both paws. The spoon tinks against the side as it stirs in far too much honey.
+
+{name} is getting a gentle sniff from {goldie}, whose harness jingles softly. They are sharing a sunny bench and saying nothing at all, which is perfect.
+
+{name} is watering the flowers with a little tin can. The water patters on the leaves, and the can makes a hollow bonk when it sets it down.
+
+{name} is tidying its burrow and has found three carrots it hid for later. It is calling this a treasure hunt.

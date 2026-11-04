@@ -1,0 +1,119 @@
+place: a seaside town with a striped boardwalk
+touch: The card is a little gritty at the corners, as if a few grains of sand came along for the ride.
+sound: It crinkles softly, like a paper bag of saltwater taffy.
+text: The boardwalk planks are warm under my paws and a gull tried to borrow my sandwich. With love from {name}.
+
+place: a mountain cabin with a stone chimney
+touch: The card is thick and rough, like bark, and smells faintly of woodsmoke.
+sound: It taps against the mailbox with a sturdy little clack.
+text: I sat by the fire in a blanket so big only my ears poked out. With love from {name}.
+
+place: a lavender field on a hillside
+touch: The card is soft and a sprig of dried lavender is tucked under the stamp.
+sound: The sprig rustles like a tiny broom when you tilt the card.
+text: I walked between rows of lavender and now my ears smell like a nap. With love from {name}.
+
+place: a hot spring tucked between mossy rocks
+touch: The card is a bit wavy, as if it once got happily steamy.
+sound: It makes a soft flap, like a towel being shaken out.
+text: The water was as warm as a bath and a very polite frog shared the bench with me. With love from {name}.
+
+place: a lighthouse island with a winding stair
+touch: The card is glossy and smooth, with a raised lighthouse you can trace with one claw.
+sound: It gives a bright little snap when you flick it.
+text: I climbed one hundred and twelve steps and counted every one out loud. With love from {name}.
+
+place: a fishing village with blue rowboats
+touch: The card has a ripply edge, like a wave pressed into paper.
+sound: It whispers when you rub it, like water on a pebble beach.
+text: A fisherman taught me a knot and I tied it to my own tail by accident. It was very funny. With love from {name}.
+
+place: a pine forest campground
+touch: The card is soft as felt and has one tiny pine needle stuck to the back.
+sound: The needle ticks lightly when you run a paw across it.
+text: I toasted a marshmallow until it was golden on every side. I am very proud of it. With love from {name}.
+
+place: an apple orchard in the valley
+touch: The card is smooth with a round sticker shaped like an apple.
+sound: The sticker peels up with a tiny sticky kiss sound and then pats back down.
+text: I picked the reddest apple in the orchard and then gave it to a goat who asked nicely. With love from {name}.
+
+place: a sunflower farm by a country road
+touch: The card is warm from the sun and slightly bumpy, like a seed head.
+sound: It rustles like a big leaf in a breeze.
+text: The sunflowers are taller than three of me stacked up. They all face the same way, like they are listening. With love from {name}.
+
+place: a little harbor with a clock tower
+touch: The card is stiff and cool, with a smooth paper shine.
+sound: It makes a crisp ding against the doorframe, almost like the clock tower bell.
+text: The clock tower chimed while I ate a cinnamon bun, so I ate it in time with the bells. With love from {name}.
+
+place: a mountain meadow full of cowbells
+touch: The card is soft and a little fuzzy, like a wool sock.
+sound: Something inside the envelope jingles faintly, maybe a very small bell.
+text: Every cow here wears a bell, so the whole hillside sounds like a gentle song. With love from {name}.
+
+place: a hot spring village with paper lanterns
+touch: The card is thin and silky, like rice paper.
+sound: It flutters softly, like a lantern in the breeze.
+text: I soaked until my paws went wrinkly and now I look like a very relaxed raisin. With love from {name}.
+
+place: a sandy cove with tide pools
+touch: The card has a tiny shell glued to one corner, smooth on top and ridged underneath.
+sound: The shell clicks gently when you tap it with a claw.
+text: I met a hermit crab who was moving house. I helped carry nothing, but I cheered a lot. With love from {name}.
+
+place: a lavender farm shop
+touch: The card is velvety and smells sweet enough to make you yawn.
+sound: It shushes softly as it slides out of the envelope.
+text: They sell lavender soap, lavender honey and lavender cookies. I tried them all, but not the soap. With love from {name}.
+
+place: a mountain cabin porch at sunrise
+touch: The card is cool and smooth, with a little dent where a mug sat on it.
+sound: It gives a gentle papery thump when it lands on the table.
+text: I watched the sun climb over the mountain while holding cocoa in both paws. Nothing could be cozier. With love from {name}.
+
+place: a lighthouse island picnic spot
+touch: The card is a little breezy feeling, thin and light, with soft rounded corners.
+sound: It hums faintly if you blow across the edge.
+text: The lighthouse keeper here waved at me with a whole sandwich. I waved back with a carrot. With love from {name}.
+
+place: a riverside town with a stone bridge
+touch: The card has a smooth stone texture printed on it that your paw can almost feel.
+sound: It burbles when you shake the envelope, because I put a tiny bag of river pebbles inside.
+text: I played a game of dropping sticks off the bridge. My stick won twice. With love from {name}.
+
+place: a seaside ice cream stand
+touch: The card is cool and a little sticky in one corner. That might be strawberry.
+sound: It crinkles like a waffle cone wrapper.
+text: I got one scoop of vanilla and one of carrot. The carrot one was my idea and it was delicious. With love from {name}.
+
+place: a snowy mountain lodge
+touch: The card is soft as a mitten and dusted with a little glitter.
+sound: The glitter shimmers with a whisper when you tilt it.
+text: I made a snow bunny that looks just like me, only rounder and with a pinecone nose. With love from {name}.
+
+place: a lavender field at dusk
+touch: The card is warm and smooth, with a dried purple petal pressed under clear tape.
+sound: The tape gives a faint crackle under your paw.
+text: The bees here hum all day and then politely go home at dusk, just like me. With love from {name}.
+
+place: a hot spring in the woods with a wooden bath house
+touch: The card is made of thin wood that feels smooth and warm.
+sound: It knocks softly, like a tiny door.
+text: The bath house has a cedar bench that smells like a forest hug. I sat there for ages. With love from {name}.
+
+place: a lighthouse island tide flat
+touch: The card has a ribbed edge, like a scallop shell.
+sound: It chirps when you run a claw along the ridges.
+text: At low tide I walked right out to the sandbar and found a starfish having a nap. With love from {name}.
+
+place: a hilltop vineyard
+touch: The card is smooth and thick, with a raised bunch of grapes you can trace.
+sound: It makes a deep soft thud, like a cork being set down.
+text: I ate grapes in the sunshine and spat the seeds into a bucket. I got eleven in a row. With love from {name}.
+
+place: a seaside town carousel
+touch: The card is shiny and smooth, with a little gold edge you can feel with a claw.
+sound: It tinkles faintly, because there is a small charm tucked inside.
+text: I rode the carousel swan with a painted carrot on its wing. Three times. With love from {name}.

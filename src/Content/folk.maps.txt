@@ -1,0 +1,35 @@
+name: The map of the whispering willow
+story: It leads to the old willow by the pond, where something hums in a hollow between its roots.
+
+name: The map of the humming hill
+story: It leads up the hill to a flat rock that stays warm long after the sun goes down.
+
+name: The map of the library attic
+story: It leads past the poetry shelf and up a creaky ladder to a trunk Hazel forgot she had.
+
+name: The map of the lighthouse steps
+story: It leads up the lighthouse stairs to a loose step that Marlow swears was not loose yesterday.
+
+name: The map of the baker's chimney
+story: It leads around the back of the bakery to a brick that smells like cinnamon and wiggles when pushed.
+
+name: The map of the meadow maze
+story: It leads through the tall meadow grass to a ring of clover where the bees take their lunch.
+
+name: The map of the sleepy snail trail
+story: It follows a very slow, very shiny path that Gerald left on purpose, ending at a mossy stump.
+
+name: The map of the market clock
+story: It leads to the market clock, where a tiny door opens if you knock three times and say please.
+
+name: The map of the stable loft
+story: It leads up to the hay loft above the stable, where Clover keeps a box she cannot quite remember filling.
+
+name: The map of the tea house garden
+story: It leads along the stepping stones in the tea house garden to a teapot buried just for fun.
+
+name: The map of the post office pigeonholes
+story: It leads to the very last pigeonhole at the post office, the one Otis calls the mystery slot.
+
+name: The map of the pond lily pads
+story: It leads across the lily pads, hop by hop, to a little island where Fennel's choir practices.

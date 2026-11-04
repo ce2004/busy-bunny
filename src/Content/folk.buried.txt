@@ -1,0 +1,119 @@
+gift: a jar of honey drops
+touch: A small smooth jar full of round candies that roll when you tilt it.
+sound: The candies click softly against the glass.
+looks: Golden drops that catch the light like little suns.
+clue1: Where green things wake up and stretch, something sweet is having a nap.
+clue2: It is near something that grows orange and crunchy and makes rabbits very happy.
+clue3: Bramble waters this spot every morning, so the soil there is soft.
+clue4: Look in the burrow garden, between the rows of carrots.
+clue5: Dig right beside the biggest carrot top, the one with the floppy leaves.
+
+gift: a knitted pair of ear warmers
+touch: Two soft woolly cups joined by a squishy band.
+sound: A fuzzy hush when you slip them over your ears.
+looks: Cream wool with tiny pink hearts.
+clue1: It is waiting somewhere that holds still while everything else blows in the wind.
+clue2: This place has roots that drink from the water.
+clue3: Fennel sings near here, and the branches hang down like long hair.
+clue4: It is by the willow at the pond.
+clue5: Feel along the willow roots on the side closest to the lily pads.
+
+gift: a little wooden bunny whistle
+touch: Smooth warm wood shaped like a bunny, with a hole at the tail.
+sound: A cheerful toot that sounds like a giggle.
+looks: Honey colored wood with painted black eyes.
+clue1: Hide and seek is easiest where everyone gathers.
+clue2: This place is wide and grassy and everyone walks across it.
+clue3: The village has picnics here, and there is a bench in the middle.
+clue4: It is on the village green.
+clue5: Dig under the bench in the middle of the village green.
+
+gift: a tin of shortbread hearts
+touch: A cool round tin with a lid that pops, full of crumbly cookies.
+sound: A happy plunk when the lid comes off.
+looks: Pale golden cookies dusted with sugar.
+clue1: Where things are made with love and flour, something is tucked away.
+clue2: You can follow your nose to this place every morning.
+clue3: There is a little herb garden behind it, near the warm back wall.
+clue4: Look behind the bakery.
+clue5: It is in the thyme patch by the bakery's back door.
+
+gift: a velvet ribbon for your ears
+touch: Silky soft and cool, slipping through your paws like water.
+sound: A soft swish when it unrolls.
+looks: Deep purple, long enough for a big bow.
+clue1: The thing you seek sleeps where the hay is high.
+clue2: Someone who loves a good brushing lives here.
+clue3: It is next to a place with a water trough and a creaky gate.
+clue4: Go to Clover's stable.
+clue5: It is buried by the stable gate, under the round speckled stone.
+
+gift: a small bag of rainbow marbles
+touch: A cotton drawstring bag of cool round marbles.
+sound: They clack together like a tiny rain shower.
+looks: Glassy swirls of every color.
+clue1: The tallest thing around keeps watch over this one.
+clue2: This place has a light that turns when the sky gets dark.
+clue3: Marlow walks past it every evening on the way up the stairs.
+clue4: It is near the lighthouse.
+clue5: Dig in the sand right by the lighthouse door, beside the anchor.
+
+gift: a cozy pair of slipper socks
+touch: Thick fuzzy socks with grippy bumps on the bottom.
+sound: They go pff pff when you walk across the floor.
+looks: Blue with little white clouds.
+clue1: Climb up, and the sky gets a little closer.
+clue2: Kites love this place, and so does the wind.
+clue3: At the very top, there is a flat rock that stays warm in the sun.
+clue4: Look on the hill.
+clue5: It is buried right next to the flat warm rock at the top of the hill.
+
+gift: a tiny jar of lavender balm
+touch: A smooth little pot of soft balm that melts on your paw.
+sound: The lid twists off with a tiny squeak.
+looks: Pale lilac in a white jar.
+clue1: Sweet smells and soft hums guard this one.
+clue2: It is somewhere with lots of flowers and lots of bees.
+clue3: Tall grass grows here, and the clover is thick enough to roll in.
+clue4: Look in the meadow.
+clue5: Dig in the middle of the clover ring in the meadow.
+
+gift: a bookmark woven from ribbon
+touch: Three silky ribbons braided tight with a soft tassel.
+sound: The tassel swishes when it swings.
+looks: Green, gold and blue in a neat braid.
+clue1: This one hides near something with lots of stories inside.
+clue2: It is quiet here, and someone wears tiny spectacles.
+clue3: There is a little flower box under the front window.
+clue4: Look at the library.
+clue5: It is buried in the flower box under the library window, by the daisies.
+
+gift: a smooth heart shaped stone
+touch: Cool and silky, a perfect fit for your thumb.
+sound: A satisfying little clack when it meets another stone.
+looks: Soft gray with a white streak through the middle.
+clue1: Look where the mail sleeps at night.
+clue2: Someone who stays up very late works here.
+clue3: Letters go in a slot on the front, and there is a pot of ferns by the step.
+clue4: Look near the post office.
+clue5: It is buried in the fern pot by the post office step.
+
+gift: a mug with a bunny on it
+touch: A heavy, smooth mug with a bumpy bunny you can feel on the side.
+sound: It rings softly when you tap it with a spoon.
+looks: Cream colored with a brown bunny holding a teacup.
+clue1: Steam rises here, and so does good cheer.
+clue2: People sip and chat in this place, slowly and happily.
+clue3: There are stepping stones in its garden, and a little stone lantern.
+clue4: Look in the tea house garden.
+clue5: Dig beside the stone lantern in the tea house garden.
+
+gift: a little felt carrot pillow
+touch: Plump and squishy, with felt leaves that crinkle.
+sound: A soft pat when you plop it on the bed.
+looks: Bright orange with green felt leaves.
+clue1: The best hiding place is sometimes the closest one.
+clue2: You walk past it every single day.
+clue3: It is right where you wipe your paws before coming in.
+clue4: It is at the burrow's front door.
+clue5: Lift the doormat at the burrow door and dig just underneath.

@@ -1,0 +1,47 @@
+LOCAL HERO FINISHES {count} TASKS, VILLAGE STUNNED. Pip reports the bakery has been informed.
+
+{count} TASKS DONE IN ONE WEEK, BUNNY BURSTS WITH PRIDE. {name} has been doing happy hops on a cushion ever since.
+
+BREAKING: {count} TASKS COMPLETE, ROCCO CROWS A VICTORY LAP. Neighbors say it was his best crow yet.
+
+VILLAGE CELEBRATES {count} TASKS WITH SURPRISE PARADE. Dot's ducklings led the way in matching hats.
+
+{count} TASKS AND COUNTING, EXPERTS AMAZED. The experts are Otis and one beetle, and both are very impressed.
+
+BAKERY ANNOUNCES SPECIAL {count} TASK MUFFIN. It has a carrot on top and tastes like a job well done.
+
+WEEK OF WONDERS: {count} THINGS FINISHED. Hazel has added the story to the library's best news shelf.
+
+TASKS FALL LIKE AUTUMN LEAVES: {count} DONE. Bramble has been asked to rake them into a proud pile.
+
+GOOD NEWS GAZETTE: {count} TASKS FINISHED BY OUR FAVORITE NEIGHBOR. Pip printed this edition in extra bold.
+
+{count} TASKS COMPLETE, {name} PLANS A NAP IN YOUR HONOR. The nap is expected to be long and well deserved.
+
+HISTORIC WEEK ON THE VILLAGE GREEN AS {count} TASKS GET DONE. Fennel is writing a song about it.
+
+FROM THE DESK OF THE ACORN GAZETTE: {count} TASKS, ZERO FUSS. The whole village tips its hats.
+
+CHEERS ERUPT AT TEA HOUSE OVER {count} FINISHED TASKS. Three cups of cocoa were raised, one of them by a duck.
+
+{count} TASKS DONE, LIGHTHOUSE SHINES EXTRA BRIGHT. Marlow says it just felt like the right thing to do.
+
+STAR OF THE WEEK FINISHES {count} TASKS, NEIGHBORS BEAM. Clover has saved you the shiniest apple.
+
+POST OFFICE FLOODED WITH CONGRATULATIONS AFTER {count} TASKS. Otis is sorting them very slowly, on purpose, to enjoy each one.
+
+{count} TASKS WRAPPED UP, VILLAGE BELL RINGS ITSELF. Bramble checked, and the bell was simply excited.
+
+SPECIAL EDITION: {count} TASKS DONE THIS WEEK. Pip ran out of exclamation points and had to borrow some from the bakery.
+
+GERALD THE SNAIL CALLS {count} TASKS WAY TOO FAST. He means it as the highest compliment.
+
+{count} TASKS FINISHED, MARKET DECLARES HALF PRICE CARROTS. {name} has already bought several bags.
+
+PROUD WEEK FOR THE VILLAGE: {count} TASKS IN THE DONE PILE. Mrs. Teasel says the shelter puppies wagged at the news.
+
+WEATHER REPORT: SUNNY WITH A CHANCE OF {count} FINISHED TASKS. Pip says the forecast was right on the nose.
+
+{count} TASKS COMPLETE, CHOIR SINGS IN CELEBRATION. Fennel held the last note for a very long time.
+
+THE VERDICT IS IN: {count} TASKS, ONE WONDERFUL WEEK. The Acorn Gazette rates it five carrots out of five.

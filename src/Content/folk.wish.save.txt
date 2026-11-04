@@ -1,0 +1,39 @@
+Saving toward {item}? Oh, that is so exciting. I will wait as patiently as a bunny can.
+
+You are saving for {item}! I am doing a tiny happy hop right now.
+
+Hooray! Now {item} is on its way, one task at a time.
+
+Ooh, a savings plan for {item}. I feel very grown up about this.
+
+Thank you! I will think about {item} every time you finish something.
+
+Saving for {item}? I am going to make a little jar and pretend to drop points in it.
+
+That is the best news. It is fine if {item} takes as long as it likes to arrive.
+
+Wow, you are saving for {item}. My ears just stood straight up.
+
+Okay, I will be patient about {item}. Mostly patient. Very mostly.
+
+You really are saving for {item}? I am telling Pip, and it will be in the Gazette by morning.
+
+Yay! There is no rush on {item}. Every bit counts.
+
+Thank you so much. Knowing {item} is coming makes me all warm and fuzzy.
+
+A goal, and it is {item}! I love having something cozy to look forward to with you.
+
+I will cheer twice as loudly now, because every task brings {item} a bit closer.
+
+Saving toward {item} sounds wonderful. Take all the time you need.
+
+Ooh, I already know where {item} will go in the burrow. Right next to my favorite cushion.
+
+You are so kind. I will hum a little song about {item} while we wait.
+
+That makes my whiskers wiggle. Now {item} is officially on the horizon.
+
+Best plan ever. Someday {item} and I will meet when the time is right.
+
+Thank you! Bramble says good things are worth saving for, and {item} definitely is.

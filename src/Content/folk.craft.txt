@@ -1,0 +1,131 @@
+name: a twig picture frame
+needs: twigs, yarn
+touch: Knobbly little sticks wrapped tight at each corner with soft yarn.
+sound: It clicks gently when you hang it on its nail.
+looks: A rustic square frame with red yarn corners.
+
+name: a button wind chime
+needs: buttons, ribbon, driftwood
+touch: A smooth driftwood bar with ribbons that sway between your paws.
+sound: The buttons tap and tinkle together in the slightest breeze.
+looks: Colorful buttons dangling on pink ribbons.
+
+name: a pinecone garland
+needs: pinecones, ribbon
+touch: Bumpy cones strung along a silky ribbon, heavier than you expect.
+sound: A dry rustle and crackle when you lift it.
+looks: Brown cones with a red bow at each end.
+
+name: an acorn cap tea set
+needs: acorn caps, felt
+touch: Tiny rough cups sitting on a soft felt tablecloth.
+sound: The cups click together very politely.
+looks: A doll sized tea party for very small guests.
+
+name: a moss cushion
+needs: moss, felt
+touch: Springy and cool, like sitting on a little green cloud.
+sound: It gives a soft squish when you plop down.
+looks: A round green pillow with a felt edge.
+
+name: a feather dream catcher
+needs: twigs, yarn, feathers
+touch: A bendy twig circle with a soft yarn web and feathers that tickle.
+sound: The feathers whisper when it turns in the window.
+looks: A woven web with white feathers hanging below.
+
+name: a driftwood bookshelf
+needs: driftwood, twigs
+touch: Silky smooth shelves with little twig pegs holding them up.
+sound: A friendly hollow knock when you set a book down.
+looks: Pale gray wood that looks like it washed up from a story.
+
+name: a bead curtain for the burrow door
+needs: beads, yarn
+touch: Long strands of round beads that slide over your fur as you walk through.
+sound: A happy clatter, like a round of applause every time you come home.
+looks: Strings of blue and green beads.
+
+name: a bark candle holder
+needs: bark, moss
+touch: A rough bark ring lined with soft moss.
+sound: It sits down with a quiet woody tok.
+looks: A little forest cup holding a stubby candle.
+
+name: a felt bunny doorstop
+needs: felt, buttons
+touch: Plump and squishy, with button eyes you can feel.
+sound: A soft thump when you set it against the door.
+looks: A gray felt bunny with shiny button eyes.
+
+name: a yarn rug
+needs: yarn, felt
+touch: Thick, woolly loops that your toes sink into.
+sound: It muffles every step to a gentle hush.
+looks: A round rug in rings of orange and cream.
+
+name: a pinecone owl
+needs: pinecones, feathers, buttons
+touch: Bumpy body, soft feather wings and two smooth button eyes.
+sound: It rustles quietly when you pick it up.
+looks: A small round owl that looks a lot like Otis.
+
+name: a twig and ribbon mobile
+needs: twigs, ribbon, beads
+touch: Crossed twigs with silky ribbons that spin when you blow on them.
+sound: The beads tick softly as it turns.
+looks: Dangling ribbons with sparkly beads at each end.
+
+name: a moss terrarium
+needs: moss, bark, acorn caps
+touch: Soft moss and bumpy bark packed into a little jar you can feel through the glass.
+sound: A tiny damp crunch when you press the moss.
+looks: A small green forest in a jar, with acorn cap mushrooms.
+
+name: a driftwood coat hook
+needs: driftwood, acorn caps
+touch: A smooth wooden bar with little knobbly acorn cap pegs.
+sound: Each coat lands with a soft thup.
+looks: Four acorn pegs on a pale driftwood board.
+
+name: a button blanket
+needs: buttons, felt, yarn
+touch: Soft felt squares stitched with yarn and dotted with smooth buttons.
+sound: The buttons clink very softly when you shake it out.
+looks: A patchwork of bright colors with buttons like confetti.
+
+name: a feather quill pen
+needs: feathers, ribbon
+touch: A long soft feather with a silky ribbon wrapped around the grip.
+sound: It scratches softly on paper, like a mouse tiptoeing.
+looks: A white feather with a blue ribbon.
+
+name: a bark bird feeder
+needs: bark, twigs, yarn
+touch: A rough little bark box with a twig perch and a yarn hanging loop.
+sound: It creaks gently as birds hop on and off.
+looks: A tiny house with a twig porch.
+
+name: a bead and yarn bracelet
+needs: beads, yarn
+touch: Soft yarn with round beads that roll under your paw.
+sound: It clicks gently when you wave.
+looks: Rainbow beads on a purple band.
+
+name: a pinecone and moss centerpiece
+needs: pinecones, moss, ribbon
+touch: Springy moss with bumpy cones nestled in it and a silky bow.
+sound: A soft rustle when you move it.
+looks: A cozy little woodland bowl for the table.
+
+name: a felt garland of stars
+needs: felt, yarn
+touch: Soft stars with puffy middles strung along a woolly line.
+sound: A whispery swish when it sways.
+looks: Yellow felt stars across the burrow ceiling.
+
+name: a driftwood lamp stand
+needs: driftwood, beads
+touch: A smooth twisty driftwood stem with beads wrapped around the base.
+sound: The beads clink when you click the lamp on.
+looks: A pale curvy lamp with a glimmering beaded foot.

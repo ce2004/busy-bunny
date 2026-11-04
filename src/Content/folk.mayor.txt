@@ -1,0 +1,59 @@
+election: 1
+candidate: Hazel
+promise: Every home will get a reading nook and a blanket that is exactly the right amount of fuzzy.
+rule: Every Wednesday, everyone must read one page of something out loud to a neighbor.
+
+election: 1
+candidate: Rocco
+promise: I will crow even louder, so nobody ever sleeps past a lovely sunrise again.
+rule: Every Monday morning starts with a village sing-along led by Rocco, whether you are ready or not.
+
+election: 1
+candidate: Pip
+promise: The Acorn Gazette will come out twice a day, with extra gossip on weekends.
+rule: Every Friday, each neighbor must share one piece of good news on the village green.
+
+election: 2
+candidate: Otis
+promise: Naps will be scheduled officially, and I will be in charge of the quiet.
+rule: Every afternoon at three, the whole village takes a ten minute nap, snoring optional.
+
+election: 2
+candidate: Clover
+promise: There will be an apple on every doorstep and a gentle breeze on every hot day.
+rule: Every Saturday is apple day, and all snacks must contain at least one apple.
+
+election: 2
+candidate: Fennel
+promise: I will turn every puddle into a stage and every rainy day into a concert.
+rule: Every time it rains, everyone in the village must hum a little tune.
+
+election: 3
+candidate: Bramble
+promise: I will fix every squeaky door in the village, except the bakery's, because that one sounds friendly.
+rule: Every Thursday is garden day, and everyone plants one seed somewhere cheerful.
+
+election: 3
+candidate: Pip
+promise: I promise a parade for every small win, including finding matching socks.
+rule: Every Tuesday is hat day, and the silliest hat wins a muffin.
+
+election: 3
+candidate: Hazel
+promise: The library will stay open late with cocoa, cushions and the softest blankets in the land.
+rule: Every Sunday evening, the village gathers for story time under the big oak.
+
+election: 4
+candidate: Fennel
+promise: The talent show will happen every week, and everyone gets a gold star just for showing up.
+rule: Every greeting in the village must now be sung instead of spoken.
+
+election: 4
+candidate: Bramble
+promise: I will build a slide from the top of the hill straight down to the pond.
+rule: Every walk to the pond must include at least one hop, skip or wiggle.
+
+election: 4
+candidate: Otis
+promise: I will deliver the mail at night with a tiny lantern and a very good joke.
+rule: Every evening, the post office reads one funny letter out loud on Village Radio.

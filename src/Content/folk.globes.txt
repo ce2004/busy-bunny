@@ -1,0 +1,79 @@
+scene: the village green in snow, with a tiny Bunny on a sled
+sound: A tinkle of a tiny music box playing a sledding song.
+touch: Cool glass and a heavy wooden base that fits right in your paws.
+
+scene: the lighthouse on its rocky island, with Marlow waving from the top
+sound: A soft swoosh of water, like a little wave.
+touch: Smooth round glass and a base carved like stones.
+
+scene: the bakery with a tiny loaf in the window
+sound: A gentle jingle like the bakery door bell.
+touch: Warm wood base, cool glass dome.
+
+scene: the pond with Fennel's choir on lily pads
+sound: A tiny chorus of croaks that plays when you wind the key.
+touch: A smooth glass globe with a bumpy lily pad base.
+
+scene: the library with Hazel reading by a window
+sound: A soft swish, like pages turning.
+touch: Heavy glass and a base shaped like a stack of books.
+
+scene: the meadow in spring with tiny flowers that swirl instead of snow
+sound: A light tinkly flutter, like petals in the air.
+touch: Cool glass with a soft felt bottom.
+
+scene: the burrow door with a wreath and a lit lantern
+sound: A cozy hum, like a kettle getting warm.
+touch: Round glass and a heavy base that feels like smooth stone.
+
+scene: the tea house with steam rising from a tiny teapot
+sound: A little ding like a teaspoon on a cup.
+touch: Smooth glass dome on a polished wooden base.
+
+scene: the post office at night with Otis sorting letters
+sound: A soft hoot from a hidden music box.
+touch: Cool glass and a base with raised envelopes you can trace.
+
+scene: the market with striped awnings and tiny pumpkins
+sound: A cheerful jingle like coins in a pouch.
+touch: Heavy base with a smooth glass bubble.
+
+scene: the hilltop with a tiny kite floating overhead
+sound: A gentle whoosh, like a breeze.
+touch: Light glass on a slim wooden base.
+
+scene: the stable with Clover and a tiny haystack
+sound: A soft rustle of hay sparkles inside.
+touch: Smooth glass and a rough little base like a barn board.
+
+scene: the village green at the harvest fair, with a tiny carousel
+sound: A tinkling carousel tune that spins slowly.
+touch: Heavy, smooth and cool, with a base that turns.
+
+scene: Bramble's garden with tiny carrots poking through snow
+sound: A soft crunch, like footsteps on snow.
+touch: Cool glass and a base with little carrot shapes.
+
+scene: the seaside town with a tiny boardwalk
+sound: A faint seagull call and a swish of waves.
+touch: Glass that feels like a sea pebble, on a sandy textured base.
+
+scene: the mountain cabin with smoke curling from the chimney
+sound: A soft crackle like a cozy fire.
+touch: Smooth glass on a log shaped base.
+
+scene: Bunny and all the neighbors sharing one long picnic blanket
+sound: A cheerful little song with lots of tiny voices.
+touch: Wide round glass and a big, sturdy base.
+
+scene: the lavender field with a tiny Bunny walking between rows
+sound: A gentle buzz of tiny glass bees.
+touch: Cool glass and a base that smells faintly of lavender.
+
+scene: the clock tower in the market at midnight with stars falling as snow
+sound: A tiny bell chiming twelve times, softly.
+touch: Tall glass dome on a heavy square base.
+
+scene: the burrow kitchen with a tiny cake on the table
+sound: A bouncy little tune that sounds like a party for one bunny.
+touch: Smooth warm wood base, cool glass on top.

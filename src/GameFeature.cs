@@ -153,15 +153,26 @@ namespace BusyBunny
             return name + " is napping in a sunbeam. Naps are its whole thing, so there is nothing to catch up on.";
         }
 
+        /// <summary>
+        /// Other features' part of Visit your bunny (sweep 12.2, 13.2 B). Each runs when the visit opens: it may ask her one
+        /// thing in a small window owned by the main window (a wish, a new idea), then gives lines that go after the newest ones.
+        /// </summary>
+        public static readonly List<Func<MainWindow, DateTime, IEnumerable<string>>> VisitHooks = new();
+
         private void VisitBunny()
         {
             var now = DateTime.Now;
             int total = Engine.Total(S.Data), level = Engine.LevelFor(total);
             G.BunnyVisits++;
             S.Save();
+            var extra = new List<string>();
+            foreach (var hook in VisitHooks)
+                try { extra.AddRange(hook(_w, now)); }
+                catch (Exception e) { ErrorLog.Write("Visit your bunny: a part failed: " + e); }
             // Sweep 11.4: the most recent thing Bunny said or did first, newest first, then how the bunny is.
             var lines = new List<string>();
             if (G.HappenedDay == S.Key(now)) lines.AddRange(Enumerable.Reverse(G.Happened).Take(20));
+            lines.AddRange(extra);
             lines.AddRange(new List<string>
             {
                 G.BunnyName + " is " + Engine.BunnyStage(level) + ", level " + level + ": " + Engine.LevelName(level) + ".",

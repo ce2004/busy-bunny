@@ -1,0 +1,95 @@
+act: Juggling acorns
+who: Pip
+line: Pock, pock, pock, as acorns slap into small paws and fly up again. Pip keeps five in the air and only bonks one off her own head.
+
+act: Tap dancing on a baking tray
+who: Rocco
+line: Clickety clack goes the tin tray under his toes, fast as rain on a roof. He finishes with a crow so proud the stage lights wobble.
+
+act: The world's slowest magic trick
+who: Gerald the snail
+line: A long, hopeful silence, then one tiny squeak of a hat being lifted. There is a leaf underneath, exactly where he promised.
+
+act: Grass blade whistling
+who: Thistle, a visiting hare
+line: A thin, bright whistle floats over the green like a happy kettle. She plays a whole tune on one blade of grass and bows to the clover.
+
+act: Toolbox drum solo
+who: Bramble
+line: Clank, bonk, rattle, ting, the toolbox becomes a full drum kit. He ends by tapping a spanner on a teacup, and the crowd stamps along.
+
+act: Poems about the moon
+who: Otis
+line: His low, slow voice rolls out like a warm blanket. Every poem ends with a dry little hoot that makes everyone giggle.
+
+act: Harmonica by the sea
+who: Marlow the gray seal
+line: A wheezy, wobbly harmonica tune drifts out, salty and cheerful. Marlow claps his flippers for himself at the end, which is fair.
+
+act: Synchronized quacking
+who: Dot and her ducklings
+line: Quack, quack quack, quack, in perfect order from big to small. The smallest duckling adds an extra quack at the end and gets the loudest cheer.
+
+act: Reading a book upside down
+who: Hazel
+line: Pages rustle softly as she reads a whole fairy tale while standing on her head. Her quills tickle the stage floor and she never loses her place.
+
+act: Lily pad cymbals
+who: Fennel
+line: Splat, splat, splat, two wet lily pads clap together on the beat as Fennel croaks the opening song. It is damp in the front row, and nobody minds.
+
+act: Balancing teacups
+who: Mrs. Teasel
+line: Tink, tink, tink, cups clink gently as she stacks them on her shell. She walks across the stage very slowly with seven cups, and not one rattles off.
+
+act: Bubble blowing
+who: Juniper, a visiting otter
+line: Soft pops fill the air as bubbles drift down and burst on whiskers and noses. She blows one so big that Pip climbs inside it for a second.
+
+act: Knitting at top speed
+who: Wooly, a visiting sheep
+line: Click click click go the needles, faster than a woodpecker. By the end of the song she has made a scarf long enough for three neighbors.
+
+act: Beatboxing
+who: Chirp, a visiting cricket
+line: Boom, tss, chk, boom, the tiniest performer makes the biggest beat. The whole tea house table taps along with its spoons.
+
+act: Yodeling from the hilltop
+who: Basil, a visiting mountain goat
+line: A rolling yodel bounces off the hill and comes back three times. Rocco looks a little impressed and pretends he is not.
+
+act: Impressions of everyone
+who: Captain Biscuit, a visiting parrot
+line: He crows like Rocco, hoots like Otis, and clanks like Bramble's toolbox. Then he does {name} yawning, and the audience howls.
+
+act: A dramatic reading of a grocery list
+who: {name}
+line: A trembling, heartfelt voice reads carrots, more carrots, and one surprise turnip. {name} gets a standing ovation and takes four bows.
+
+act: Spoon music
+who: Ruffles, a visiting raccoon
+line: Clackity clack, two spoons bounce off her knee in a jolly jig. She plays the spoons on the stage, a bucket and Pip's acorn, all in rhythm.
+
+act: Musical water glasses
+who: Dig, a visiting mole
+line: A soft ringing hum rises as wet paws circle the rims of the glasses. Each glass sings a different note, and together they play a lullaby.
+
+act: Interpretive dance about autumn
+who: a visiting family of field mice
+line: Dry leaves crunch and swirl as tiny feet twirl across the stage. The smallest mouse plays the part of an acorn and simply rolls, with great feeling.
+
+act: Kazoo quartet
+who: four visiting chipmunks
+line: Bzzz, bzzz, bzzzz, four kazoos buzz in very nearly perfect harmony. It sounds like a happy beehive learning a march.
+
+act: Apple balancing
+who: Clover
+line: A soft thunk as each apple lands on her nose and stays there. She balances three, then shares them with the front row, crunch crunch.
+
+act: Tiny ukulele
+who: Zip, a visiting hummingbird
+line: A ukulele the size of a walnut plinks out a bright little song while wings hum like a fan. Nobody is sure how he holds it, and nobody needs to know.
+
+act: The grand finale
+who: the whole village choir
+line: Every voice in the village rises together, croaks, hoots, quacks and all. The stage floor hums under your feet, and the sound wraps around you like a hug.

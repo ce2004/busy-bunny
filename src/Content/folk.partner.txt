@@ -1,0 +1,49 @@
+trait: gentle and bookish
+like: reading under blankets
+dislike: folded page corners
+line: {partner} always saves the best chapter to read aloud on rainy nights.
+
+trait: giggly
+like: knock-knock jokes
+dislike: very serious hats
+line: {partner} laughs so hard at their own jokes that everyone else starts laughing too.
+
+trait: adventurous
+like: exploring the meadow
+dislike: staying in on sunny days
+line: {partner} always knows a new path over the hill, and it usually ends at a berry bush.
+
+trait: sleepy
+like: long afternoon naps
+dislike: early mornings
+line: {partner} can nap anywhere, and once dozed off standing up in the bakery line.
+
+trait: crafty
+like: knitting scarves
+dislike: tangled yarn
+line: {partner} has knitted a tiny sweater for almost everyone in the village, including Gerald.
+
+trait: musical
+like: humming in the bath
+dislike: squeaky floorboards
+line: {partner} hums a little tune for every chore, even folding socks.
+
+trait: tidy
+like: neat little baskets
+dislike: crumbs in the bed
+line: {partner} sweeps the burrow while singing, and somehow always finishes before the song does.
+
+trait: curious
+like: asking questions
+dislike: puzzles with missing pieces
+line: {partner} wants to know how everything works, from the post office clock to Bramble's toolbox.
+
+trait: sweet-toothed
+like: honey cakes
+dislike: soggy crackers
+line: {partner} can name every pastry in the bakery by smell alone.
+
+trait: calm and steady
+like: quiet walks by the pond
+dislike: rushing
+line: {partner} has a way of making any day feel slow and soft.
