@@ -26,12 +26,15 @@ namespace BusyBunny
             return start > end ? h >= start || h < end : h >= start && h < end;
         }
 
+        /// <summary>Other focus timers (a toolbox timer like the two-minute dare) that keep unprompted lines quiet, as a sprint does.</summary>
+        public static readonly System.Collections.Generic.List<Func<bool>> FocusTimers = new();
+
         /// <summary>Why unprompted lines must wait right now, or null when they may come. Does not count anything.</summary>
         public static string? Hush(Store s, Settings? cfg, DateTime now)
         {
             if (cfg?.CalmMode == true) return "Calm mode";
             if (QuietHours(cfg, now)) return "quiet hours";
-            if (FocusTools.SprintRunning) return "a sprint";
+            if (FocusTools.SprintRunning || FocusTimers.Any(f => f())) return "a sprint";
             if (s.Data.Days.TryGetValue(s.Key(now), out var day) && day.Mode is DayMode.Vacation or DayMode.RoughDay) return day.Mode == DayMode.Vacation ? "vacation" : "a rough day";
             if (s.Data.Classes.Any(c => c.Days.Contains(now.DayOfWeek) && c.Start <= now.TimeOfDay && now.TimeOfDay < c.End)) return "class";
             return null;
