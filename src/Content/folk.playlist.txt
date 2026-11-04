@@ -1,0 +1,149 @@
+mood: cozy
+title: Socks by the Fire
+line: This one feels like warm socks fresh off the hearth, so tuck your toes in.
+sound: Soft piano, two up
+
+mood: cozy
+title: Cocoa Steam
+line: Hold your mug close for this one, it is all warm and swirly.
+sound: Cello, rising
+
+mood: cozy
+title: Rain on the Burrow Roof
+line: I picked this because it sounds like rain tapping while we stay dry inside.
+sound: Soft piano, sigh
+
+mood: cozy
+title: The Quilt Waltz
+line: Wrap up in the big quilt, because this one sways like a slow, soft dance.
+sound: Cello, sigh
+
+mood: cozy
+title: Cinnamon Bun Sunday
+line: This tune smells like the bakery, if a song could smell.
+sound: Organ, two up
+
+mood: focused
+title: Steady Paws
+line: Here is a calm one with a steady beat, perfect for one thing at a time.
+sound: Piano, four up
+
+mood: focused
+title: The Library Hush
+line: Hazel says this is the official sound of getting things done quietly.
+sound: Soft piano, two up
+
+mood: focused
+title: Little Ticking Clock
+line: This one ticks along gently, like a friend keeping you company while you work.
+sound: Xylophone, rising
+
+mood: focused
+title: Bramble at the Workbench
+line: Bramble hums this while he fixes things, so it is basically a fixing song.
+sound: Cello, rising
+
+mood: focused
+title: One Carrot at a Time
+line: Slow and steady, one bite at a time, that is the whole idea of this track.
+sound: Flute, two up
+
+mood: sleepy
+title: Lantern Glow Lullaby
+line: Close your eyes for this one, it is soft as a pillow.
+sound: Soft piano, sigh
+
+mood: sleepy
+title: Owl on the Night Shift
+line: Otis says this is the tune he hums at three in the morning, very quietly.
+sound: Cello, sigh
+
+mood: sleepy
+title: Cricket Choir
+line: The crickets helped me pick this one, and they have very good taste.
+sound: Singing bells, sparkle
+
+mood: sleepy
+title: Ember Sighs
+line: This one crackles low and slow, like the last warm glow of the fire.
+sound: Soft piano, two up
+
+mood: sleepy
+title: Moon Over the Meadow
+line: Here is a drifty little tune to float you off to dreamland.
+sound: Flute, sparkle
+
+mood: bouncy
+title: Binky Boogie
+line: This is the song that makes my feet go thump, so get ready to wiggle.
+sound: Bunny, binky
+
+mood: bouncy
+title: Puddle Stomp
+line: Splashy and silly, this one is all about jumping in with both feet.
+sound: Pizzicato strings, bounce
+
+mood: bouncy
+title: Rocco's Morning Strut
+line: Rocco walks around the green to this one, very proudly.
+sound: Xylophone, rising
+
+mood: bouncy
+title: Acorn Hop
+line: Pip plays this in the Gazette office, and nobody can sit still.
+sound: Pizzicato strings, bounce
+
+mood: bouncy
+title: Carrot Conga
+line: Grab a carrot and join the line, this one is a party.
+sound: Piano, four up
+
+mood: brave
+title: Lighthouse Beam
+line: Marlow says this one shines bright even on the foggiest night.
+sound: Cello, rising
+
+mood: brave
+title: Up the Big Hill
+line: One step at a time, all the way to the top, and the view is worth it.
+sound: Organ, two up
+
+mood: brave
+title: Tiny Bunny, Big Heart
+line: I picked this one because it reminds me of you, small steps and huge courage.
+sound: Piano, four up
+
+mood: brave
+title: The Grand Finale
+line: Fennel wrote this for the talent show, and it makes you feel ten feet tall.
+sound: Singing bells, sparkle
+
+mood: brave
+title: Sunrise March
+line: This one starts quiet and grows bold, just like a good morning.
+sound: Xylophone, rising
+
+mood: gentle
+title: Clover's Apple Orchard
+line: Soft and kind, this one feels like a velvety pony nose nuzzle.
+sound: Flute, two up
+
+mood: gentle
+title: Feather on the Pond
+line: This is a light little tune that floats along without any hurry.
+sound: Flute, sparkle
+
+mood: gentle
+title: Dandelion Breeze
+line: Breathe slow for this one, it is as soft as a dandelion puff.
+sound: Soft piano, sigh
+
+mood: gentle
+title: Gerald's Slow Stroll
+line: Gerald approves of this one because it never rushes anything.
+sound: Cello, sigh
+
+mood: gentle
+title: Warm Hands, Warm Tea
+line: Here is a quiet, kind song to hold close like a warm cup.
+sound: Singing bells, sparkle

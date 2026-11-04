@@ -1,0 +1,343 @@
+The blankets are piled high and soft, and the fire in the burrow has gone low and orange. {neighbor} fluffs a pillow and speaks in a whisper.
+
+"Once there was a little cloud," says {neighbor}, "who was very, very tired. It had floated all day long. So it found a hilltop, soft with grass, and settled down on top of it like a quilt."
+
+{name} yawns.
+
+"The hill was warm," says {neighbor}. "The breeze hummed a quiet song. And the little cloud got softer, and softer, and sleepier, and sleepier."
+
+{name}'s eyes are closing. {neighbor} tucks the blanket under its chin. "Goodnight, little cloud," {neighbor} whispers. The fire ticks. Everything is warm and still.
+===
+"Shall I tell you about the sleepy pond?" {neighbor} asks softly. {name} nods into its pillow, which is cool and smells like lavender.
+
+"At night, the pond grows very still," says {neighbor}. "The water is smooth as glass. The frogs stop singing, one by one. The reeds stop whispering. Even the moon lies down on the water, round and quiet, to rest."
+
+The fire gives a soft pop.
+
+"The ducks tuck their heads under their wings," says {neighbor}. "The fish settle down among the soft weeds. And the whole pond breathes slow, slow, slow."
+
+{name} breathes slow too. In and out. {neighbor} smiles and pulls the quilt up a little higher. "Shh," {neighbor} says. "The pond is sleeping. And so are you, almost."
+===
+{neighbor} settles into the big armchair by the fire, and the cushions sigh. {name} is wrapped in a fleecy blanket, warm as toast.
+
+"Once there was a teapot," says {neighbor}, "who liked to hum. Every evening, when the kettle had cooled, the teapot hummed a little tune, very low. Mmm, mmm, mmm."
+
+{name} hums too, without meaning to.
+
+"The cups on the shelf would listen," says {neighbor}. "And one by one, they would fall asleep. Clink. Clink. Until the whole cupboard was snoring, very politely."
+
+The fire flickers. {name}'s hum gets quieter, and slower.
+
+"Then the teapot would hum one last note," says {neighbor}, very softly, "and close its lid, and sleep too."
+
+{name} is already asleep.
+===
+The burrow is dark except for the soft glow of the fireplace. {name} snuggles into a nest of pillows. {neighbor} speaks low and slow.
+
+"Far away, on a quiet hill, there is a very old tree," says {neighbor}. "Its bark is rough and warm. Its leaves rustle like a lullaby. And every night, all the birds of the village come home to it."
+
+"Every bird?" mumbles {name}.
+
+"Every one," says {neighbor}. "They fluff their feathers. They tuck in close together. And the tree sways, gently, gently, rocking them to sleep."
+
+The fire crackles softly.
+
+"The tree hums, deep in its roots," says {neighbor}. "Sleep now, little birds. Sleep now."
+
+{name}'s ears droop. {neighbor} leans over and pats its paw. "Sleep now," {neighbor} whispers.
+===
+{neighbor} pulls a woolly blanket over both of them. It is thick and heavy and smells like the cedar chest. {name} gives a happy sigh.
+
+"There was once a little boat," says {neighbor}, "that lived at the edge of a lake. Every evening, the water rocked it. Back and forth. Back and forth."
+
+The fire hisses softly.
+
+"The boat loved being rocked," says {neighbor}. "It listened to the water lapping against its sides. Lap. Lap. Lap. It watched the stars come out, one at a time."
+
+{name}'s breathing slows.
+
+"And when the last star appeared," says {neighbor}, almost too quiet to hear, "the little boat let out a creaky yawn, and fell fast asleep, still rocking."
+
+{name} is rocking too, very slightly, into dreams.
+===
+The rain is pattering softly on the roof of the burrow. Tap, tap, tap. {name} is curled up under three blankets. {neighbor} sits beside it and speaks very gently.
+
+"The rain is telling a story," says {neighbor}. "Can you hear it? It is a story about the garden."
+
+{name} listens. Tap, tap, tap.
+
+"The rain says the flowers are drinking," says {neighbor}. "The carrots are growing, deep and sweet, under the soil. The worms are snug in their tunnels. Everyone is safe and warm."
+
+The fire crackles quietly.
+
+"The rain says it will keep tapping all night," says {neighbor}, "so you have something soft to listen to while you sleep."
+
+{name}'s eyes drift closed. Tap, tap, tap, goes the rain. {neighbor} smiles and dims the lamp.
+===
+"Once," says {neighbor}, in a voice like warm milk, "there was a bunny who could not decide which pillow was the softest."
+
+{name} giggles sleepily.
+
+"So the bunny tried every pillow," says {neighbor}. "The round one was too round. The flat one was too flat. The fluffy one was nice, but a little tickly. The one shaped like a carrot was very silly."
+
+The fire pops softly.
+
+"And then," says {neighbor}, "the bunny found the softest thing of all. A friend's warm side. Right there, next to the fire."
+
+{name} leans against {neighbor}, who is warm and steady.
+
+"Exactly like that," {neighbor} whispers. And {name} decides it is the softest pillow in the whole world, and closes its eyes.
+===
+The fireplace glows, and the coals tick as they cool. {neighbor} has a mug of warm milk, and so does {name}. It is sweet with honey.
+
+"Let me tell you about the moon's nightcap," says {neighbor}. "Every night, the moon puts on a fluffy cloud, like a hat, and gets ready for bed."
+
+{name} sips its milk.
+
+"The moon fluffs its pillow," says {neighbor}. "It is made of the softest stars. It tucks its blanket, which is the whole night sky. And it whispers goodnight to everyone in the village, one by one."
+
+"Even me?" asks {name}, sleepily.
+
+"Especially you," says {neighbor}. "Goodnight, {name}, says the moon."
+
+{name}'s mug tilts. {neighbor} catches it gently and sets it aside. The moon, outside, glows soft and kind.
+===
+{name} is snug in its burrow bed, and the quilt is heavy and warm. {neighbor} sits nearby, voice slow as honey.
+
+"Once upon a time, there was a slow little snail," says {neighbor}. "A lot like Gerald. He wanted to visit the moon. So he started climbing a hill."
+
+"Did he make it?" mumbles {name}.
+
+"He climbed and climbed," says {neighbor}. "Very slowly. All night. The grass was cool and damp. The crickets cheered him on. And when he reached the top, the moon was right there, big and round and glowing."
+
+The fire gives a tiny pop.
+
+"The snail said hello," says {neighbor}. "The moon said hello. And then they both fell asleep, side by side, on top of the hill."
+
+{name} is asleep too. {neighbor} tiptoes to the lamp and turns it down.
+===
+"This is a story about a blanket," says {neighbor}, tucking the edges in around {name}. "A blanket that loved to give hugs."
+
+{name} smiles into its pillow.
+
+"Every night, the blanket waited on the bed," says {neighbor}. "When someone climbed in, it would wrap around them, very gently, and hold them close. It was soft and warm and smelled like sunshine."
+
+The fire crackles low.
+
+"The blanket never got tired of hugging," says {neighbor}. "It held on all night. Through every dream. Until morning."
+
+{name} snuggles deeper. The blanket is very soft.
+
+"And this blanket," whispers {neighbor}, patting it, "is that very same one."
+
+{name} sighs happily. Its eyes are already closed.
+===
+The burrow is warm and dim, and the fire whispers to itself. {neighbor} speaks so quietly that {name} has to lean in close.
+
+"In a field far away, there is a family of sheep," says {neighbor}. "Every night, they count bunnies to fall asleep."
+
+{name} giggles. "Bunnies?"
+
+"One bunny hops over the fence," says {neighbor}. "Then two bunnies. Then three. They are very fluffy. They hop very slowly. Hop. Hop. Hop."
+
+{name}'s eyes flutter.
+
+"Four bunnies," whispers {neighbor}. "Five bunnies. Six. All warm and round and sleepy."
+
+The fire ticks.
+
+"Seven bunnies," says {neighbor}, barely a whisper now. "Eight." And by nine, {name} is fast asleep, dreaming of fences and fluff.
+===
+{neighbor} draws back the curtain so {name} can feel the cool night air on its nose. Then {neighbor} tucks it back in, warm and cozy.
+
+"The night is like a big, soft cat," says {neighbor}. "It curls around the whole village. Its fur is dark and warm. Its purr is the quiet hum of crickets."
+
+{name} listens. The crickets are humming.
+
+"It purrs over the bakery," says {neighbor}. "It purrs over the library. It purrs over the pond and the stable and the lighthouse on the cliff."
+
+The fire gives a gentle crackle.
+
+"And it purrs over this burrow," says {neighbor}, "very softly, all night long."
+
+{name} curls up like a little cat too. Purr, purr, goes the night. And {name} sleeps.
+===
+"Shall I tell you about the bakery at night?" asks {neighbor}. {name} nods, its nose twitching at the thought.
+
+"After everyone has gone home," says {neighbor}, "the loaves rest on their shelves. They are still warm. They smell like butter and honey. And they whisper to each other."
+
+"What do they say?" asks {name}.
+
+"Oh, sleepy bread things," says {neighbor}. "That was a lovely day. Who do you think will eat me tomorrow? I hope it is someone nice."
+
+The fire glows softly.
+
+"Then the bakery's oven gives one last warm sigh," says {neighbor}, "and the loaves all settle in, cozy and golden."
+
+{name} pulls the blanket up to its chin, feeling warm and buttery itself. Its eyes close.
+===
+The fire is a soft orange glow, and the burrow smells of woodsmoke and cocoa. {neighbor} sits cross-legged on the rug and speaks very slowly.
+
+"There once was a little star," says {neighbor}, "who did not know how to twinkle. It tried and tried. But it only glowed, steady and soft."
+
+{name} listens, eyes half closed.
+
+"The other stars said that was fine," says {neighbor}. "They said a steady glow is very cozy. It is perfect for nightlights."
+
+The fire crackles.
+
+"So the little star became the nightlight of the whole sky," says {neighbor}. "It glowed all night, warm and steady, so everyone could sleep."
+
+{neighbor} looks out the window. "There it is," {neighbor} whispers. {name} is already dreaming of it.
+===
+{name} is tucked in tight, and the pillows are fluffed just right. {neighbor} sits on the edge of the bed, which creaks softly.
+
+"Do you know where yawns come from?" asks {neighbor}. {name} shakes its head.
+
+"They come from a little cave on a sleepy hill," says {neighbor}. "Every evening, the yawns float out, one by one. They drift through the village like dandelion fluff."
+
+{name} yawns.
+
+"There goes one now," says {neighbor}, smiling. "They visit everyone. Rocco. Hazel. Otis, though he never takes them."
+
+The fire pops.
+
+"And when you catch a yawn," says {neighbor}, "it means it is time to sleep."
+
+{name} yawns again, a great big one. {neighbor} chuckles quietly. "Caught you," {neighbor} says. And {name} drifts off.
+===
+The wind is blowing softly outside, a low whoo sound around the edges of the burrow. Inside, it is snug and warm. {neighbor} speaks quietly.
+
+"The wind is a traveler," says {neighbor}. "All day, it flies over hills and rivers. It plays with kites. It ruffles feathers. It spins the windmill in Willowmere."
+
+{name} listens to it whooing.
+
+"But at night," says {neighbor}, "the wind gets tired. It slows down. It finds a cozy hollow by a burrow, just like this one, and it curls up."
+
+The fire crackles gently.
+
+"Whoo," says the wind, more softly. "Whoo." Like a lullaby.
+
+"It is singing you to sleep," whispers {neighbor}. And {name}, listening, lets the wind sing until everything is quiet.
+===
+"Once," says {neighbor}, "there was a carrot who wanted to be a star."
+
+{name}'s ears perk up, just a little. Then they flop back down on the pillow.
+
+"Every night, the carrot looked up at the sky from its garden bed," says {neighbor}. "It was warm and snug in the soil. But it wanted to shine."
+
+The fire glows softly.
+
+"So the moon came down," says {neighbor}, "and sprinkled a little starlight on the carrot's leafy top. Just a little. And the carrot glowed, ever so softly, all night long."
+
+{name} smiles sleepily.
+
+"And the carrot was very happy," says {neighbor}. "It was a star and a carrot at the same time."
+
+{name} thinks that sounds perfect. It falls asleep dreaming of glowing carrots.
+===
+The burrow is quiet. The only sound is the gentle tick of the clock on the mantel. {neighbor} speaks in time with it.
+
+"Tick," says {neighbor}. "Tock. That is the sound of the clock putting the hours to bed."
+
+{name} listens. Tick. Tock.
+
+"Each hour has a little bed," says {neighbor}. "Seven o'clock goes to sleep. Then eight o'clock. Then nine. They are tucked in with tiny blankets."
+
+The fire is just embers now, glowing faintly.
+
+"The clock is very gentle," says {neighbor}. "It never hurries them. Tick. Tock."
+
+{name}'s breathing slows to match the clock.
+
+"Ten o'clock is going to bed now," whispers {neighbor}. "And so is {name}." Tick. Tock. And {name} is asleep.
+===
+{neighbor} has brought a little music box. When the lid opens, it plays a soft, tinkling tune. {name} feels the little box, cool and smooth under its paw.
+
+"This music box has a story," says {neighbor}. "Inside, there is a tiny mouse who dances to the music. Every night, she dances until she gets sleepy."
+
+The tune tinkles on.
+
+"She twirls," says {neighbor}. "She spins. She curtsies. And then she slows down, slower and slower, as the music slows."
+
+The music box is slowing too.
+
+"And when the last note plays," whispers {neighbor}, "she curls up in her little velvet bed, and sleeps."
+
+The last note chimes. {name}'s eyes are closed. {neighbor} closes the lid very, very gently.
+===
+"Tonight," says {neighbor}, "let us walk through the village in our heads." {name} snuggles down and listens.
+
+"First, the village green," says {neighbor}. "The grass is soft and cool. The crickets are singing."
+
+{name} pictures it.
+
+"Then the pond," says {neighbor}. "Still and quiet. The frogs are snoring. Then the library, where the books are resting on their shelves. Then the bakery, still warm and smelling of bread."
+
+The fire crackles softly.
+
+"And then," says {neighbor}, "home. Back to this burrow. Into this bed. Under this blanket."
+
+{name} sighs, warm all over.
+
+"The walk is over," whispers {neighbor}. "And now it is time to rest." {name} is already resting, deep and cozy.
+===
+The fire crackles low, and {neighbor} is wrapped in a quilt too. They are both warm and sleepy, and the burrow smells of pine.
+
+"There was once a sock," says {neighbor}, "who lost its partner in the laundry."
+
+{name} murmurs. "Did it find it?"
+
+"It looked everywhere," says {neighbor}. "In the basket. Under the bed. In the cat's favorite box. And then it found it. Curled up in the warmest corner of the drawer, fast asleep."
+
+The fire pops softly.
+
+"So the sock curled up right next to it," says {neighbor}. "They were a pair again. Cozy and warm and very fluffy."
+
+{name} smiles, half asleep. {neighbor} yawns too. "Goodnight," {neighbor} whispers, and both of them drift off.
+===
+Snow is falling outside the burrow, soft and quiet. Inside, the fire is warm and the blankets are piled high. {neighbor} speaks just above a whisper.
+
+"Every snowflake has a story," says {neighbor}. "This one was born in a fluffy cloud. It floated down, down, down, twirling and spinning."
+
+{name} listens, cozy.
+
+"It landed on a tree," says {neighbor}. "Then it slid off and landed on a rooftop. Then it rolled down and landed right on our windowsill."
+
+The fire crackles.
+
+"Now it is resting there," says {neighbor}. "With all its friends. A soft white blanket of snowflakes, sleeping on the sill."
+
+{name} can almost feel how soft and quiet it must be. {neighbor} tucks it in a little tighter. "Sleep like the snow," {neighbor} whispers.
+===
+"This is the story of the slowest race in the world," says {neighbor}, already yawning.
+
+{name} yawns too.
+
+"Gerald the snail and Mrs. Teasel the tortoise decided to race to the pond," says {neighbor}. "They lined up on the green. Ready, set, go."
+
+The fire ticks quietly.
+
+"Gerald moved one inch," says {neighbor}. "Mrs. Teasel moved one inch. They both stopped for a rest. Then they had a snack. Then they took a nap in the sun."
+
+{name} giggles very softly.
+
+"They are still racing today," says {neighbor}. "Mostly napping. Both of them are winning."
+
+{name}'s eyes droop. Napping and winning sound wonderful. {neighbor} pulls the quilt up, and {name} drifts off like a happy little snail.
+===
+The burrow is so quiet that {name} can hear its own heartbeat, slow and steady. {neighbor} speaks very, very softly.
+
+"Close your eyes," says {neighbor}. "Imagine you are lying in a meadow. The grass is warm from the sun. The breeze is cool on your nose."
+
+{name} imagines it.
+
+"You can hear the bees, humming far away," says {neighbor}. "A bird is singing a slow, sleepy song. A little stream is babbling nearby."
+
+The fire glows warm.
+
+"The sun is going down," says {neighbor}, "and everything turns soft and golden. The meadow is getting sleepy. The flowers are closing up."
+
+{name}'s breathing is long and slow.
+
+"And you," whispers {neighbor}, "are getting sleepy too." {neighbor} tucks the blanket in, and {name} sleeps in a meadow of dreams.

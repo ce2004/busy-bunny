@@ -1,0 +1,159 @@
+when: goal
+mood: proud
+reason: You reached a goal, and I have been doing little victory hops ever since.
+
+when: goal
+mood: overjoyed
+reason: A whole goal, done, so I might have to tell every single neighbor.
+
+when: goal
+mood: bouncy
+reason: My feet will not stop thumping because you finished something big.
+
+when: goal
+mood: glowing
+reason: I feel warm all the way to my ears, like I swallowed a little sunbeam, because of your goal.
+
+when: busy
+mood: cheerful
+reason: Things keep getting done today, and each one makes my tail wiggle.
+
+when: busy
+mood: impressed
+reason: You are on a roll, and I am a bunny who knows a good roll when I see one.
+
+when: busy
+mood: peppy
+reason: The burrow is buzzing with getting things done, and I love the hum of it.
+
+when: busy
+mood: proud
+reason: I have been keeping count in my head and the number keeps going up.
+
+when: bigweek
+mood: amazed
+reason: This whole week has been one good thing after another, and my whiskers are tingling.
+
+when: bigweek
+mood: proud
+reason: Pip says this week deserves its own page in the Gazette, and I agree completely.
+
+when: quiet
+mood: restful
+reason: It is a calm day, and calm days are when I get my best cuddles in.
+
+when: quiet
+mood: patient
+reason: There is no rush today, so I am happily sitting here like a warm loaf.
+
+when: quiet
+mood: content
+reason: The fire is warm and you are here, which is all I need from a day.
+
+when: quiet
+mood: dreamy
+reason: Slow days give me time to daydream about carrots and clouds.
+
+when: rough
+mood: snuggly
+reason: Today felt heavy, so I am staying extra close and extra soft.
+
+when: rough
+mood: gentle
+reason: I am being a quiet, cozy bunny today because that is what this day needs.
+
+when: vacation
+mood: relaxed
+reason: It is a break, so I have put on my floppy sun hat and stopped thinking about anything.
+
+when: vacation
+mood: carefree
+reason: No lists, no rush, just us and the meadow, and I could get used to this.
+
+when: festival
+mood: festive
+reason: It is {holiday}, and the whole village smells like treats and sounds like singing.
+
+when: festival
+mood: giddy
+reason: I have been waiting for {holiday} all year, and my paws are tapping with excitement.
+
+when: winter
+mood: cozy
+reason: The snow is soft and squeaky outside, and the fire is crackling inside, so I am in heaven.
+
+when: winter
+mood: snug
+reason: I am wearing my thickest sweater and my fur is twice as fluffy as usual.
+
+when: spring
+mood: bouncy
+reason: Everything is sprouting and the birds are singing, so my feet want to hop all day.
+
+when: spring
+mood: fresh
+reason: The air smells like rain and new grass, and I feel brand new too.
+
+when: summer
+mood: sunny
+reason: The grass is warm, the pond is cool, and the bees are humming my favorite song.
+
+when: summer
+mood: lazy
+reason: It is too warm to do anything but stretch out in the shade and nibble clover.
+
+when: fall
+mood: crunchy
+reason: Every leaf I step on goes crunch, and I am stepping on all of them.
+
+when: fall
+mood: toasty
+reason: There is apple cider at the market and a scarf around my neck, so fall is going great.
+
+when: morning
+mood: sleepy
+reason: Rocco crowed and I heard it, but my ears are still asking for five more minutes.
+
+when: morning
+mood: fresh
+reason: It is a brand new morning, and I have already had a carrot and a stretch.
+
+when: morning
+mood: hopeful
+reason: Mornings feel like a clean page, and I like to sniff around and see what is on it.
+
+when: morning
+mood: wiggly
+reason: I woke up with extra hops in me and I have to use them somewhere.
+
+when: night
+mood: drowsy
+reason: The lanterns are glowing and my eyes keep closing on their own.
+
+when: night
+mood: peaceful
+reason: The crickets are singing and the fire is low, so I feel all soft inside.
+
+when: night
+mood: cozy
+reason: My slippers are on, my blanket is warm, and the whole burrow is humming quietly.
+
+when: night
+mood: dreamy
+reason: I am getting ready for tonight's dream, and I hope it has cocoa in it.
+
+when: newfriend
+mood: excited
+reason: Someone new moved into the village, and I already practiced my friendly wave.
+
+when: newfriend
+mood: chatty
+reason: We have a new neighbor, and I have so many questions about their favorite snacks.
+
+when: wish
+mood: hopeful
+reason: I have a little wish tucked in my pocket, and I keep patting it to check it is still there.
+
+when: wish
+mood: twinkly
+reason: I made a wish on the brightest star, and now I am trying very hard to be patient.

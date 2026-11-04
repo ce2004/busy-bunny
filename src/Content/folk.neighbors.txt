@@ -1,0 +1,95 @@
+id: hazel
+name: Hazel
+kind: the hedgehog librarian
+touch: Her prickles are soft as a hairbrush when she is relaxed, and her small paws are always warm from holding tea.
+sound: She speaks in a quiet library voice, and pages turn with a gentle whisper wherever she goes.
+looks: A round little hedgehog with tiny spectacles perched on the end of her nose.
+level1: a quiet librarian who nods hello
+level2: a librarian who saves you the comfy chair
+level3: a secret writer with ink on her paws
+level4: an author with a finished draft and a proud little sniff
+level5: the village's very own storyteller
+
+id: otis
+name: Otis
+kind: the night shift post office owl
+touch: His feathers are soft as a pillow you have fluffed just right, and his talons hold letters very carefully.
+sound: A slow, sleepy hoo, and the papery shuffle of envelopes being sorted.
+looks: A big gray owl with half-closed eyes and one feather that always sticks up.
+level1: a sleepy mail sorter who yawns hello
+level2: the owl who knows every address by heart
+level3: the owl who answers your notes with riddles
+level4: the postmaster of the whole night shift
+level5: the wisest and dryest pen pal in the valley
+
+id: pip
+name: Pip
+kind: the squirrel who runs The Acorn Gazette
+touch: Her tail is a puffy, fluffy whoosh against your arm, and her paws are a little sticky with ink.
+sound: Fast chatter, the scratch of a pencil, and a happy gasp every time she hears news.
+looks: A small red squirrel with a pencil tucked behind one ear.
+level1: a new reporter
+level2: a reporter with a notebook full of scoops
+level3: the editor
+level4: the editor with a printing press
+level5: the most trusted name in acorn news
+
+id: rocco
+name: Rocco
+kind: the rooster who wakes the village
+touch: His feathers are smooth and springy, and he puffs his chest out so you can feel how proud he is.
+sound: A loud, bright crow that rolls over every rooftop, followed by a pleased little cluck.
+looks: A tall rooster with a floppy red comb and a very shiny tail.
+level1: a rooster with one good crow
+level2: a rooster practicing a brand new crow
+level3: a rooster with a crow in two whole parts
+level4: the conductor of the morning
+level5: the proudest alarm clock in the land, now with harmony
+
+id: clover
+name: Clover
+kind: the gentle pony at the edge of the village
+touch: Her nose is velvet soft and warm, and she blows a gentle puff of breath on your hand to say hello.
+sound: A friendly nicker and the slow clip clop of hooves on the lane.
+looks: A cream colored pony with a long, wavy mane full of little burrs from the meadow.
+level1: a friendly pony at the stable gate
+level2: a walking buddy who always finds the sunny path
+level3: the planner of a very big picnic
+level4: the pony with a picnic map and a basket on each side
+level5: the host of the best picnic the meadow has ever heard
+
+id: bramble
+name: Bramble
+kind: the badger who fixes and gardens
+touch: His big paws are rough and warm like a well loved garden glove, and he smells of fresh soil.
+sound: A low, happy hum and the clank of a toolbox that has far too many spoons in it.
+looks: A sturdy badger with a striped face and a straw hat with a hole for each ear.
+level1: a humming fixer who waves a wrench hello
+level2: a gardener who lets you hold the watering can
+level3: the badger with a spare key to everything
+level4: the builder of a brand new garden bench
+level5: the keeper of the happiest garden in the village
+
+id: fennel
+name: Fennel
+kind: the frog who leads the choir
+touch: His hands are cool and smooth, and he pats the beat gently on your shoulder.
+sound: A deep, round ribbit that somehow lands right on the note.
+looks: A bright green frog in a tiny bow tie, standing on a lily pad like a stage.
+level1: a frog with a pitch pipe
+level2: the choir leader who saves you a spot in the front row
+level3: a frog who writes a song with your name in it
+level4: the conductor of a pond wide chorus
+level5: the voice of every warm summer evening
+
+id: goldie
+name: {goldie}
+kind: the golden retriever who is always nearby
+touch: Soft ears like warm velvet, and a steady lean against your leg that says I am right here.
+sound: The cheerful jingle of {goldie}'s collar tags and a slow, happy tail thump on the floor.
+looks: A golden retriever with a shiny honey coat and a smile that goes all the way to the tail.
+level1: a steady friend by your side
+level2: a calm friend who knows the way home
+level3: a patient friend who waits at every door
+level4: a warm friend who leans in when the day is long
+level5: the kindest, steadiest friend in the whole village

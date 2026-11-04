@@ -1,0 +1,119 @@
+name: a smooth piece of sea glass
+touch: Cool and silky, with every sharp edge worn soft by the waves.
+sound: It clinks like a tiny bell against the other treasures.
+looks: Pale green and frosty, like a mint candy.
+
+name: a tiny cowbell
+touch: Small and round, with a leather loop that is soft from years of use.
+sound: A sweet bright tonk that makes you want to skip.
+looks: Brass with a little dent on one side.
+
+name: a lavender sachet
+touch: A plump little pillow that squishes and springs back in your paw.
+sound: It rustles like dry leaves when you squeeze it.
+looks: Purple cotton tied with a white ribbon.
+
+name: a smooth river stone
+touch: Flat, heavy for its size and perfect for rubbing with your thumb.
+sound: A satisfying clack when it meets the bottom of the trunk.
+looks: Gray with one white stripe across the middle.
+
+name: a carved wooden bunny
+touch: Warm wood, sanded so smooth that its ears feel like butter.
+sound: A hollow little knock when it bumps the trunk lid.
+looks: A pale bunny about the size of an acorn, smiling.
+
+name: a jar of beach sand
+touch: The glass is smooth and the cork stopper has a springy squeak.
+sound: The sand shushes from end to end when you tip it.
+looks: Golden sand with one pink shell resting on top.
+
+name: a pinecone from the mountain cabin
+touch: Bumpy and woody, with scales that tickle your paw pads.
+sound: It crackles faintly when you roll it.
+looks: Brown and plump, like a tiny pineapple.
+
+name: a hot spring towel
+touch: The softest fluffy cotton, still smelling faintly of cedar.
+sound: A soft whump when it unfolds.
+looks: Cream colored with a little embroidered steam cloud.
+
+name: a lighthouse snow globe keychain
+touch: A small smooth dome on a chain that is cool and jingly.
+sound: The chain jingles and the water inside sloshes very quietly.
+looks: A tiny red and white lighthouse inside the dome.
+
+name: a seashell that hums
+touch: Spiral ridges on the outside and a glassy smooth inside.
+sound: Hold it to your ear and it whooshes like a sleepy ocean.
+looks: Cream with pink inside, like the inside of a bunny ear.
+
+name: a felt mountain patch
+touch: Soft felt with stitched edges you can trace all the way around.
+sound: Almost silent, just a fuzzy whisper on your fur.
+looks: Three green peaks under a little yellow sun.
+
+name: a wooden whistle from the fair
+touch: Light and smooth, with a little hole worn soft at the tip.
+sound: A cheerful tweet, like a bird who just heard good news.
+looks: Painted blue with white stars.
+
+name: a bundle of dried lavender
+touch: Crisp, papery stems tied tight with string.
+sound: A dry rustle like a whispered secret.
+looks: Purple tops and silvery green stems.
+
+name: a postcard rack charm
+touch: A tiny metal charm with a raised seagull you can feel.
+sound: A tinkly ting when it taps glass.
+looks: Silver and shiny, about the size of a button.
+
+name: a knitted cabin mitten
+touch: Thick, cozy wool, slightly scratchy in a nice way.
+sound: It makes a soft pat when you clap with it.
+looks: Red with a white snowflake on the back.
+
+name: a bottle of hot spring bath salts
+touch: The bottle is cool glass and the salts inside feel like grainy pebbles through it.
+sound: The salts rattle like soft maracas.
+looks: Pale blue crystals that sparkle a little.
+
+name: a driftwood bunny
+touch: Silky gray wood, light as a cracker.
+sound: A papery tap when you set it down.
+looks: A bunny shape the sea carved all by itself.
+
+name: a ticket from the island ferry
+touch: Thick card with a punched hole you can poke a claw through.
+sound: A crisp flick when you snap it with a finger.
+looks: Yellow with blue letters and a little anchor.
+
+name: a honey stick from the lavender farm
+touch: A bendy little straw that squishes slightly.
+sound: It crinkles when you bend it.
+looks: Clear plastic full of golden honey.
+
+name: a polished acorn from the mountain trail
+touch: Smooth as a marble, with a rough little cap.
+sound: The cap clicks when you twist it on and off.
+looks: Shiny brown with a tiny painted heart.
+
+name: a small brass compass
+touch: Round and cool, with a lid that opens on a springy hinge.
+sound: The lid shuts with a neat little click.
+looks: Gold colored with a needle that always points home to the burrow, or so {name} says.
+
+name: a starfish made of yarn
+touch: Five soft woolly arms with a squishy middle.
+sound: Quiet as a sleeping cat.
+looks: Orange yarn with little white dots.
+
+name: a wind chime made of shells
+touch: Strings of cool smooth shells that sway between your paws.
+sound: A clatter of tiny clicks, like a little crowd applauding.
+looks: White and gray shells hanging from a driftwood stick.
+
+name: a sugar cube from the cabin teacup
+touch: Gritty and square, with corners that crumble a little.
+sound: A tiny tick when you drop it into its box.
+looks: White with a bunny pressed into one side.

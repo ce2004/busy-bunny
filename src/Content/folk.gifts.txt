@@ -1,0 +1,119 @@
+gift: a jar of honey
+from: Bramble
+touch: A heavy glass jar with a cloth lid tied on with string.
+sound: The honey moves inside with a slow, golden glug.
+
+gift: a library book with a note inside
+from: Hazel
+touch: A soft cloth cover and a folded paper note poking out the top.
+sound: The pages fan with a gentle flutter.
+
+gift: a letter sealed with wax
+from: Otis
+touch: Thick, smooth paper with a bumpy round seal.
+sound: The seal cracks open with a satisfying little snap.
+
+gift: a fresh copy of the village newspaper
+from: Pip
+touch: Crisp, folded paper that smells like new ink.
+sound: It rustles loudly and importantly.
+
+gift: a basket of brown eggs
+from: Rocco
+touch: Smooth, warm eggs nestled in soft straw.
+sound: The basket creaks gently and the straw whispers.
+
+gift: a braided ribbon bookmark
+from: Clover
+touch: Three silky ribbons braided together, smooth and tight.
+sound: A soft swish when you swing it.
+
+gift: a little clay pot of mint
+from: Bramble
+touch: A rough clay pot with soft, fuzzy leaves on top.
+sound: The leaves rustle and give off a fresh smell when you brush them.
+
+gift: a songbook with a new verse just for you
+from: Fennel
+touch: A thin book with a slightly damp, bendy cover.
+sound: When you open it, you can almost hear Fennel humming.
+
+gift: a bouncy rubber ball
+from: Rocco
+touch: Squishy, springy and smooth, with a little seam around the middle.
+sound: A cheerful thock when it bounces off the step.
+
+gift: a very small, very shiny pebble
+from: Gerald
+touch: Smooth and polished, about the size of a pea.
+sound: A tiny tick when it lands in your paw.
+
+gift: a jar of sea glass
+from: Marlow
+touch: Cool, frosted pieces with soft rounded edges.
+sound: They clink like tiny chimes when you shake the jar.
+
+gift: a loaf of seeded bread
+from: Dot
+touch: A crusty top and a soft, warm middle.
+sound: The crust crackles when you squeeze it.
+
+gift: a pair of hand knitted socks
+from: Mrs. Teasel
+touch: Thick, squishy wool with a ribbed cuff.
+sound: A soft woolly pat when you clap them together.
+
+gift: a bundle of wildflowers
+from: Clover
+touch: Soft petals and cool, slightly bendy stems tied with string.
+sound: They rustle like a little crowd whispering hello.
+
+gift: a pencil sharpened to a perfect point
+from: Pip
+touch: A smooth painted pencil with a pointy tip that tickles.
+sound: It taps the doorstep with a light tick.
+
+gift: a lantern for evening walks
+from: Otis
+touch: A cool metal handle and a smooth glass globe.
+sound: The handle squeaks gently as it swings.
+
+gift: a tin of shortbread
+from: Hazel
+touch: A cool round tin and buttery cookies inside.
+sound: The lid pops off with a happy plunk.
+
+gift: a smooth carved whistle
+from: Rocco
+touch: Light wood, sanded so smooth it feels like silk.
+sound: A bright cheerful tweet that sounds like morning.
+
+gift: a lily pad coaster
+from: Fennel
+touch: A thick, smooth disk with veins you can trace.
+sound: A soft pat when you set a cup on it.
+
+gift: a stick that is clearly the best stick
+from: Pip
+touch: A long, smooth stick with one perfect bend in the middle.
+sound: It knocks happily against the door.
+
+gift: a jar of strawberry jam
+from: Bramble
+touch: A cool glass jar with a checkered cloth lid.
+sound: The lid twists off with a satisfying pop.
+
+gift: a tiny knitted hat for Bunny
+from: Mrs. Teasel
+touch: Soft wool with two holes for ears.
+sound: A fuzzy hush as it slips on.
+
+gift: a seashell that hums like the sea
+from: Marlow
+touch: Ridged outside and glassy smooth inside.
+sound: Hold it to your ear and it whooshes softly.
+
+gift: a cup of dandelion tea, still warm
+from: Dot
+touch: A warm round cup that heats your paws.
+sound: A gentle slosh and a soft sip.

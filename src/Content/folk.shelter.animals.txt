@@ -1,0 +1,119 @@
+name: Biscuit
+kind: puppy
+touch: Soft, wiggly and warm, with velvety ears that flop over your fingers.
+sound: Happy little yips and a tail that thumps the floor like a drum.
+looks: Golden brown with a white patch on his chest.
+
+name: Mittens
+kind: kitten
+touch: Fluffy as a dandelion, with tiny paws that knead your lap.
+sound: A purr like a small motor that starts the moment you pick her up.
+looks: Gray with four white paws.
+
+name: Juniper
+kind: rabbit
+touch: Silky fur and a nose that twitches against your hand.
+sound: Soft thumps when she is excited and a gentle crunch when she eats.
+looks: Cream colored with brown ears.
+
+name: Peanut
+kind: guinea pig
+touch: Round and smooth, like holding a warm, furry potato.
+sound: Cheerful wheeks whenever he hears the lettuce bag rustle.
+looks: Tan and white with a little swirl of fur on his head.
+
+name: Daisy
+kind: lamb
+touch: Curly wool that springs back when you pat it, soft as a cloud.
+sound: A sweet, wobbly baa and the clip clop of small hooves.
+looks: Snowy white with a black nose.
+
+name: Noodle
+kind: ferret
+touch: Long and slinky, with fur smooth as a ribbon.
+sound: Happy little dooks and the patter of feet as he bounces around.
+looks: Sandy brown with a dark mask around his eyes.
+
+name: Button
+kind: hamster
+touch: Tiny and light, with cheeks that puff out when you feel them.
+sound: The soft whirr of his wheel and a busy rustle in his bedding.
+looks: Honey gold with a white tummy.
+
+name: Kiwi
+kind: parrot
+touch: Smooth feathers and gentle feet that grip your finger like a soft clothespin.
+sound: Whistles, chirps, and a very proud hello.
+looks: Bright green with a splash of yellow on her head.
+
+name: Pudding
+kind: puppy
+touch: Chubby and fuzzy, with a belly that loves to be rubbed.
+sound: Squeaky play growls and big, happy sighs when he settles down.
+looks: Chocolate brown with a pink nose.
+
+name: Marmalade
+kind: kitten
+touch: Soft fur and a tail that curls around your wrist.
+sound: A tiny mew and a purr that rumbles like a tiny lawn mower.
+looks: Orange stripes like a sunset.
+
+name: Smudge
+kind: chinchilla
+touch: The softest fur you have ever felt, so thick your fingers sink into it.
+sound: Little chirps and the hop hop of small feet on a wooden shelf.
+looks: Silvery gray with big round ears.
+
+name: Pebble
+kind: baby goat
+touch: Short, bristly fur and a head that nudges your hand for scratches.
+sound: Bleats, giggly snorts, and the tap of hooves as she jumps on everything.
+looks: Brown and white with tiny nubs where her horns will grow.
+
+name: Truffle
+kind: piglet
+touch: Smooth and warm, with a wiggly snout that snuffles your palm.
+sound: Happy oinks and grunts, like a little engine of joy.
+looks: Pink with one brown spot on her back.
+
+name: Sunny
+kind: chick
+touch: So light and fluffy it feels like holding a warm puff of cotton.
+sound: Bright peeps that get faster when she is happy.
+looks: Butter yellow all over.
+
+name: Crumb
+kind: mouse
+touch: Tiny and quick, with whiskers that tickle your fingertips.
+sound: Faint squeaks and the scritch of little paws in the sawdust.
+looks: Soft brown with shiny black eyes.
+
+name: Bear
+kind: puppy
+touch: Big fluffy paws and a thick, cuddly coat.
+sound: A deep, silly woof that is much too big for him.
+looks: Black and tan, like a tiny teddy bear.
+
+name: Clementine
+kind: kitten
+touch: Short, sleek fur and a head that bonks your chin.
+sound: Chirpy little trills when she wants to play.
+looks: Calico, with patches of orange, black and white.
+
+name: Waffles
+kind: guinea pig
+touch: Long, swishy hair that feels like a tiny mop.
+sound: Rumbly purrs and squeaks when you say his name.
+looks: Brown and white with a fluffy fringe over his eyes.
+
+name: Dumpling
+kind: rabbit
+touch: Chunky and soft, with lop ears that feel like warm felt.
+sound: Quiet tooth purrs when you stroke her back.
+looks: Gray with a white blaze down her nose.
+
+name: Ziggy
+kind: cockatiel
+touch: Feathers soft as a whisper and a crest that tickles your cheek.
+sound: A cheerful whistled tune he learned from the radio.
+looks: Gray with bright orange cheeks and a yellow crest.

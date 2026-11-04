@@ -1,0 +1,71 @@
+hobby: guitar
+start: I got a guitar! It is smooth and wooden and almost as big as me, and I am going to be a rock star.
+stage1: The strings press grooves into my paws, and every chord sounds like a goose sitting on a squeaky toy. Rocco asked me to keep it down, and Rocco is a rooster.
+stage2: My paws are getting used to the strings, and I can play one chord now. I play it a lot. It is a very good chord.
+stage3: Two chords, back and forth, plunk then strum. Gerald seems to be enjoying it, or at least he has not left.
+stage4: The strings feel friendly now and my strumming has a bounce to it. Fennel asked if I take requests.
+stage5: My paws glide over the strings and the music comes out warm and round. I played by the fire last night and the whole burrow went quiet to listen.
+
+hobby: knitting
+start: I have taken up knitting. The yarn is so soft and squishy, and I am going to make everyone sweaters.
+stage1: The needles go clack, clack, then clatter onto the floor. I made something lumpy and tangled, and I have decided it is a hat for Gerald.
+stage2: I can feel the stitches lining up now, little bumps in a row. It is a very short scarf, about the size of a bookmark.
+stage3: Clickety click, my needles are finding a rhythm. My scarf is now long enough to go around my neck, once, if I hold my breath.
+stage4: The rows are even and soft under my paws, and I tried a stripe. Hazel asked where I bought it, which is the best compliment.
+stage5: My needles click like a happy little clock, and I just finished a cozy sweater with cables you can trace with your fingers. It is for you.
+
+hobby: juggling
+start: I am learning to juggle. I have three soft beanbags, and they jingle a little when they land.
+stage1: Thump, thump, thump. That is all three beanbags hitting the floor at once. Also one bounced off my nose.
+stage2: I can toss one beanbag up and catch it. The soft pat in my paw feels like a tiny victory.
+stage3: Two beanbags now, toss, catch, toss, catch. The third one is resting on the floor, cheering me on.
+stage4: All three are in the air for almost five whole seconds. The patter of catches sounds like rain.
+stage5: Pat, pat, pat, around and around, smooth and steady. I juggled on the village green and Pip wrote a whole article about it.
+
+hobby: painting
+start: I bought paints! The brushes are soft and the paint smells like rain, and I am going to be an artist.
+stage1: The paint is cold and squishy, and most of it is on my paws. My first painting was supposed to be a carrot and Otis thought it was a sunset.
+stage2: I can feel the brush swish in smooth strokes now. I painted a very confident blob, and the blob is a cloud.
+stage3: The bristles go swish, dab, swish, and I can make shapes on purpose. Clover recognized herself in my painting, mostly by the apple.
+stage4: I painted the pond, and you can almost hear the frogs when you look at it. Fennel clasped his hands and declared it a masterpiece, very theatrically.
+stage5: The canvas has bumpy textures you can feel, so the painting works by touch too. Hazel hung it in the library, right by the fireplace.
+
+hobby: baking
+start: I have started baking. The flour is powdery and soft, and the oven goes tick, tick as it warms up.
+stage1: My first loaf is as hard as a rock and goes clonk when I tap it on the table. Bramble is using it as a doorstop.
+stage2: The dough feels squishy and alive under my paws now. My bread came out flat, but it tasted like bread, so that is progress.
+stage3: I baked muffins that go soft when you squeeze them, and only three were stuck to the pan.
+stage4: The crust crackles when I break it open and the inside is warm and fluffy. The bakery asked for my recipe, and I said it is a family secret.
+stage5: Warm cinnamon rolls, soft and sticky, with a crunchy sugar top. The whole village followed the smell to my door.
+
+hobby: chess
+start: I have taken up chess. The pieces are smooth and wooden, and they click nicely on the board.
+stage1: I tried to move the castle like a kangaroo. Otis said that is not how chess works, and then fell asleep.
+stage2: I learned which piece is which by the shapes. The one with the bumpy crown feels like a tiny cake, so it is my favorite.
+stage3: I played Hazel and lasted twenty whole moves. The clicks of the pieces sounded very serious and important.
+stage4: I won a game against Pip! There was a lot of clicking and thinking and one very loud gasp.
+stage5: I play by touch now, feeling each piece and planning ahead. I even beat Otis, and he was awake for the whole game.
+
+hobby: yodeling
+start: I am learning to yodel. I stood on the hill and felt the wind in my fur, and I am ready.
+stage1: My yodel sounds like a kettle that has opinions. Every bird in the meadow flew up at once.
+stage2: Yodel, ay, ee, oops. I can do the first half now. The second half is still a squeak.
+stage3: My voice is wobbling less, and the echo off the hill answers back nicely. Rocco seems a little jealous.
+stage4: I yodeled a whole verse, and the cows on the far farm mooed along. I count that as a duet.
+stage5: My yodel rolls out over the meadow, clear and bright, and the echo sings it back. Fennel wants me in the talent show as the grand finale.
+
+hobby: pottery
+start: I got a pottery wheel! The clay is cool and slippery, and the wheel goes whirr when it spins.
+stage1: Splat. The clay flew off the wheel and landed on Bramble's toolbox. Bramble says it is modern art now.
+stage2: I made a little bowl, wobbly and lopsided, and it tips over if you look at it. It still holds one carrot.
+stage3: The clay feels smooth and even under my paws now, and my bowls stand up on their own. Mostly.
+stage4: I made a mug with a handle you can actually hold. It is a little heavy, but it makes a nice tock on the table.
+stage5: My bowls are smooth as river stones and ring like a bell when you tap them. I made a set for the tea house.
+
+hobby: origami
+start: I am learning origami. The paper is crisp and makes the best little crinkle sounds.
+stage1: I tried to fold a crane and made a crumpled ball. It rolls nicely, so I am calling it a pebble.
+stage2: I can fold a paper boat now. It floats on the pond for almost a minute, and Dot's ducklings love it.
+stage3: My folds are getting sharp and neat, with soft creases you can feel. I made a frog that hops when you press it.
+stage4: I folded a whole family of paper bunnies with tiny pointed ears. Gerald is pretending not to be impressed.
+stage5: I fold cranes with smooth, crisp wings that flap when you pull the tail. I hung a string of them in the burrow and they rustle in the breeze.

@@ -1,0 +1,159 @@
+kind: event
+name: Pillow day
+season: any
+text: I had an idea. What if the village had a pillow day, where everyone carries their squishiest pillow and the whole green turns soft underfoot? The only sound would be happy flumping.
+
+kind: item
+name: A humming teapot
+season: any
+text: What if the tea house had a teapot that hums a little tune when the water is ready? It would feel warm and round in your paws, and you would never have to guess.
+
+kind: spot
+name: The whisper bench
+season: any
+text: I was thinking we could put a wooden bench by the pond where all you hear is reeds and frogs. Bramble could sand it so smooth it feels like a warm loaf of bread.
+
+kind: story
+name: The carrot who wanted to fly
+season: any
+text: I made up a story in my head. It is about a carrot who ties dandelion fluff to its leaves and floats over the village, waving at everyone. It ends with a very soft landing in a salad.
+
+kind: event
+name: The great sock swap
+season: Winter
+text: What if everyone brought their fuzziest socks to the village green and traded? You would feel every kind of wool, nubbly and silky and squishy, and Pip would announce each trade like big news.
+
+kind: event
+name: Puddle parade
+season: Spring
+text: Here is my rainy day plan. We all march through the puddles in boots, splashing on purpose, while Rocco keeps the beat with a very serious crow.
+
+kind: spot
+name: The moss hollow
+season: Spring
+text: I found a hollow on the hill where the moss is so thick it feels like a velvet pillow. If we hung a little bell on the branch above, the breeze would ring it now and then.
+
+kind: item
+name: A squeaky snack drawer
+season: any
+text: What if my burrow had a snack drawer that gives a tiny squeak every time it opens? I would always know where the carrots are. So would you, which is only fair.
+
+kind: event
+name: Cricket hum night
+season: Summer
+text: Picture one warm night lying in the meadow grass, cool and a little damp, while Fennel leads everyone in a very quiet hum. I am fairly sure the crickets would join in.
+
+kind: story
+name: Otis and the upside-down letter
+season: any
+text: I wrote a little story where Otis delivers a letter upside down. It turns out the joke inside only works upside down, and everyone laughs so hard their hats wobble.
+
+kind: spot
+name: The leaf pile corner
+season: Fall
+text: Bramble could rake all the leaves into one giant crunchy pile beside the library. You could hop right in and hear the crackle all around you.
+
+kind: event
+name: Soup swap
+season: Winter
+text: Ooh, what if everyone made one pot of soup and we shared them all at the tea house? Warm bowls to hold, lots of slurping, and Hazel could read the recipes aloud.
+
+kind: item
+name: A bell for Gerald
+season: any
+text: What if Gerald wore a teeny bell on his shell? It would be smooth and tiny, and its little ting would tell us which way he is wandering.
+
+kind: event
+name: Backwards day
+season: any
+text: Just imagine everyone saying goodnight in the morning and good morning at night, for one whole day. Rocco would crow at sunset, and Otis would finally get to greet a sunrise.
+
+kind: spot
+name: The rain roof nook
+season: any
+text: We could build a little nook with a tin roof behind the bakery. When it rains, the drops would plink and patter overhead while you sit snug and dry on a cushion.
+
+kind: story
+name: The cloud that liked naps
+season: any
+text: My newest story is about a fluffy cloud that keeps napping on top of the hill. It feels like a cool blanket when you walk through it, and it snores in tiny drizzles.
+
+kind: event
+name: Kite day
+season: Spring
+text: Let us all fly kites from the hill! You would feel the string tug in your paws and hear the kites flap and snap in the breeze.
+
+kind: item
+name: A carrot doorbell
+season: any
+text: My burrow door needs a doorbell shaped like a carrot, I just know it. You would feel its bumpy top, and when you pressed it, it would go crunch instead of ding.
+
+kind: event
+name: Snow animal day
+season: Winter
+text: What if everyone made snow animals on the green? The snow would be cold and packable, and you would hear mittens patting and lots of giggling.
+
+kind: spot
+name: The shell path
+season: Summer
+text: Marlow says he has a bucket of extra shells. We could line the path to the lighthouse with them, so every step feels cool and polished and goes clink and crunch.
+
+kind: story
+name: The very polite rain
+season: any
+text: I have a story idea about a rain shower that knocks before it falls. It taps gently on every roof, waits for everyone to say come in, and then patters down softly.
+
+kind: event
+name: Apple day at the stable
+season: Fall
+text: Clover gave me an idea. A barrel of crisp cool apples, lots of splashing as everyone tries to catch one, and Clover winning every single round.
+
+kind: item
+name: Pocket warming stones
+season: Winter
+text: What if the market sold smooth little stones you warm by the fire and carry in your pocket? They would feel like holding a cozy secret, and they would click softly together.
+
+kind: event
+name: Lullaby night
+season: any
+text: I had a sleepy idea. Fennel's choir could sing lullabies on the green one evening while everyone snuggles in blankets, and probably half the village would doze off, starting with me.
+
+kind: spot
+name: The reading hammock
+season: Summer
+text: I want to hang a hammock between two trees by the library. The rope would feel nubbly, it would sway gently, and the leaves would rustle while Hazel reads to us.
+
+kind: story
+name: Bramble's humming wrench
+season: any
+text: In my story, Bramble's wrench learns to hum along with him. Every time he fixes something it goes hmm hmm, and the whole toolbox joins in like a tiny choir.
+
+kind: event
+name: Pajama breakfast
+season: any
+text: How about one morning when everyone comes to the bakery in pajamas? Soft flannel, slippers shuffling on the floor, and warm muffins straight from the oven.
+
+kind: item
+name: A blanket with pockets
+season: any
+text: Somebody should invent a blanket with little pockets sewn all over it for snacks and cold paws. It would be thick and soft, and it would crinkle a little when you found a cracker.
+
+kind: spot
+name: The echo spot
+season: any
+text: Guess what? I found a place on the hill where your voice comes back to you. If you say hello, it says hello back, softer and a little sleepier, like it just woke up.
+
+kind: event
+name: Pumpkin rolling
+season: Fall
+text: Big idea for this time of year. We roll pumpkins down the hill, smooth and bumpy at once, and they go thump thump thump all the way to the bottom.
+
+kind: story
+name: The duckling choir
+season: Spring
+text: I thought of a story where Dot's ducklings start their own choir. They only know one note, which is quack, but they sing it with so much feeling that Fennel gives them a standing ovation.
+
+kind: event
+name: Lemonade stand
+season: Summer
+text: I want to open a lemonade stand on the village green. Cold cups that drip on your paws, ice clinking, and me announcing it far too loudly.

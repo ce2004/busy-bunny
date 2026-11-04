@@ -1,0 +1,175 @@
+kind: food
+value: carrots
+line: Carrots go crunch in the most satisfying way, and I will not hear otherwise.
+
+kind: food
+value: warm cinnamon buns
+line: They are soft and sticky and the bakery smells like a hug when they come out.
+
+kind: food
+value: clover
+line: Clover is sweet and tender, and you can eat it while lying in it, which is very efficient.
+
+kind: food
+value: apple slices
+line: Clover the pony shares them with me, and they snap so crisply in my mouth.
+
+kind: food
+value: dandelion greens
+line: They are a little peppery and very fancy, like salad with personality.
+
+kind: color
+value: carrot orange
+line: It is the color of my favorite snack, so it feels warm just thinking about it.
+
+kind: color
+value: sky blue
+line: It reminds me of cool breezes and long naps on the hill.
+
+kind: color
+value: clover green
+line: It feels like soft grass under my paws on a summer morning.
+
+kind: color
+value: buttercup yellow
+line: It is cheerful and sunny, like a happy little song you can see.
+
+kind: song
+value: the morning crow
+line: Rocco puts his whole heart into it, and it gets me out of bed every time.
+
+kind: song
+value: the choir's lullaby
+line: Fennel's choir hums it so softly that my ears go floppy and warm.
+
+kind: song
+value: rain on the roof
+line: The gentle pitter patter is the coziest song in the whole world.
+
+kind: song
+value: Bramble's humming
+line: Bramble hums while he fixes things, and it sounds like a friendly bee.
+
+kind: song
+value: the kettle whistle
+line: It sings right before tea is ready, so it is basically a song about snacks.
+
+kind: room
+value: the reading nook
+line: The cushions are squishy, the blanket is soft, and the fire crackles right next to it.
+
+kind: room
+value: the kitchen
+line: It always smells like something warm, and the floor is nice and smooth for sliding.
+
+kind: room
+value: the pantry
+line: I like to visit the carrots and make sure they are all doing well.
+
+kind: room
+value: the attic window
+line: The rain sounds loudest there, and the sun puddle in the afternoon is perfect for naps.
+
+kind: season
+value: Fall
+line: Crunchy leaves, warm cider and scarves, so it is basically my whole personality.
+
+kind: season
+value: Winter
+line: Snow is soft and squeaky, and it is the best excuse for staying in by the fire.
+
+kind: season
+value: Spring
+line: Everything smells fresh and new, and the meadow fills up with tasty sprouts.
+
+kind: season
+value: Summer
+line: The grass is warm, the pond is cool, and the days are long enough for two naps.
+
+kind: neighbor
+value: Hazel
+line: She reads to me by the fire, and her voice is as cozy as a blanket.
+
+kind: neighbor
+value: Otis
+line: He is very sleepy and very dry, and he makes me laugh without even trying.
+
+kind: neighbor
+value: Clover
+line: Her nose is velvety soft, and she always saves me a slice of apple.
+
+kind: neighbor
+value: Bramble
+line: He can fix anything, and his toolbox clanks like a song when he walks.
+
+kind: neighbor
+value: Fennel
+line: He makes everything feel like a show, even buying turnips.
+
+kind: weather
+value: gentle rain
+line: It patters softly on the window, and it means I get to stay in my burrow.
+
+kind: weather
+value: light snow
+line: The flakes feel like cold little kisses on my nose.
+
+kind: weather
+value: a breezy sunny day
+line: The wind ruffles my fur and the sun warms my ears at the same time.
+
+kind: weather
+value: fog
+line: Everything goes hushed and soft, like the whole village is whispering.
+
+kind: activity
+value: napping
+line: It is my best skill, and I practice it every day.
+
+kind: activity
+value: hopping on the green
+line: The grass is springy and my feet go thump, thump, and I feel like I could fly.
+
+kind: activity
+value: baking with you
+line: Flour is soft, dough is squishy, and we get to eat the results.
+
+kind: activity
+value: splashing in puddles
+line: The splash sound is so satisfying that I have to do it again and again.
+
+kind: activity
+value: stargazing
+line: The grass is cool, the crickets sing, and I get to name the stars whatever I want.
+
+kind: dislike
+value: soggy carrots
+line: A carrot should crunch, and a soggy one just sort of sighs at me.
+
+kind: dislike
+value: itchy sweaters
+line: They make my fur stand up and I end up wiggling like a noodle.
+
+kind: dislike
+value: thunder
+line: It is very loud and very rude, so I hide under the blanket until it says sorry.
+
+kind: dislike
+value: cold toes
+line: My paws should always be toasty, which is why I own so many slippers.
+
+kind: dislike
+value: running out of honey
+line: An empty honey jar just goes clink, clink when I scrape it, and that is not the song I wanted.
+
+kind: dislike
+value: wet ears
+line: When my ears get damp they flop over and drip, and I look like a mop.
+
+kind: dislike
+value: squeaky floorboards
+line: They tell on me every time I sneak to the pantry for a midnight carrot.
+
+kind: dislike
+value: buttons that will not button
+line: I struggle with them so dramatically that Bramble has to come and help.

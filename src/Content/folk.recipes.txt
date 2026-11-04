@@ -1,0 +1,143 @@
+name: carrot cake
+smell: Warm cinnamon, brown sugar and sweet carrot.
+touch: A soft, springy crumb under a thick layer of smooth cream cheese frosting.
+sound: The fork sinks in with a gentle squish.
+steps: Stir grated carrots, flour, sugar, eggs and cinnamon together, then bake until golden. Frost it once it has cooled.
+
+name: honey oat bars
+smell: Toasty oats and warm honey.
+touch: Chewy and a little sticky, with crunchy edges.
+sound: A soft crunch at the corners and a quiet chew in the middle.
+steps: Mix oats, honey and melted butter, press it into a pan and bake until the edges turn golden. Cut into squares.
+
+name: cocoa
+smell: Rich chocolate with a hint of vanilla.
+touch: A warm mug that heats your paws all the way through.
+sound: A happy slurp and a little sigh.
+steps: Warm milk in a pot, then whisk in cocoa powder and sugar until smooth. Pour into your biggest mug.
+
+name: cinnamon rolls
+smell: Butter, cinnamon and fresh bread.
+touch: Soft swirls that unroll in your paw, with gooey icing on top.
+sound: A sticky little peel as you unwind each layer.
+steps: Roll dough flat, spread with butter, cinnamon and sugar, then roll it up and slice. Bake and drizzle with icing.
+
+name: blueberry muffins
+smell: Sweet berries and warm vanilla.
+touch: A domed top that is crisp, and a soft, tender middle with juicy pops.
+sound: The paper wrapper crinkles as you peel it.
+steps: Fold blueberries into a simple muffin batter and spoon it into paper cups. Bake until the tops spring back.
+
+name: apple crumble
+smell: Baked apples, cinnamon and buttery crumbs.
+touch: Soft warm apples under a crunchy, sandy topping.
+sound: The spoon crunches through the top and then goes quiet in the fruit.
+steps: Slice apples into a dish with sugar and cinnamon, then rub butter, flour and oats into crumbs and scatter on top. Bake until bubbly.
+
+name: dandelion tea
+smell: Light and grassy, like a sunny meadow.
+touch: A warm teacup with a delicate handle.
+sound: The kettle sings and the tea pours with a gentle trickle.
+steps: Steep dried dandelion petals in hot water for five minutes. Add a spoon of honey.
+
+name: pumpkin bread
+smell: Nutmeg, clove and warm pumpkin.
+touch: A dense, moist slice that bends a little before it breaks.
+sound: The knife glides through with a soft hush.
+steps: Mix pumpkin, flour, sugar and spices into a thick batter and pour it into a loaf pan. Bake until a toothpick comes out clean.
+
+name: strawberry jam toast
+smell: Sweet strawberries and warm toast.
+touch: Crisp toast with a cool, sticky jam layer.
+sound: A big crunch, every time.
+steps: Toast a slice of bread until golden. Spread it thickly with strawberry jam.
+
+name: Bramble's garden soup
+smell: Herbs, carrots and something peppery.
+touch: A warm bowl with soft chunks of vegetables.
+sound: The spoon clinks against the bowl and the soup goes slurp.
+steps: Chop carrots, potatoes and leeks and simmer them in broth with herbs. Season with a little salt and serve warm.
+
+name: oatmeal raisin cookies
+smell: Brown sugar, oats and plump raisins.
+touch: Chewy in the middle and crisp at the very edge.
+sound: A soft snap when you break one in half.
+steps: Cream butter and sugar, then stir in oats, flour and raisins. Drop spoonfuls on a tray and bake.
+
+name: lavender shortbread
+smell: Butter with a soft floral hint.
+touch: Smooth and sandy, melting the moment it touches your tongue.
+sound: A crisp little snap.
+steps: Mix butter, sugar, flour and a pinch of dried lavender into a dough. Cut into rounds and bake until pale gold.
+
+name: Fennel's pond lemonade
+smell: Bright lemon and fresh mint.
+touch: A cool glass beaded with droplets.
+sound: Ice cubes clink and the lemonade fizzes faintly.
+steps: Stir lemon juice, water and sugar together until the sugar disappears. Add ice and a sprig of mint.
+
+name: banana bread
+smell: Caramel sweet banana and warm butter.
+touch: A soft, heavy slice with a tender crumb.
+sound: A gentle squish as you press it.
+steps: Mash ripe bananas and stir in flour, sugar, eggs and butter. Bake in a loaf pan until golden brown.
+
+name: honey biscuits
+smell: Golden honey and toasty butter.
+touch: Flaky layers that pull apart in warm, soft pieces.
+sound: A flaky crackle as you split one open.
+steps: Cut cold butter into flour and stir in milk until it just holds together. Pat it out, cut rounds and bake, then brush with honey.
+
+name: warm milk with nutmeg
+smell: Creamy milk and a sprinkle of spice.
+touch: A heavy mug that keeps your paws toasty.
+sound: A soft sip and a sleepy yawn.
+steps: Warm milk gently in a small pot. Pour it into a mug and dust the top with nutmeg.
+
+name: Mrs. Teasel's slow cooked porridge
+smell: Oats, cream and a little brown sugar.
+touch: Thick and smooth, warm all the way down.
+sound: The spoon makes a happy plop.
+steps: Simmer oats in milk on low heat, stirring often, until thick and creamy. Top with brown sugar and berries.
+
+name: rhubarb tart
+smell: Tangy rhubarb and buttery pastry.
+touch: A crisp, flaky shell around a soft, jammy filling.
+sound: The pastry crackles when the fork goes in.
+steps: Press pastry into a tart pan and fill it with chopped rhubarb mixed with sugar. Bake until the crust is golden.
+
+name: maple pancakes
+smell: Sweet maple syrup and warm butter.
+touch: Fluffy, soft stacks that soak up the syrup.
+sound: The pan sizzles gently as each one cooks.
+steps: Whisk flour, milk, eggs and a little sugar into a batter and pour small circles into a warm pan. Flip when bubbles appear and drizzle with maple syrup.
+
+name: carrot top pesto pasta
+smell: Garlic, basil and fresh greens.
+touch: Soft noodles coated in a smooth, slightly grainy sauce.
+sound: The noodles twirl on the fork with a soft slurp.
+steps: Blend carrot tops, basil, nuts, cheese and oil until smooth. Toss with warm pasta.
+
+name: gingerbread bunnies
+smell: Ginger, molasses and warm spice.
+touch: Firm cookies with smooth icing details you can trace.
+sound: A crisp snap as an ear comes off first.
+steps: Mix a spiced molasses dough, roll it out and cut bunny shapes. Bake and decorate with icing.
+
+name: pear and honey scones
+smell: Sweet pear and toasty honey.
+touch: Crumbly outside and tender inside, with soft bits of fruit.
+sound: A gentle crumble as you break one open.
+steps: Rub butter into flour, then fold in diced pear, honey and a splash of milk. Shape into wedges and bake.
+
+name: Otis's midnight toast
+smell: Butter, cinnamon and a little sugar.
+touch: Warm crunchy toast with a sweet sandy topping.
+sound: A cheerful crunch that echoes in a quiet kitchen.
+steps: Butter a slice of toast and sprinkle it with cinnamon sugar. Warm it under the grill for one minute.
+
+name: strawberry shortcake
+smell: Fresh berries and sweet cream.
+touch: A soft, crumbly cake with cool whipped cream and juicy berries.
+sound: The cream gives a soft squish under the spoon.
+steps: Split a warm biscuit in half and fill it with sliced strawberries and whipped cream. Put the top back on and add one more berry.

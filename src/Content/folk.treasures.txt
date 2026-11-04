@@ -1,0 +1,119 @@
+name: a music box that plays a lullaby
+touch: A smooth wooden box with a little brass key that turns with a springy resistance.
+sound: A slow, tinkling lullaby that makes everyone nearby yawn at once.
+looks: Painted with tiny stars and a sleeping moon.
+
+name: a velvet pouch of marbles
+touch: Soft velvet outside and a heap of cool round marbles that shift inside.
+sound: They roll and clack together like a little rain shower.
+looks: Deep blue velvet with marbles of every color.
+
+name: a quilt square sewn by the first villagers
+touch: Patchy cotton with tiny knots you can feel along every seam.
+sound: A soft rustle when you unfold it.
+looks: Faded yellow and green, with a little bunny stitched in one corner.
+
+name: a jar of everlasting honey
+touch: A heavy glass jar with a waxy cloth tied over the top.
+sound: The honey moves inside with a slow, happy glug.
+looks: Golden as a sunset.
+
+name: a pocket watch that only tells teatime
+touch: Round, cool and smooth, with a lid that clicks open under your thumb.
+sound: It ticks gently and chimes once whenever it decides it is teatime.
+looks: Silver with a teacup painted where the numbers should be.
+
+name: a book of riddles with the answers in the back
+touch: A thick book with a soft cloth cover and pages worn smooth.
+sound: The pages flutter like a moth when you flip them.
+looks: Green cloth with gold letters.
+
+name: a tin of buttons from every coat in the village
+touch: A cool tin full of buttons, some flat, some domed, some fuzzy.
+sound: A big happy rattle when you shake it.
+looks: A round tin with a picture of a hedgehog on the lid.
+
+name: a wooden flute carved from a willow branch
+touch: Light, smooth wood with six round holes that fit your paw pads.
+sound: A soft breathy tune, like wind through reeds.
+looks: Pale wood with a tiny leaf carved near the top.
+
+name: a set of tiny teacups
+touch: Six little cups no bigger than thimbles, smooth and cool.
+sound: They clink together like wind chimes.
+looks: White china with blue rims.
+
+name: a warm wool scarf that never tangles
+touch: Thick, soft wool that settles around your neck like a hug.
+sound: A quiet fluffy whisper when you wrap it.
+looks: Long and striped in every color of a sunrise.
+
+name: a seed packet labeled mystery flowers
+touch: A crinkly paper packet with seeds that shift like sand inside.
+sound: A tiny rattle like a whispered maraca.
+looks: Brown paper with a hand drawn question mark.
+
+name: a lantern that glows like a firefly
+touch: A smooth glass lantern with a looped handle that sits nicely in your paw.
+sound: It hums very quietly, like a contented bug.
+looks: A soft yellow glow that flickers gently.
+
+name: a recipe card for the world's best biscuit
+touch: A stiff old card, smooth on one side, with a floury smudge on the other.
+sound: A crisp little snap when you flick it.
+looks: Neat handwriting and a doodle of a biscuit wearing a crown.
+
+name: a bag of rainbow pebbles
+touch: A cotton drawstring bag of pebbles, each one round and polished.
+sound: They click together like a tiny xylophone.
+looks: Red, orange, yellow, green and blue pebbles.
+
+name: a hand bell from the old market tower
+touch: A heavy little bell with a smooth wooden handle.
+sound: A clear, cheerful ding that rings for a long time.
+looks: Brass with a worn wooden grip.
+
+name: a kite folded into a small square
+touch: Crisp, light fabric with thin sticks you can feel through it.
+sound: It snaps open with a bright flap.
+looks: A red kite with a long ribbon tail.
+
+name: a jar of fireflies' thank you notes
+touch: A jar of tiny rolled paper scrolls, each one tied with thread.
+sound: The scrolls tick softly against the glass.
+looks: Little cream colored rolls, like grains of rice.
+
+name: a pair of fuzzy slippers shaped like clouds
+touch: So soft your paws sink right in.
+sound: They go pff pff when you walk.
+looks: White and puffy with tiny smiling faces.
+
+name: a spinning top made of acorn wood
+touch: Smooth and round with a pointy little tip.
+sound: It whirs like a bee and then wobbles to a stop with a clatter.
+looks: Brown wood with a painted red spiral.
+
+name: a story stone that tells a tale
+touch: A smooth flat stone with a raised picture you can trace.
+sound: When you tap it on the table, Hazel says it means once upon a time.
+looks: Gray with a carved bunny under a tree.
+
+name: a basket of the first spring berries
+touch: A woven basket with berries plump and slightly squishy.
+sound: The basket creaks softly as you carry it.
+looks: Red and purple berries on green leaves.
+
+name: a spyglass that shows the stars up close
+touch: A cool brass tube that slides longer with a smooth glide.
+sound: It extends with a satisfying shhk.
+looks: Shiny brass with a leather grip.
+
+name: a dried flower crown
+touch: Crisp, papery petals woven on a soft twisted vine.
+sound: It crackles gently when you set it on your ears.
+looks: Pink, white and yellow flowers all around.
+
+name: a pillow stuffed with lavender and dreams
+touch: Plump and squishy, with a silky case that feels cool on your cheek.
+sound: It sighs softly when you lean on it.
+looks: Lilac colored with a stitched moon.

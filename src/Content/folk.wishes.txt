@@ -1,0 +1,287 @@
+id: wish-aquarium
+name: A small aquarium
+aisle: decor
+price: 180
+why: After all those pond trips I keep thinking about fish.
+touch: Cool smooth glass, and water that ripples when you dip a paw near the top.
+sound: A soft bubbling hum, like the pond whispering indoors.
+season: any
+
+id: wish-ukulele
+name: A little ukulele
+aisle: instruments
+price: 120
+why: Fennel says the choir needs someone to strum along, and I have been practicing on a rubber band.
+touch: Smooth curved wood and four thin strings that tickle your paw pads.
+sound: A bright plinky strum, like sunshine fitted into a box.
+season: any
+
+id: wish-drums
+name: A pair of hand drums
+aisle: instruments
+price: 150
+why: I have been tapping on every table in the burrow, so maybe I should tap on something meant for it.
+touch: Tight springy skin stretched over a round wooden shell, warm under your palms.
+sound: A deep friendly boom, then a quick pat pat pat at the edges.
+season: any
+
+id: wish-harp
+name: A tiny lap harp
+aisle: instruments
+price: 260
+why: Hazel read me a story about a harp that played lullabies, and now I cannot stop thinking about it.
+touch: Rows of smooth taut strings and a curved frame worn soft as a pebble.
+sound: Rippling notes that roll like water over stones.
+season: any
+
+id: wish-piano
+name: An old upright piano
+aisle: instruments
+price: 400
+why: Every time we pass the tea house I hear someone playing, and my paws wiggle along.
+touch: Cool glossy keys that dip down slowly, and a wooden lid that creaks when you lift it.
+sound: Warm round notes, plus the odd plonk when I accidentally sit on it.
+season: any
+
+id: wish-kazoo
+name: A shiny kazoo
+aisle: instruments
+price: 20
+why: The village band has no kazoo yet, and honestly I think I was born for this.
+touch: Small, smooth and a little cool, with a tiny round cap on top.
+sound: A buzzy, silly hum that makes everyone grin.
+season: any
+
+id: wish-fireplace
+name: A bigger stone hearth
+aisle: furniture
+price: 300
+why: Now that the evenings are cold, I want the whole burrow to feel like one warm hug.
+touch: Wide smooth stones that hold the heat long after the fire settles.
+sound: A deep cozy crackle and the soft pop of a pine log.
+season: Winter
+
+id: wish-carrot-cake
+name: A carrot cake from the bakery
+aisle: food
+price: 40
+why: I smelled it through the bakery window after our errands, and I have thought about nothing else since.
+touch: Soft springy layers and thick cool frosting that sticks to your whiskers.
+sound: The gentle squish of a fork sinking in.
+season: any
+
+id: wish-cinnamon-buns
+name: A box of cinnamon buns
+aisle: food
+price: 50
+why: You have been working so hard lately that I think we both deserve something sticky.
+touch: Warm pull-apart swirls, gooey in the middle and crisp at the edges.
+sound: The crinkle of the paper box and a happy sigh.
+season: any
+
+id: wish-honey-biscuits
+name: Honey oat biscuits
+aisle: food
+price: 30
+why: Clover and I shared one at the stable, and I would like to share a whole tin with you.
+touch: Crumbly and bumpy with little oats, still a bit warm from the oven.
+sound: A crunchy snap when you break one in half.
+season: any
+
+id: wish-rocking-chair
+name: A rocking chair
+aisle: furniture
+price: 160
+why: I want a cozy spot to sit while you work so I can rock and cheer for you quietly.
+touch: Smooth armrests and a soft cushion that sinks just right.
+sound: A slow, sleepy creak, back and forth.
+season: any
+
+id: wish-beanbag
+name: A giant beanbag
+aisle: furniture
+price: 90
+why: After all those naps on the rug, I think my nap game is ready for an upgrade.
+touch: Squishy and shifting, it hugs you back the moment you flop in.
+sound: A big soft whumpf, then a gentle rustle as it settles.
+season: any
+
+id: wish-quilt
+name: A patchwork quilt
+aisle: bedding
+price: 110
+why: The nights are getting longer, and I want something soft and heavy to burrow into.
+touch: Squares of flannel, corduroy and silk, each one different under your paw.
+sound: A quiet swish when you pull it up to your chin.
+season: any
+
+id: wish-wind-chimes
+name: Wooden wind chimes
+aisle: decor
+price: 45
+why: I love hearing the breeze on our walks, and I want to catch a little of it by the burrow door.
+touch: Smooth hollow tubes that knock gently against your paw.
+sound: Soft clonks and tocks, like the trees are chatting.
+season: any
+
+id: wish-rug
+name: A woolly rug
+aisle: decor
+price: 85
+why: The reading nook floor is a bit chilly for my toes, and I like to sit there while you study.
+touch: Thick, springy wool that your paws sink into.
+sound: Almost nothing at all, just the hush of soft steps.
+season: any
+
+id: wish-sweater
+name: A knitted sweater
+aisle: clothes
+price: 70
+why: The mornings have been nippy on my way to the market, and I would like to be a cozy little loaf.
+touch: Chunky cable knit, soft on the inside and bumpy on the outside.
+sound: A faint woolly rustle when I wiggle my arms.
+season: Fall
+
+id: wish-rain-boots
+name: Yellow rain boots
+aisle: clothes
+price: 55
+why: All this spring rain makes every puddle look like an invitation.
+touch: Smooth rubbery sides and a snug fit around the ankle.
+sound: A wonderful squelch and splash with every step.
+season: Spring
+
+id: wish-scarf
+name: A long striped scarf
+aisle: clothes
+price: 40
+why: When we go see Otis at the post office at night, my ears get chilly.
+touch: Fluffy and long enough to wrap around twice, with little tassels at the ends.
+sound: A soft swoosh as it trails behind me.
+season: Winter
+
+id: wish-sun-hat
+name: A straw sun hat
+aisle: clothes
+price: 35
+why: I have been napping in the meadow so much that I think my nose needs some shade.
+touch: Crisp woven straw with a floppy brim and a soft ribbon tie.
+sound: A light crinkle when the breeze lifts the brim.
+season: Summer
+
+id: wish-carrot-patch
+name: A carrot patch
+aisle: garden
+price: 100
+why: Bramble showed me how seeds work, and I would like to grow carrots right outside the burrow.
+touch: Cool crumbly soil and feathery carrot tops that brush your paws.
+sound: The happy little tug and pop of pulling one up.
+season: any
+
+id: wish-bird-feeder
+name: A bird feeder
+aisle: garden
+price: 40
+why: The birds have been singing outside every morning while you work, and I want to say thank you.
+touch: A smooth wooden roof and a little perch, with seeds that pour like sand.
+sound: Cheerful chirps and the tap tap of tiny beaks.
+season: any
+
+id: wish-wading-pool
+name: A wading pool
+aisle: pool
+price: 130
+why: On these hot afternoons, I have been dreaming of dipping my toes in cool water.
+touch: Cool water up to your knees and a squishy inflatable rim to lean on.
+sound: Splashes, sloshes and one very happy squeak.
+season: Summer
+
+id: wish-pool-float
+name: A carrot pool float
+aisle: pool
+price: 60
+why: Dot and the ducklings float around the pond all day, and I want to try it in style.
+touch: Smooth, bouncy and warm from the sun.
+sound: A soft squeak when you climb on and a gentle bob on the water.
+season: Summer
+
+id: wish-finger-paints
+name: A set of finger paints
+aisle: crafts
+price: 45
+why: I made a painting with mud after our walk, and I think real paint would be even better.
+touch: Cool and slippery, smooth as pudding between your fingers.
+sound: A squishy smear and the pat of paws on paper.
+season: any
+
+id: wish-yarn
+name: A basket of yarn
+aisle: crafts
+price: 50
+why: I want to learn to knit so I can make tiny scarves for the whole village.
+touch: Soft fluffy balls of wool, some fuzzy and some silky.
+sound: The gentle click click of knitting needles.
+season: any
+
+id: wish-storybook
+name: A big book of bedtime stories
+aisle: books
+price: 40
+why: Hazel let me borrow one from the library, and now I want one of my very own for cozy nights.
+touch: Thick soft pages and a cloth cover with a raised moon on the front.
+sound: The papery whisper of a page turning.
+season: any
+
+id: wish-atlas
+name: A raised map atlas
+aisle: books
+price: 90
+why: I want to feel where Juniper lives in Willowmere and trace the road there with my paw.
+touch: Bumpy mountains, smooth seas and little dotted roads under your fingertips.
+sound: A heavy, satisfying thud when you open it on the table.
+season: any
+
+id: wish-pumpkin
+name: A pumpkin to carve
+aisle: seasonal
+price: 35
+why: Pip says everyone on the green is carving pumpkins this week, and I want to join in.
+touch: Cool, smooth ridges outside and slippery, stringy seeds inside.
+sound: A hollow knock when you tap it, like it is saying hello.
+season: Fall
+
+id: wish-sled
+name: A wooden sled
+aisle: seasonal
+price: 95
+why: The hill is covered in snow, and I have been sliding down it on a tea tray, which is not very dignified.
+touch: Smooth wooden slats and a soft rope to hold on to.
+sound: A swooshing hiss across the snow and a lot of happy squealing.
+season: Winter
+
+id: wish-music-box
+name: A golden music box
+aisle: rare
+price: 350
+why: The traveling peddler had one, and its little song has been stuck in my head ever since.
+touch: A cool smooth lid and a tiny crank that turns with a gentle click.
+sound: A twinkly, slow lullaby that makes my ears droop with happiness.
+season: any
+
+id: wish-lighthouse-trip
+name: A trip to the lighthouse
+aisle: trip
+price: 120
+why: Marlow keeps telling me about the waves, and I would love to hear them up close with you.
+touch: Salty breeze in your fur and cool, damp stone steps under your feet.
+sound: Waves rolling in and out and gulls calling far away.
+season: any
+
+id: wish-willowmere-trip
+name: A train ride to Willowmere
+aisle: trip
+price: 250
+why: Juniper has written me so many letters, and I would love to visit and bring you along.
+touch: A velvety train seat and a warm window to lean your cheek on.
+sound: The clackety rhythm of wheels and a cheerful whistle.
+season: any

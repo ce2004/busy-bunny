@@ -1,0 +1,181 @@
+item: Hazel's reading glasses
+owner: Hazel
+touch: Small round lenses, cool and smooth, with bendy wire arms.
+sound: They fold shut with a tiny click.
+rule: small
+clue: It was last seen somewhere small and quick, so a small task might turn it up.
+
+item: Otis's night shift lantern
+owner: Otis
+touch: A cool metal handle and a glass globe that feels faintly warm.
+sound: The handle squeaks softly when it swings.
+rule: evening
+clue: Otis says it likes to show up after dark, so a task finished in the evening might find it.
+
+item: Pip's favorite pencil
+owner: Pip
+touch: A short pencil, chewed a little at the end, with a smooth painted side.
+sound: It rattles when it rolls across a table.
+rule: small
+clue: It is a tiny thing, so a tiny task might be just the right size to find it.
+
+item: Rocco's alarm clock
+owner: Rocco
+touch: A round clock with two bells on top and a cool metal back.
+sound: It ticks very loudly and very proudly.
+rule: morning
+clue: It belongs to an early riser, so a task done before noon might wake it up.
+
+item: Clover's mane ribbon
+owner: Clover
+touch: A long silky ribbon, a little crinkled from being tied in bows.
+sound: It flutters with a soft flap in the wind.
+rule: any
+clue: It could be anywhere at all, so any finished task might find it.
+
+item: Bramble's trowel
+owner: Bramble
+touch: A sturdy wooden handle, worn smooth, and a cool metal scoop.
+sound: It clinks when it taps a flowerpot.
+rule: large
+clue: It was last used on a big project, so a big task might dig it up.
+
+item: Fennel's pitch pipe
+owner: Fennel
+touch: A small round whistle with little grooves around the edge.
+sound: It plays one clear note, and Fennel hums along.
+rule: evening
+clue: Choir practice is at sunset, so an evening task might hear it.
+
+item: Gerald's tiny scarf
+owner: Gerald
+touch: A very small, very soft knitted scarf, slightly damp.
+sound: Nearly silent, like a sleepy sigh.
+rule: weekend
+clue: Gerald only wears it on slow, lazy days, so a weekend task might find it.
+
+item: Marlow's foghorn whistle
+owner: Marlow
+touch: A smooth brass whistle on a woven cord.
+sound: A deep, friendly hoot that makes boats wave back.
+rule: large
+clue: It is the biggest sound in the village, so a big task might be the one to find it.
+
+item: Dot's rain bonnet
+owner: Dot
+touch: A soft bonnet with a stiff brim and a ribbon to tie under the beak.
+sound: It crinkles a little like a raincoat.
+rule: morning
+clue: Dot wears it on her morning paddle, so a task finished before noon might spot it.
+
+item: Mrs. Teasel's knitting needles
+owner: Mrs. Teasel
+touch: Two long smooth needles, cool and slightly slippery.
+sound: They click together like a cheerful clock.
+rule: weekend
+clue: Mrs. Teasel knits all weekend long, so a weekend task might find them.
+
+item: Hazel's bookmark with the tassel
+owner: Hazel
+touch: A stiff card with a soft silky tassel at the bottom.
+sound: The tassel swishes as it swings.
+rule: any
+clue: Bookmarks wander everywhere, so any task at all might turn it up.
+
+item: Otis's spare mail bag
+owner: Otis
+touch: Thick canvas, slightly scratchy, with a wide soft strap.
+sound: It flumps when you drop it.
+rule: large
+clue: It is a big bag for big deliveries, so a big task might find it.
+
+item: Pip's notebook of gossip
+owner: Pip
+touch: A small notebook with a bendy cover and pages full of pencil bumps.
+sound: Its pages riffle like a tiny breeze.
+rule: small
+clue: It is pocket sized, so a quick little task might find it.
+
+item: Rocco's sunrise bell
+owner: Rocco
+touch: A small heavy bell with a smooth wooden handle.
+sound: A bright, cheerful ding.
+rule: morning
+clue: Rocco rings it at sunup, so a morning task might hear it.
+
+item: Mrs. Teasel's ball of yarn
+owner: Mrs. Teasel
+touch: A soft, squishy ball of wool with a loose end that tickles.
+sound: It thumps softly and rolls away with a quiet patter.
+rule: any
+clue: It rolls everywhere, so any finished task might catch it.
+
+item: Clover's brush
+owner: Clover
+touch: Soft bristles on one side and a smooth wooden back.
+sound: A gentle swish swish.
+rule: weekend
+clue: Clover has a long brushing session every weekend, so a weekend task might find it.
+
+item: Bramble's lucky gardening glove
+owner: Bramble
+touch: Thick, soft leather with a patch on the thumb.
+sound: It pats softly when you clap it against your leg.
+rule: small
+clue: It only needs a small hand, so a small task might uncover it.
+
+item: Fennel's songbook
+owner: Fennel
+touch: A thin book with a soft cover and slightly damp pages.
+sound: It falls open with a soft flap at Fennel's favorite song.
+rule: evening
+clue: Fennel reads it every evening, so an evening task might find it.
+
+item: Gerald's map of shortcuts
+owner: Gerald
+touch: A folded paper map, soft at every crease.
+sound: It crinkles slowly as it opens.
+rule: large
+clue: Gerald's shortcuts are very long, so a big task might find it.
+
+item: Marlow's lighthouse key
+owner: Marlow
+touch: A large old key, heavy and cool, with a loop on the end.
+sound: It jingles on a little ring.
+rule: evening
+clue: Marlow needs it when the light goes on at dusk, so an evening task might find it.
+
+item: Dot's bread crumb pouch
+owner: Dot
+touch: A soft cloth pouch, lumpy with crumbs.
+sound: It rustles like a tiny bag of leaves.
+rule: any
+clue: Dot dropped it on a walk somewhere, so any task might come across it.
+
+item: Mrs. Teasel's sun hat
+owner: Mrs. Teasel
+touch: A wide, floppy straw hat with a smooth ribbon band.
+sound: It crackles softly when you bend the brim.
+rule: morning
+clue: She wears it for her morning stroll, so a task finished before noon might find it.
+
+item: Hazel's carrot cookie cutter
+owner: Hazel
+touch: A thin metal shape, cool, with a rolled edge that is gentle on the paw.
+sound: It gives a tiny ting when it taps the counter.
+rule: small
+clue: It is a little thing, so a little task might find it.
+
+item: Pip's newspaper stamp
+owner: Pip
+touch: A smooth wooden handle with a rubber bottom that feels soft and grippy.
+sound: It goes thunk when stamped.
+rule: weekend
+clue: Pip stamps the weekend edition, so a weekend task might find it.
+
+item: Otis's reading monocle
+owner: Otis
+touch: A single round lens, cool and smooth, on a soft cord.
+sound: It taps gently against his feathers.
+rule: any
+clue: Otis wears it all day and night, so any task might find it.

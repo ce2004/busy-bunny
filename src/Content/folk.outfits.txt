@@ -1,0 +1,155 @@
+name: Little red bow tie
+touch: Smooth satin with a tiny knot that sits right under the chin.
+sound: A faint swish when it turns its head.
+looks: A small red bow, very fancy for a bunny.
+unlock: 2
+
+name: Knitted ear warmers
+touch: Soft, stretchy wool that hugs each ear like a sock.
+sound: A muffled hush, because now it can barely hear anything.
+looks: Two striped tubes, one for each ear.
+unlock: 4
+
+name: Gardening apron
+touch: Thick cotton with a deep pocket full of crumbly soil.
+sound: The pocket rattles with seeds when it hops.
+looks: A green apron with a carrot stitched on the front.
+unlock: 6
+
+name: Jingle bell collar
+touch: A soft velvet band, cool and smooth against the fur.
+sound: A tiny ting, ting with every step.
+looks: A blue ribbon with one little silver bell.
+unlock: 8
+
+name: Fuzzy slippers
+touch: Plush and squishy, like stepping on clouds.
+sound: A soft shff, shff across the floor.
+looks: Pink slippers with floppy ears of their own.
+unlock: 10
+
+name: Explorer vest
+touch: Sturdy canvas with lots of little buttoned pockets.
+sound: Pockets snapping open and shut, mostly to check for snacks.
+looks: A tan vest with a tiny compass badge.
+unlock: 12
+
+name: Raincoat with a hood
+touch: Smooth, cool and slightly squeaky, with a soft lining inside.
+sound: Rain goes pit pat on the hood, and it crinkles when it moves.
+looks: A bright yellow coat with ear holes in the hood.
+unlock: 14
+
+name: Painter's smock
+touch: Loose, soft cotton with a few stiff, dried paint spots.
+sound: A gentle flap when it waves its paws around making art.
+looks: A white smock speckled with every color.
+unlock: 16
+
+name: Chef's hat
+touch: Crisp, puffy cotton that stands up tall.
+sound: A soft crumple when it bonks the top on the doorway.
+looks: A tall white hat, slightly squashed by the ears.
+unlock: 18
+
+name: Musician's cape
+touch: Heavy, silky fabric that drapes over the shoulders.
+sound: A grand whoosh when it spins around.
+looks: A deep purple cape with music notes sewn along the edge.
+unlock: 20
+
+name: Pajamas with feet
+touch: Warm flannel, soft all over, with snug little feet.
+sound: A cozy pad, pad down the hallway.
+looks: Light blue with tiny carrots printed everywhere.
+unlock: 22
+
+name: Sailor's sweater
+touch: Thick, chunky knit that smells a little like sea air.
+sound: The wooden buttons click together.
+looks: Navy and white stripes, a gift idea from Marlow.
+unlock: 24
+
+name: Detective coat
+touch: Long, soft tweed with a high collar to tuck its nose in.
+sound: A swish and a dramatic hmm with every clue.
+looks: A brown coat and a magnifying glass on a string.
+unlock: 27
+
+name: Patchwork quilt cape
+touch: Every square is different, velvet, corduroy, fleece and silk.
+sound: A soft rustle like turning pages.
+looks: A rainbow of patches stitched by Bramble.
+unlock: 30
+
+name: Starry wizard robe
+touch: Smooth, flowing fabric with little embroidered stars you can feel.
+sound: A gentle sparkle of tiny bells sewn into the hem.
+looks: Midnight blue with silver stars and a pointy hat.
+unlock: 35
+
+name: Golden carrot crown
+touch: Light and smooth, with little rounded points that are not sharp at all.
+sound: A soft chime when it nods, which it does often, to show it off.
+looks: A shiny gold crown shaped like carrot tops.
+unlock: 40
+
+name: Woolly winter scarf
+touch: Thick, fluffy wool wrapped around twice and still too long.
+sound: The fringe swishes along the snow behind it.
+looks: Red and white stripes, very festive.
+unlock: Winter
+
+name: Snow boots
+touch: Fleecy inside, rubbery outside, and very toasty.
+sound: A happy crunch, crunch in the snow.
+looks: Puffy little boots with pom poms on the laces.
+unlock: Winter
+
+name: Cozy cable knit sweater
+touch: Bumpy knit ridges that are fun to trace with a paw.
+sound: A soft woolly hush when it hugs you.
+looks: Cream colored, with a snowflake on the front.
+unlock: Winter
+
+name: Flower crown
+touch: Soft petals and cool, smooth stems woven together.
+sound: A faint buzz now and then, because a bee came to visit.
+looks: Daisies and violets in a little ring.
+unlock: Spring
+
+name: Spring rain boots
+touch: Smooth and bouncy, made for stomping.
+sound: A big happy splash in every puddle.
+looks: Green boots with frog faces on the toes, approved by Fennel.
+unlock: Spring
+
+name: Floppy sun hat
+touch: Light woven straw with a soft ribbon tie.
+sound: The brim flaps gently in the breeze.
+looks: A wide straw hat with a daisy tucked in the band.
+unlock: Summer
+
+name: Beach towel cape
+touch: Fluffy terry cloth, warm from the sun.
+sound: A soft flump when it flops down on the sand.
+looks: Bright orange with a seashell pattern.
+unlock: Summer
+
+name: Leaf pile sweater
+touch: A soft, slouchy knit with a few crunchy leaves stuck to it.
+sound: The leaves crackle every time it moves.
+looks: Rust and gold, like a maple tree.
+unlock: Fall
+
+name: Pumpkin hat
+touch: Warm, squishy knit with a little stem on top to wiggle.
+sound: A soft pat when it adjusts it for the tenth time.
+looks: A round orange hat that makes it look like a pumpkin.
+unlock: Fall
+
+name: Corduroy overalls
+touch: Ridged and soft, with a big front pocket for acorns.
+sound: Acorns clicking together in the pocket.
+looks: Brown overalls with brass buttons.
+unlock: Fall
