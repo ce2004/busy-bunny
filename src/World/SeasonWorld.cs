@@ -13,7 +13,7 @@ namespace BusyBunny
     /// </summary>
     public sealed class SeasonWorld : IFeature
     {
-        private const string Since = "0.19.0";
+        private const string Since = "0.14.0";
         private const string Green = "season.green", WindowPlace = "season.window", Hill = "season.hill", MusicTool = "season.music", ReportTool = "season.weather";
         private MainWindow _w = null!;
         private Store S => _w.Store;
