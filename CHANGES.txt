@@ -1,3 +1,17 @@
+0.15.0
+New feature: a Bunny menu, Alt B (Morgan's issue 19). Talk to Bunny, check on me now, start a new talk, get to know me again, Stop Bunny, Bunny changes today, import a syllabus with Bunny, Visit your bunny, today's briefing, what I finished and Smarter Bunny settings are all there now, instead of in File and Options. Control Shift A still takes you to Talk to Bunny.
+Bug fixed: if you moved around your lists with the keyboard after opening Busy Bunny, Bunny's daily briefing kept waiting and often never came (Morgan's issue 20). Now it comes the first time you open Busy Bunny each day, once any startup windows close. If it can't, like with no internet or the spending cap reached, Bunny tells you why in one line and tries again later that day.
+New feature: Bunny, Today's briefing gives you your briefing any time. You can also type give me my briefing in Talk to Bunny.
+Bug fixed: if you marked tasks done, Bunny could forget and suggest ways to catch up on them (Morgan's issue 20). Now Bunny always knows what you finished today and this past week, including Done not submitted, and never suggests catching up on something you finished.
+New feature: Bunny, What I finished shows what you finished today and on each day of the last two weeks. The Done list in the toolbox shows the same.
+New feature: School connection brings your due dates from Moodle or Canvas into Busy Bunny. Set it up in Options, Settings, School connection with a token from your school's site; the page tells you step by step how to get one. You approve your due dates the first time, and after that new ones are added each day by themselves, and one Control Z undoes them.
+New feature: if your teacher moves a due date in Moodle or Canvas, Busy Bunny moves it on your task too and keeps your own name and notes. Nothing is ever deleted.
+New feature: you can tell Busy Bunny to mark a task done when the school says you turned it in.
+New feature: Bunny can read your classes. Ask what is due this week, what you are missing, what an assignment's instructions say, your grades, or the latest announcements. Bunny only reads; it never changes or turns in anything at school. Turn it off on the School connection page.
+New feature: Visit your bunny is now the first line on the Bunny tab.
+New feature: Rate a line can keep a line you liked as an inside joke, which also counts as a thumbs up.
+Bug fixed: the lighthouse and Goldie could pick different tasks for you. Now they pick the same way.
+Bug fixed: a day a streak shield covered also counted toward honey, stars, photos and season goals as if you had met your goal. Now it only keeps your streak going.
 0.14.0
 This is the big one from issue 18: Stages 4 to 8 of your sweep, all at once, so it comes in one update. Everything new is in the Bunny Toolbox (Control Shift H), the Bunny tab or Bunny's world, and every tool can be turned off in Options, Settings, Fun and tools. Help, New in Busy Bunny lists it all. Calm mode still pauses all of it.
 Smarter Bunny (Stage 4):

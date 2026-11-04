@@ -15,6 +15,11 @@ namespace BusyBunny
         public int WeeklyGoal { get; set; }
         /// <summary>Days (yyyy-MM-dd) on which the daily goal was met.</summary>
         public List<string> GoalDays { get; set; } = new();
+        /// <summary>
+        /// Days (yyyy-MM-dd) a streak shield covered. They keep the streak going (Streaks counts them) but are not goal
+        /// days, so honey, stars, photos, season goals and the rest never count them.
+        /// </summary>
+        public List<string> CoveredDays { get; set; } = new();
         /// <summary>Badge id and when it was earned.</summary>
         public Dictionary<string, DateTime> Badges { get; set; } = new();
         public int BestDay { get; set; }
@@ -159,8 +164,9 @@ namespace BusyBunny
         /// <summary>The streak running now and the longest between two days. Vacation and rough days never break it, and today is not over yet.</summary>
         public static (int Current, int Longest) Streaks(Data d, DateTime today, DateTime? from = null)
         {
-            var goals = new HashSet<string>(d.Game.GoalDays);
-            var days = d.Game.GoalDays.Select(s => DateTime.TryParse(s, out var x) ? x.Date : DateTime.MaxValue).Where(x => x <= today.Date).ToList();
+            // Days a streak shield covered keep the streak going, though they are not goal days.
+            var goals = new HashSet<string>(d.Game.GoalDays.Concat(d.Game.CoveredDays));
+            var days = goals.Select(s => DateTime.TryParse(s, out var x) ? x.Date : DateTime.MaxValue).Where(x => x <= today.Date).ToList();
             if (days.Count == 0) return (0, 0);
             var start = days.Min();
             if (from is DateTime f && f > start) start = f.Date;
@@ -379,10 +385,7 @@ namespace BusyBunny
             return changed;
         }
 
-        /// <summary>Drops goal days (and this week's goal) that the points no longer reach, after points were taken back.</summary>
-        /// <summary>Set by streak shields: a goal day a shield covered is kept, whatever its points.</summary>
-        public static Func<Store, string, bool>? KeepGoalDay;
-
+        /// <summary>Drops goal days (and this week's goal) that the points no longer reach, after points were taken back. Days a shield covered are in CoveredDays and stay.</summary>
         public static void RecheckGoals(Store store, IEnumerable<DateTime> days, DateTime now)
         {
             var d = store.Data;
@@ -390,7 +393,6 @@ namespace BusyBunny
             foreach (var day in days)
             {
                 string key = day.ToString("yyyy-MM-dd");
-                if (KeepGoalDay?.Invoke(store, key) == true) continue;
                 if (g.GoalDays.Contains(key) && PointsOn(d, day) < DailyGoalFor(store, day)) g.GoalDays.Remove(key);
             }
             if (g.WeekGoalWeek == WeekStart(now).ToString("yyyy-MM-dd") && PointsInWeek(d, now) < WeeklyGoalFor(d))

@@ -488,10 +488,8 @@ namespace BusyBunny
             return things;
         }
 
-        /// <summary>The lighthouse beam picks one task: overdue first, then the soonest due, then the top priority.</summary>
-        public static TaskItem? Beam(Store s, DateTime now) => s.Data.Tasks
-            .Where(t => t.Status is Status.Today or Status.ThisWeek or Status.NextWeek)
-            .OrderBy(t => t.Due is DateTime d && d < now ? 0 : 1).ThenBy(t => t.Due ?? t.DoDate ?? DateTime.MaxValue).ThenBy(t => t.Priority == 0 ? 99 : t.Priority).FirstOrDefault();
+        /// <summary>The lighthouse beam picks one task the same way Goldie does (one rule for picking one task): the first urgent task, then the first of today's others, then this week's.</summary>
+        public static TaskItem? Beam(Store s, DateTime now) => FolkVillage.GoldiePick(s, now);
 
         public static List<PlaceThing> Lighthouse(Store s) => new()
         {
@@ -731,10 +729,11 @@ namespace BusyBunny
             // The night owl club's hours, including a closing hour after midnight.
             Need(ClubOpen(new DateTime(2026, 11, 4, 21, 0, 0), 23) && !ClubOpen(new DateTime(2026, 11, 4, 23, 30, 0), 23) && ClubOpen(new DateTime(2026, 11, 4, 0, 30, 0), 1) && !ClubOpen(new DateTime(2026, 11, 4, 15, 0, 0), 1), "the club's hours");
             Need(SemesterBreak(new DateTime(2026, 7, 1)) && !SemesterBreak(new DateTime(2026, 10, 1)) && YearEnd(new DateTime(2026, 12, 31)), "seasons for sailing and the balloon");
-            // The lighthouse picks an overdue task first.
+            // The lighthouse and Goldie pick one task the same way, and an overdue task counts.
             var late = new TaskItem { Name = "overdue one", List = s.Data.Lists[0].Name, Status = Status.Today, Due = DateTime.Now.AddDays(-2) };
-            s.Data.Tasks.Add(late);
-            Need(Beam(s, DateTime.Now)?.Id == late.Id, "the lighthouse did not pick the overdue task");
+            s.Data.Tasks.Insert(0, late);
+            Need(Beam(s, DateTime.Now)?.Id == FolkVillage.GoldiePick(s, DateTime.Now)?.Id, "the lighthouse and Goldie picked different tasks");
+            Need(Beam(s, DateTime.Now) != null, "the lighthouse found nothing with an overdue task waiting");
             s.Data.Tasks.Remove(late);
             Need(Landscape(s, DateTime.Now, t => t + " {day}").Count == 7 && Landscape(s, DateTime.Now, t => "{day}").All(l => !l.Contains('{')), "the lookout landscape");
             // A stone polishes after five working days.

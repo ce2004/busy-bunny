@@ -312,6 +312,20 @@ namespace BusyBunny
                 day.Items.Clear();
                 foreach (var m in items) day.Items.Add(m);
             }
+            // The Bunny menu (issue 19): talking first, the syllabus import after the talk items, its settings last.
+            if (w.AddMenuItem("Bunny", "_Visit your bunny...", Tools.Guard("visitbunny", () => { if (Tools.Find("visitbunny") is BunnyTool v) Tools.Use(w, v); })).Parent is MenuItem bunny)
+            {
+                string[] order = { "talk to bunny", "check on me", "new talk", "know me", "stop bunny", "changes today", "briefing", "what i finished", "syllabus", "visit your bunny", "settings" };
+                int Rank(MenuItem m) { string h = (m.Header as string ?? "").Replace("_", "").ToLowerInvariant(); int i = Array.FindIndex(order, o => h.Contains(o)); return i < 0 ? order.Length - 2 : i; }
+                var items = bunny.Items.OfType<MenuItem>().OrderBy(Rank).ToList();
+                bunny.Items.Clear();
+                // One separator only, before Smarter Bunny settings.
+                foreach (var m in items)
+                {
+                    if (Rank(m) == order.Length - 1 && bunny.Items.Count > 0 && bunny.Items[^1] is not Separator) bunny.Items.Add(new Separator());
+                    bunny.Items.Add(m);
+                }
+            }
             w.AddMenuItem("Help", "_New in Busy Bunny...", () => TextViewer.Show(w, "New in Busy Bunny", NewLines(w.AppSettings)));
             w.AddMenuItem("Help", "Every _tool in the toolbox...", () => TextViewer.Show(w, "Every tool in the toolbox", Tools.HelpLines(w.AppSettings), l => l.EndsWith(":")));
             w.AddMenuItem("Help", "Where things _moved...", () => TextViewer.Show(w, "Where things moved", MovedLines()));
@@ -326,6 +340,7 @@ namespace BusyBunny
             Tools.NoteMove("The roast dial, emoji and finals week mode settings: the Settings page called Fun is now called Bunny's voice, next to the new Fun and tools page.");
             Tools.NoteMove("View the parking lot: now a room in Bunny's world, the parking lot, also in the toolbox. Control Shift K still parks a thought.");
             Tools.NoteMove("Visit your bunny, Bunny's world, the burrow and the adventures: also on the new Bunny tab, after Upcoming.");
+            Tools.NoteMove("The Done list: also in the Bunny menu as What I finished, now with the two weeks before today. Today's briefing is new in the Bunny menu too.");
         }
 
         private List<string> MovedLines()
@@ -339,6 +354,8 @@ namespace BusyBunny
         {
             var lines = new List<string>
             {
+                "The Bunny menu, Alt B: Talk to Bunny, check on me now, start a new talk, get to know me again, Stop Bunny, Bunny changes today, Today's briefing, What I finished, Import a syllabus with Bunny, Visit your bunny and Smarter Bunny settings, all in one place. They used to be in File and Options, and every shortcut still works.",
+                "Bunny, Today's briefing: your daily briefing any time, or type give me my briefing in Talk to Bunny. Bunny, What I finished: everything you finished today and the two weeks before.",
                 "The Bunny Toolbox: Control Shift H, or Fun, Open the toolbox. Drawers of tools, a search box, and Control D for favorites.",
                 "The Bunny tab, after Upcoming: visit your bunny, Bunny's world, the burrow and the adventures, one line each.",
                 "The Day menu: rough day, kind of day, vacation, low-energy and finals week modes, the morning check-in and more.",
@@ -407,6 +424,18 @@ namespace BusyBunny
             Need(Tools.IsOn("no.such.tool"), "an unknown id counts as on");
             // Every menu has its own letters after the moves.
             Need(MainWindow.MenuKeyProblems.Count == 0, "menus share letters: " + string.Join("; ", MainWindow.MenuKeyProblems));
+            // The Bunny menu (issue 19) holds every Bunny item; File and Options hold none.
+            if (MainWindow.MenuHeaders.TryGetValue("Bunny", out var bunnyItems))
+            {
+                foreach (var h in new[] { "Talk to Bunny", "Bunny, check on me now", "Start a new talk with Bunny", "Bunny, get to know me again", "Stop Bunny", "Bunny changes today...", "Today's briefing", "What I finished...", "Import a syllabus with Bunny...", "Visit your bunny...", "Smarter Bunny settings..." })
+                    Need(bunnyItems.Contains(h), "the Bunny menu has no " + h);
+                Need(bunnyItems[0] == "Talk to Bunny" && bunnyItems[^1] == "Smarter Bunny settings...", "the Bunny menu is out of order");
+                foreach (var top in new[] { "File", "Options" })
+                    Need(!MainWindow.MenuHeaders[top].Any(h => h.Contains("Bunny") && !h.Contains("Busy Bunny")), "a Bunny item is still in " + top);
+                Need(Tools.MoveLines().Any(l => l.Contains("Bunny menu")), "Where things moved does not mention the Bunny menu");
+                Need(NewLines(new Settings())[0].StartsWith("The Bunny menu"), "New in Busy Bunny does not start with the Bunny menu");
+            }
+            else Need(false, "there is no Bunny menu");
             Need(MainWindow.MovedMenuKeys.Count == 0, "a menu letter had to move: " + string.Join("; ", MainWindow.MovedMenuKeys));
         }
     }
@@ -523,8 +552,8 @@ namespace BusyBunny
             _changed?.Invoke();
         }
 
-        /// <summary>The entries shown now: those whose tool is on.</summary>
-        public static List<BunnyTabEntry> Visible() => _entries.Where(e => e.ToolId == null || Tools.IsOn(e.ToolId)).ToList();
+        /// <summary>The entries shown now: those whose tool is on, Visit your bunny first (issue 19: most important first), then in the order registered.</summary>
+        public static List<BunnyTabEntry> Visible() => _entries.Where(e => e.ToolId == null || Tools.IsOn(e.ToolId)).OrderBy(e => e.ToolId == "visitbunny" ? 0 : 1).ToList();
         private List<BunnyTabEntry> _shown = new();
 
         private MainWindow _w = null!;
@@ -584,6 +613,7 @@ namespace BusyBunny
             foreach (var e in _entries)
                 if (e.ToolId != null && Tools.Find(e.ToolId) == null) throw new Exception("Bunny tab: " + e.Name + " names a tool that does not exist");
             if (_entries.Count(e => e.ToolId == null) > 0) throw new Exception("Bunny tab: a line has no tool, so it cannot be turned off");
+            if (Tools.IsOn("visitbunny") && Visible().FirstOrDefault()?.Name != "Visit your bunny") throw new Exception("Bunny tab: Visit your bunny is not the first line");
         }
     }
 }

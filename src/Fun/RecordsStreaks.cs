@@ -38,7 +38,7 @@ namespace BusyBunny
             Tool(YearId, "Year in review", "Your whole year, like Semester Wrapped. Opens in December.", ShowYear);
             BunnyTab.Register("Season pass", "your tier and the items so far", ShowPass, PassId);
 
-            Engine.KeepGoalDay = Shielded;
+            MoveCoveredDays(S);
             GameEvents.TaskStarted += _ => MarkStarted(S, DateTime.Now);
             GameEvents.StreakChanged += days => { if (Tools.IsOn(ShieldId)) EarnShield(S, days, DateTime.Now); };
             GameEvents.LevelUp += level => { if (Tools.IsOn(PerkId)) PerkShields(S, level); };
@@ -122,7 +122,7 @@ namespace BusyBunny
         public static string ComebackLine(Store s, DateTime now)
         {
             var (cur, _) = Engine.Streaks(s.Data, now);
-            var goals = s.Data.Game.GoalDays.Select(GamesFunKit.Day).OfType<DateTime>().Where(d => d.Date < now.Date.AddDays(-cur)).ToList();
+            var goals = s.Data.Game.GoalDays.Concat(s.Data.Game.CoveredDays).Select(GamesFunKit.Day).OfType<DateTime>().Where(d => d.Date < now.Date.AddDays(-cur)).ToList();
             if (goals.Count == 0) return cur > 0 ? "Your streak is " + GamesFunKit.Plural(cur, "day") + " and has never been broken, so there is nothing to come back from yet." : "No streak yet. Meet your daily goal to start one.";
             if (cur == 0) return "Your streak took a break. Meet your daily goal today and your comeback streak starts at 1.";
             return "Comeback streak: " + GamesFunKit.Plural(cur, "day") + " since your last break. " + Content.Pick(s, "records.comeback");
@@ -180,8 +180,31 @@ namespace BusyBunny
             if (changed) PutShields(s, sh);
         }
 
-        /// <summary>Whether a shield covered this goal day: Engine.RecheckGoals keeps it when a task of that day is un-finished.</summary>
-        public static bool Shielded(Store s, string dayKey) => ShieldsOf(s).Used.Contains(dayKey);
+        /// <summary>Whether a shield covered this day.</summary>
+        public static bool Shielded(Store s, string dayKey) => ShieldsOf(s).Used.Contains(dayKey) || s.Data.Game.CoveredDays.Contains(dayKey);
+
+        /// <summary>
+        /// Older versions put a shield's day in GoalDays, so honey, stars and photos counted it: those days move to
+        /// CoveredDays, unless she really met the goal that day. Returns how many moved.
+        /// </summary>
+        public static int MoveCoveredDays(Store s)
+        {
+            var g = s.Data.Game;
+            int moved = 0;
+            bool changed = false;
+            foreach (var key in ShieldsOf(s).Used)
+            {
+                // Every shield day is covered, even one that also met the goal: if a task from it is set back later,
+                // RecheckGoals may drop it from GoalDays, and the shield still keeps the streak.
+                if (!g.CoveredDays.Contains(key)) { g.CoveredDays.Add(key); changed = true; }
+                if (!g.GoalDays.Contains(key) || GamesFunKit.Day(key) is not DateTime day) continue;
+                if (Engine.PointsOn(s.Data, day) >= Engine.DailyGoalFor(s, day)) continue;
+                g.GoalDays.Remove(key);
+                moved++;
+            }
+            if (moved > 0 || changed) s.Save();
+            return moved;
+        }
 
         /// <summary>
         /// At the start of a day: missed days just before it (not vacation or rough days) right after a goal day are
@@ -191,7 +214,7 @@ namespace BusyBunny
         {
             var sh = ShieldsOf(s);
             if (sh.Have <= 0) return null;
-            var goals = s.Data.Game.GoalDays.ToHashSet();
+            var goals = s.Data.Game.GoalDays.Concat(s.Data.Game.CoveredDays).ToHashSet();
             var missed = new List<DateTime>();
             var day = now.Date.AddDays(-1);
             for (int k = 0; k < 7; k++, day = day.AddDays(-1))
@@ -204,7 +227,8 @@ namespace BusyBunny
             int streak = Engine.Streaks(s.Data, day).Current;
             if (streak < 2) return null;
             s.Remember("a streak shield");
-            foreach (var m in missed) s.Data.Game.GoalDays.Add(GamesFunKit.Key(m));
+            // Covered, not met: the streak counts these days, the rewards for goal days do not.
+            foreach (var m in missed) s.Data.Game.CoveredDays.Add(GamesFunKit.Key(m));
             sh.Have -= missed.Count;
             sh.Used.AddRange(missed.Select(GamesFunKit.Key));
             PutShields(s, sh);
@@ -434,19 +458,40 @@ namespace BusyBunny
             EarnShield(store, 14, today.AddDays(1));
             Need(ShieldsOf(store).Have == MaxShields, "more than 3 shields, or a shield earned twice");
             d.Game.GoalDays.Clear();
+            d.Game.CoveredDays.Clear();
             for (int k = 2; k <= 6; k++) d.Game.GoalDays.Add(GamesFunKit.Key(today.AddDays(-k)));
+            string yesterday = GamesFunKit.Key(today.AddDays(-1));
             string? note = UseShields(store, today);
-            Need(note != null && d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))) && ShieldsOf(store).Have == MaxShields - 1, "a shield did not cover the missed day");
+            Need(note != null && d.Game.CoveredDays.Contains(yesterday) && ShieldsOf(store).Have == MaxShields - 1, "a shield did not cover the missed day");
             Need(Engine.Streaks(d, today).Current == 6, "the streak was not kept by the shield");
-            // Un-finishing a task of a shielded day keeps the day: RecheckGoals asks the shields.
-            Engine.KeepGoalDay ??= Shielded;
+            // A covered day is not a goal day: honey, casts, stars, photos and season goals count only the five real ones.
+            Need(!d.Game.GoalDays.Contains(yesterday), "a shield's day counted as a goal day");
+            Need(PlaceStats.Of(store).GoalDays == 5, "the world's rewards counted a shield's day");
+            Need(PlaceRooms.Photos(store).Count == 5, "the photo booth has a snapshot of a shield's day");
+            // Un-finishing a task of a shielded day keeps the streak: RecheckGoals never touches covered days.
             Engine.RecheckGoals(store, new[] { today.AddDays(-1) }, today);
-            Need(d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))), "rechecking goals dropped a day a shield covered");
+            Need(d.Game.CoveredDays.Contains(yesterday) && Engine.Streaks(d, today).Current == 6, "rechecking goals dropped a day a shield covered");
             store.Undo();
             d = store.Data;
-            Need(!d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))), "Control Z did not take the shield's day back");
+            Need(!d.Game.CoveredDays.Contains(yesterday), "Control Z did not take the shield's day back");
             Need(ShieldsOf(store).Have == MaxShields && ShieldsOf(store).Used.Count == 0, "Control Z of a streak shield did not give the shield back");
+            // An older version's shield day in GoalDays moves to the covered days; a day she really met stays.
+            var oldShields = ShieldsOf(store);
+            oldShields.Used.Add(yesterday);
+            PutShields(store, oldShields);
+            d.Game.GoalDays.Add(yesterday);
+            Need(MoveCoveredDays(store) == 1 && !d.Game.GoalDays.Contains(yesterday) && d.Game.CoveredDays.Contains(yesterday), "an older shield day stayed a goal day");
+            // A shield day she really met stays a goal day, and is covered too, so setting a task back later cannot drop it.
+            d.Game.CoveredDays.Clear();
+            d.Game.GoalDays.Add(yesterday);
+            var met = new LogEntry { Kind = "Done", When = GamesFunKit.Day(yesterday)!.Value.AddHours(12), Points = 10000, TaskId = Guid.NewGuid() };
+            d.Log.Add(met);
+            Need(MoveCoveredDays(store) == 0 && d.Game.GoalDays.Contains(yesterday) && d.Game.CoveredDays.Contains(yesterday), "a met shield day was not kept as covered");
+            d.Log.Remove(met);
+            oldShields.Used.Clear();
+            PutShields(store, oldShields);
             d.Game.GoalDays.Clear();
+            d.Game.CoveredDays.Clear();
             // The first run settles last month quietly: no badge for a month that never had a title.
             store.World.SetKept(MonthId, new Months());
             d.Log.Add(new LogEntry { Kind = "Done", When = today.AddMonths(-1), Points = 1, TaskId = Guid.NewGuid() });

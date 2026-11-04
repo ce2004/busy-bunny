@@ -2,6 +2,16 @@ Busy Bunny bug list
 
 This file keeps track of the bugs found in Busy Bunny, how each one was fixed, and what could not be tested. It was asked for by Morgan in sweep 9.12. It is plain text so that NVDA and a braille display can read it easily. Each bug is one line: what went wrong, then the word Fixed with how it was fixed. New rounds of bug hunting get a new section at the top.
 
+Version 0.15.0, November 4, 2026
+
+From Morgan's issue 20: Bunny's daily briefing waited for a quiet minute with no key pressed, and moving around the lists with NVDA counted as typing, so it often never came. Fixed: it only waits while you are typing in a text box, and says why if it cannot come.
+From Morgan's issue 20: Bunny was only told about open tasks, so it could think finished ones were still to do, and its weekly notes about you could keep saying so. Fixed: Bunny always gets what you finished this week, and its notes keep only patterns.
+Found by the reviewer of the new School connection, all fixed before release: a saved token could be sent to a new school address you typed; one Canvas class with hidden assignments could stop the whole check; Moodle quizzes that had not opened yet were treated as turned in; a daily check and the first checklist could add the same due dates twice; work the school marked as turned in skipped its points; the token status was not reachable with Tab; and Bunny's school tools ignored their on and off switch.
+Also fixed: asking Bunny something that only mentioned a briefing, like adding a task called club briefing, was taken as asking for your briefing.
+Not fixed yet: nothing known.
+What was tested: the automatic self-test, three times in a row, including checks with sample Canvas and Moodle answers; the real app on the x64 server: every menu, the new Bunny menu and its letters, and closing.
+What could not be tested: a real Canvas or Moodle school, NVDA and braille, an ARM64 machine, and Bunny with a real Claude key.
+
 Version 0.14.0, November 4, 2026
 
 Stages 4 to 8 were each built separately, then each was read by a second reviewer who had not written it, and every problem below was fixed before release.

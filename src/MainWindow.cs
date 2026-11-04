@@ -212,6 +212,7 @@ namespace BusyBunny
             Refresh();
             _urgentBefore = _store.Today(DateTime.Now).ToDo.Count;
             MenuKeyProblems = AccessKeys.MenuProblems(menu);
+            MenuHeaders = _menus.ToDictionary(p => p.Key, p => p.Value.Items.OfType<MenuItem>().Select(i => (i.Header as string ?? "").Replace("_", "")).ToList());
         }
 
         // The day NewDay last ran for: only CheckNewDay moves it, so a Refresh just after midnight cannot skip the new day.
@@ -219,6 +220,8 @@ namespace BusyBunny
         private bool _jumpIntoTab;
         /// <summary>Menus with two items on one access key in the main window built last (the self-test reads it).</summary>
         public static List<string> MenuKeyProblems { get; private set; } = new();
+        /// <summary>Each top menu's item names, without access key marks, in the main window built last (the self-test reads it).</summary>
+        public static Dictionary<string, List<string>> MenuHeaders { get; private set; } = new();
         /// <summary>The headers whose access key AddMenuItem had to move, because the letter was taken in that menu.</summary>
         public static readonly List<string> MovedMenuKeys = new();
 
@@ -364,7 +367,7 @@ namespace BusyBunny
 
         private readonly Dictionary<string, MenuItem> _menus = new();
         private Separator? _exitSeparator;
-        /// <summary>Adds an item to a top menu: File, Task, View, Day, Fun, Options or Help. In File it goes above Exit, which stays last.</summary>
+        /// <summary>Adds an item to a top menu: File, Task, View, Day, Fun, Bunny, Options or Help. In File it goes above Exit, which stays last.</summary>
         public MenuItem AddMenuItem(string menu, string header, Action act, string gesture = "")
         {
             var top = _menus[menu];
@@ -520,9 +523,11 @@ namespace BusyBunny
             // Alt Y: Alt D is To do today on the Today tab.
             var day = new MenuItem { Header = "Da_y", Visibility = Visibility.Collapsed };
             var fun = new MenuItem { Header = "F_un", Visibility = Visibility.Collapsed };
+            // The Bunny menu (Morgan's issue 19): talking to Bunny, its changes, the syllabus import and its settings, all in one place.
+            var bunny = new MenuItem { Header = "_Bunny", Visibility = Visibility.Collapsed };
             var bar = new Menu();
-            foreach (var m in new[] { file, task, view, day, fun, options, help }) bar.Items.Add(m);
-            _menus["File"] = file; _menus["Task"] = task; _menus["View"] = view; _menus["Day"] = day; _menus["Fun"] = fun; _menus["Options"] = options; _menus["Help"] = help;
+            foreach (var m in new[] { file, task, view, day, fun, bunny, options, help }) bar.Items.Add(m);
+            _menus["File"] = file; _menus["Task"] = task; _menus["View"] = view; _menus["Day"] = day; _menus["Fun"] = fun; _menus["Bunny"] = bunny; _menus["Options"] = options; _menus["Help"] = help;
             return bar;
         }
 

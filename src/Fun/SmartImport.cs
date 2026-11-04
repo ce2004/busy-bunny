@@ -29,7 +29,8 @@ namespace BusyBunny
             _w = w;
             Tools.Register(new BunnyTool(SyllabusId, "Import a syllabus with Bunny", Drawers.Plan, "Paste a syllabus; Bunny finds the due dates, tests and readings, and you approve them.", ImportSyllabus) { Since = "0.14.0" });
             Tools.Register(new BunnyTool(SemesterId, "Semester setup with Bunny", Drawers.Plan, "Paste your class schedule and syllabi; Bunny proposes tags, class times, weekday plans and due dates.", SemesterSetup) { Since = "0.14.0" });
-            w.AddMenuItem("File", "Import a s_yllabus with Bunny...", Tools.Guard(SyllabusId, ImportSyllabus));
+            w.AddMenuItem("Bunny", "Import a s_yllabus with Bunny...", Tools.Guard(SyllabusId, ImportSyllabus));
+            Tools.NoteMove("Import a syllabus with Bunny: was in the File menu, now in the Bunny menu.");
         }
 
         // ---- What Bunny proposes ----
@@ -229,7 +230,7 @@ namespace BusyBunny
         private async void SemesterSetup()
         {
             if (_busy) { _w.Say("Bunny is still reading the last one.", true); return; }
-            if (!SmartBunny.Ready) { _w.Say("Semester setup needs Bunny's Claude key: Options, Smarter Bunny. Without it, File, Import a syllabus with Bunny still finds the dated lines.", true); return; }
+            if (!SmartBunny.Ready) { _w.Say("Semester setup needs Bunny's Claude key: Bunny, Smarter Bunny settings. Without it, Bunny, Import a syllabus with Bunny still finds the dated lines.", true); return; }
             if (SmartSpend.CapReached()) { _w.Say(new SmartSpend.CapHit(SmartSpend.CapOf(_w.Store).Dollars).Message, true); return; }
             var store = _w.Store;
             var lists = Lists(true);
@@ -257,7 +258,7 @@ namespace BusyBunny
             }
             catch (Exception e) { _w.Say((e is SmartUi.StoppedByHand ? e.Message : SmartBunny.Problem(e)) + " Nothing changed.", true); back(); return; }
             finally { _busy = false; }
-            if (p.Tags.Count + p.Classes.Count + p.Plans.Count + p.Tasks.Count == 0) { _w.Say("Bunny could not find a schedule or dates in that. Nothing changed. File, Import a syllabus with Bunny can read one syllabus at a time.", true); back(); return; }
+            if (p.Tags.Count + p.Classes.Count + p.Plans.Count + p.Tasks.Count == 0) { _w.Say("Bunny could not find a schedule or dates in that. Nothing changed. Bunny, Import a syllabus with Bunny can read one syllabus at a time.", true); back(); return; }
 
             var keep = new Proposal();
             bool Group<T>(string title, string intro, List<T> items, Func<T, string> line, Func<T, bool> on, List<T> into)

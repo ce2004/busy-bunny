@@ -38,7 +38,7 @@ namespace BusyBunny
             Tool(MarbleId, "The marble jar", "Every finished task drops a marble in. Fifty fills the jar and gives a prize.", ShowJar);
             Tool(ShareId, "Share a win", "Copies a short brag line about today, ready to paste to a friend.", Share, "Control Shift C");
             Tool(RaceId, "Race your past self", "Today's points so far against the same day last week at this time.", ShowRace);
-            Tool(DoneListId, "Done list", "Only what you finished today, including I did a thing.", ShowDoneList);
+            Tool(DoneListId, "Done list", "What you finished today and the two weeks before, including I did a thing. Also Bunny, What I finished.", ShowDoneList);
             Tool(BestDayId, "Best day replay", "Your best day ever: what you finished and how it went.", ShowBestDay);
             Tool(BestsId, "Personal bests board", "Your records: longest sprint, most before noon, biggest day and more.", ShowBests);
             Tool(ReceiptId, "Effort receipt", "A silly receipt for your day: items, effort and a fake total.", ShowReceipt);
@@ -211,19 +211,53 @@ namespace BusyBunny
 
         // ---- Done list and best day ----
 
+        /// <summary>
+        /// When a finished task was finished: Done keeps DoneAt; Done not submitted has no DoneAt, so it is when its
+        /// status was set. Null for a task that is not finished.
+        /// </summary>
+        public static DateTime? FinishedAt(TaskItem t) =>
+            t.Status == Status.Done ? t.DoneAt ?? t.StatusSince : t.Status == Status.DoneNotSubmitted ? t.StatusSince ?? t.DoneAt ?? t.TouchedAt : null;
+
+        /// <summary>Tasks finished on a day, Done and Done not submitted, on lists that are not archived, earliest first.</summary>
+        public static List<TaskItem> FinishedOn(Store s, DateTime day) =>
+            GamesFunKit.Live(s).Where(t => FinishedAt(t)?.Date == day.Date).OrderBy(t => FinishedAt(t)).ToList();
+
         public static List<string> DoneList(Store s, DateTime day)
         {
-            var lines = GamesFunKit.DoneOn(s, day).OrderBy(t => t.DoneAt).Select(t => Words.Time(t.DoneAt!.Value) + ": " + t.Name + (t.Status == Status.DoneNotSubmitted ? ", done, not submitted yet" : "")).ToList();
+            var lines = FinishedOn(s, day).Select(t => Words.Time(FinishedAt(t)!.Value) + ": " + t.Name + ", " + t.List + (t.Status == Status.DoneNotSubmitted ? ", done, not submitted yet" : "")).ToList();
             lines.AddRange(s.Data.Log.Where(e => e.Kind == "DidAThing" && e.When.Date == day.Date).Select(e => Words.Time(e.When) + ": " + e.Text + ", I did a thing"));
             return lines;
         }
 
-        private void ShowDoneList()
+        /// <summary>How many days the done list looks back, today included.</summary>
+        public const int DoneLogDays = 14;
+
+        /// <summary>
+        /// The log of what she finished (Morgan's issue 20): today first, then each earlier day with something finished,
+        /// back DoneLogDays days. Her own window, so every list she can see is in it.
+        /// </summary>
+        public static List<string> DoneLog(Store s, DateTime now, int days = DoneLogDays)
         {
-            var lines = DoneList(S, DateTime.Now);
-            lines.Insert(0, lines.Count == 0 ? "Nothing finished yet today. That is fine; the day is not over." : GamesFunKit.Plural(lines.Count, "thing") + " done today.");
-            GamesFunKit.Read(_w, "Done list", lines);
+            var lines = new List<string>();
+            var today = DoneList(s, now);
+            lines.Add(today.Count == 0 ? "Today: nothing finished yet. That is fine; the day is not over." : "Today, " + GamesFunKit.Plural(today.Count, "thing") + " done.");
+            lines.AddRange(today);
+            for (int back = 1; back < days; back++)
+            {
+                var day = now.Date.AddDays(-back);
+                var those = DoneList(s, day);
+                if (those.Count == 0) continue;
+                lines.Add((back == 1 ? "Yesterday, " : day.ToString("dddd, MMMM d", System.Globalization.CultureInfo.InvariantCulture) + ", ") + GamesFunKit.Plural(those.Count, "thing") + " done.");
+                lines.AddRange(those);
+            }
+            if (lines.Count == 1) lines.Add("Nothing finished in the last " + days + " days yet. The first one is the hardest.");
+            return lines;
         }
+
+        /// <summary>The done list window: what she finished today and the days before. Also Bunny, What I finished.</summary>
+        public static void ShowDoneLog(MainWindow w) => GamesFunKit.Read(w, "What I finished", DoneLog(w.Store, DateTime.Now));
+
+        private void ShowDoneList() => ShowDoneLog(_w);
 
         public static DateTime? BestDay(Data d) =>
             d.Log.Where(e => Engine.KarmaKinds.Contains(e.Kind)).GroupBy(e => e.When.Date).Select(g => (Day: g.Key, Pts: g.Sum(e => e.Points))).Where(x => x.Pts > 0).OrderByDescending(x => x.Pts).ThenByDescending(x => x.Day).Select(x => (DateTime?)x.Day).FirstOrDefault();
@@ -490,6 +524,19 @@ namespace BusyBunny
             store.Data.Tasks.Add(later);
             Need(!WindPrompt(store, monday.AddDays(-14)).Contains("ZZ later") && (list.PrivateFromBunny || list.Archived || WindPrompt(store, monday.AddDays(-7)).Contains("ZZ later")), "a wind-down used the wrong week's tasks");
             store.Data.Tasks.Remove(later);
+            // The done log (issue 20): Done not submitted counts, and earlier days are in it, not only today.
+            var handIn = new TaskItem { Name = "ZZ hand in later", List = list.Name, Status = Status.DoneNotSubmitted, StatusSince = now };
+            var yesterday = new TaskItem { Name = "ZZ yesterday thing", List = list.Name, Status = Status.Done, DoneAt = now.Date.AddDays(-1).AddHours(15) };
+            store.Data.Tasks.Add(handIn);
+            store.Data.Tasks.Add(yesterday);
+            if (!list.Archived)
+            {
+                var log = DoneLog(store, now);
+                Need(log.Any(l => l.Contains("ZZ hand in later") && l.Contains("not submitted")), "the done log left out a task done but not submitted");
+                Need(log.Any(l => l.Contains("ZZ yesterday thing")) && !DoneList(store, now).Any(l => l.Contains("ZZ yesterday thing")), "the done log left out yesterday, or today's list had it");
+            }
+            store.Data.Tasks.Remove(handIn);
+            store.Data.Tasks.Remove(yesterday);
             // Kindness: points, a wildflower and a done list line, all undone in one step; 3 paid a day.
             int before = Engine.Total(store.Data);
             LogKindness(store, "carried groceries", now);

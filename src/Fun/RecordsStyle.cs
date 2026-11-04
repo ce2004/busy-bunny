@@ -83,7 +83,7 @@ namespace BusyBunny
                 Celebration.Set(s, next);
                 w.Say("Celebration style is " + next + " now. " + Celebration.Describe(next) + ".", true);
             }) { Since = "0.14.0", State = () => Celebration.Style(s) });
-            Tools.Register(new BunnyTool(RateId, "Rate a line", Drawers.Wins, "Thumbs up or down on the last fun line, so you hear more of the ones you like.", Rate) { Since = "0.14.0" });
+            Tools.Register(new BunnyTool(RateId, "Rate a line", Drawers.Wins, "Thumbs up or down on the last fun line, so you hear more of the ones you like, or keep a funny one as an inside joke.", Rate) { Since = "0.14.0" });
             Tools.Register(new BunnyTool(JarId, "Compliment jar", Drawers.Wins, "Hear a kind line about your work, or put one in.", ShowJar) { Since = "0.14.0" });
             BunnyTab.Register("Compliment jar", "a kind line about your work", ShowJar, JarId);
 
@@ -173,11 +173,23 @@ namespace BusyBunny
         {
             if (Heard is not (string topic, string line, string said)) { _w.Say("There is no fun line to rate yet. Finish something first.", true); return; }
             int now = RatingOf(_w.Store, topic, line);
-            var choices = new[] { "Thumbs up: more like this", "Thumbs down: not this one again", "No rating" };
+            var choices = new[] { "Thumbs up: more like this", "Thumbs down: not this one again", "No rating", "That was funny, keep it as an inside joke" };
             int i = GamesFunKit.Pick(_w, "Rate a line", "_Your rating", choices, now > 0 ? 0 : now < 0 ? 1 : 2, "The last fun line you heard was: " + said);
             if (i < 0) return;
-            SetRating(_w.Store, topic, line, i == 0 ? 1 : i == 1 ? -1 : 0);
-            _w.Say(i == 0 ? "Thumbs up. You will hear lines like that a bit more." : i == 1 ? "Thumbs down. That line is out of the rotation." : "Rating cleared.", true);
+            _w.Say(ApplyRating(_w.Store, topic, line, said, i), true);
+        }
+
+        /// <summary>
+        /// Her choice in Rate a line: 0 thumbs up, 1 thumbs down, 2 no rating, 3 an inside joke, which keeps the words
+        /// she heard in Bunny's jokes and also counts as a thumbs up. Returns what to say.
+        /// </summary>
+        public static string ApplyRating(Store s, string topic, string line, string said, int choice)
+        {
+            SetRating(s, topic, line, choice is 0 or 3 ? 1 : choice == 1 ? -1 : 0);
+            if (choice == 3)
+                return FolkBunny.AddJoke(s, said) ? "Ha, an inside joke now. Bunny will bring it up again some day, and you will hear lines like that a bit more."
+                    : "Bunny already keeps that one as an inside joke. You will hear lines like that a bit more.";
+            return choice == 0 ? "Thumbs up. You will hear lines like that a bit more." : choice == 1 ? "Thumbs down. That line is out of the rotation." : "Rating cleared.";
         }
 
         // ---- Compliment jar ----
@@ -266,6 +278,13 @@ namespace BusyBunny
             Need(Celebration.Plays(store) == !Calm.FunPaused, "Calm mode does not silence celebration sounds");
             for (int k = 1; k < lines.Count; k += 2) SetRating(store, "records.cheer.roast", lines[k], 0);
             Need(RatingOf(store, "records.cheer.roast", lines[1]) == 0, "clearing a rating");
+            // An inside joke goes in Bunny's jokes and counts as a thumbs up.
+            string joke = "Selftest joke line " + Guid.NewGuid().ToString("N");
+            ApplyRating(store, "records.cheer.roast", lines[1], joke, 3);
+            Need(RatingOf(store, "records.cheer.roast", lines[1]) == 1, "an inside joke did not count as a thumbs up");
+            Need(FolkBunny.JokesOf(store).Contains(joke), "an inside joke did not go in Bunny's jokes");
+            FolkBunny.DropJoke(store, joke);
+            SetRating(store, "records.cheer.roast", lines[1], 0);
             _cache = null; _cacheFor = null;
         }
     }

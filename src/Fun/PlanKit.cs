@@ -319,7 +319,7 @@ namespace BusyBunny
 
         // Bunny's daily briefing comes first on the first open of a day; the morning line waits for it, but not forever.
         private static bool BriefingDue(MainWindow w, DateTime now, MorningNote m) =>
-            SmartBunny.Ready && w.AppSettings.BunnyBriefing && w.AppSettings.BunnyBriefedDay != w.Store.Key(now) && now.Hour >= 5 && now.Hour < 22 && now - m.Since < BriefingWait;
+            SmartBunny.Ready && SmartBunny.BriefingDue(w.AppSettings, w.Store, now, default) && now - m.Since < BriefingWait;
     }
 
     /// <summary>Ties the shared Stage 5 helpers to the app: the morning line, the tone ladder sounds and the settings page.</summary>

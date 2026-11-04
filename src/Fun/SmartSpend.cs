@@ -10,7 +10,7 @@ namespace BusyBunny
 {
     /// <summary>
     /// Bunny's spending (sweep 3.4 and 8.5): every answer from Claude reports the tokens it used, and Busy Bunny adds
-    /// them up here at the published prices, so Options, Smarter Bunny can say about how much credit this month has
+    /// them up here at the published prices, so Bunny, Smarter Bunny settings can say about how much credit this month has
     /// used (always as an estimate: it only knows this computer). The daily spending cap, off until she turns it on,
     /// stops every Bunny call for the rest of the day once the day's estimate reaches it, and says so plainly.
     /// Both live in the world's bookkeeping (GetKept), so Control Z never changes them.
@@ -47,7 +47,7 @@ namespace BusyBunny
         /// <summary>Bunny is over today's cap: every Bunny call stops, with this line.</summary>
         public sealed class CapHit : Exception
         {
-            public CapHit(double cap) : base("Bunny is at today's spending cap of " + SmartUi.Money(cap) + ", so it is resting until tomorrow. Options, Smarter Bunny changes the cap.") { }
+            public CapHit(double cap) : base("Bunny is at today's spending cap of " + SmartUi.Money(cap) + ", so it is resting until tomorrow. Bunny, Smarter Bunny settings changes the cap.") { }
         }
 
         public void Attach(MainWindow w) { }
@@ -135,7 +135,7 @@ namespace BusyBunny
         }
 
         /// <summary>The line said once when the day's spending reaches the cap.</summary>
-        public static string CapLine(double cap) => "Bunny just reached today's spending cap of " + SmartUi.Money(cap) + ". It rests until tomorrow; Options, Smarter Bunny changes the cap.";
+        public static string CapLine(double cap) => "Bunny just reached today's spending cap of " + SmartUi.Money(cap) + ". It rests until tomorrow; Bunny, Smarter Bunny settings changes the cap.";
 
         public static void Add(Store s, DateTime now, double dollars, bool asked = false)
         {
@@ -199,7 +199,7 @@ namespace BusyBunny
             return line;
         }
 
-        // ---- On Options, Smarter Bunny ----
+        // ---- On Bunny, Smarter Bunny settings ----
 
         /// <summary>The credit check and the daily spending cap, as a part of the Smarter Bunny page.</summary>
         public sealed class Panel
