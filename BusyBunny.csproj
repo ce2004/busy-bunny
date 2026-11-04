@@ -10,7 +10,7 @@
     <RootNamespace>BusyBunny</RootNamespace>
     <Product>Busy Bunny</Product>
     <AssemblyTitle>Busy Bunny</AssemblyTitle>
-    <Version>0.13.0</Version>
+    <Version>0.14.0</Version>
     <ApplicationIcon Condition="Exists('native\BusyBunny.ico')">native\BusyBunny.ico</ApplicationIcon>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
@@ -40,7 +40,7 @@
     <EmbeddedResource Include="native\Concentus-LICENSE.txt" LogicalName="Concentus-LICENSE.txt" />
     <EmbeddedResource Include="CHANGES.txt" LogicalName="CHANGES.txt" />
     <!-- The content library (src\Engine\Content.cs): one plain text file per topic. -->
-    <EmbeddedResource Include="src\Content\*.txt">
+    <EmbeddedResource Include="src\Content\*.txt" WithCulture="false">
       <LogicalName>content.%(Filename).txt</LogicalName>
     </EmbeddedResource>
   </ItemGroup>

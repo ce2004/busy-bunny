@@ -2,6 +2,31 @@ Busy Bunny bug list
 
 This file keeps track of the bugs found in Busy Bunny, how each one was fixed, and what could not be tested. It was asked for by Morgan in sweep 9.12. It is plain text so that NVDA and a braille display can read it easily. Each bug is one line: what went wrong, then the word Fixed with how it was fixed. New rounds of bug hunting get a new section at the top.
 
+Version 0.14.0, November 4, 2026
+
+Stages 4 to 8 were each built separately, then each was read by a second reviewer who had not written it, and every problem below was fixed before release.
+
+Privacy: About me lines could be sent to Claude much more often than needed, even with the About me tool off. Fixed: only a few lines a reply truly needs, and none when the tool is off.
+Privacy: the Friday wind-down and Bunny's semester poem sent counts that included private lists. Fixed: they count only lists Bunny may see.
+Money: two Bunny calls at once could go past the daily spending cap. Fixed: each call sets aside its cost before it starts.
+Points: bonuses from different features, like power hour, the dice roll, the golden task and the combo meter, could add up to six or eight times a task's points. Fixed: all bonuses for one task share a limit of four times, and un-finishing takes them all back.
+Points: daily three, treasure maps and a few others could be paid again by setting a task back and finishing it again. Fixed: each pays once.
+Tasks: the done is done lock undid the last change to put a task back, which could throw away other work. Fixed: it only sets that task's status back.
+Tasks: a pick-several list could pick a line you never chose, so a monthly fresh start could move a task you did not pick. Fixed.
+Bunny's world: a granted wish spent points but nothing arrived. Fixed: it goes to your burrow or storage.
+Bunny's world: sonar diving gave a new treasure every time you pressed Enter after a find. Fixed.
+Bunny's world: some places were there twice, like two burrows, three villages and two weather windows. Fixed: one of each.
+Bunny's world: some lines read the word name in curly brackets out loud instead of your bunny's name. Fixed.
+Bunny's world: Visit your bunny could open several windows in a row and repeat reminders. Fixed: at most one question, three extra lines and one reminder line.
+Sounds: a change of music mood cut off ringing notes. Fixed: it glides.
+Keys: Share a win was going to be Control Alt W, which types a letter on some keyboards. Fixed: it is Control Shift C.
+Calm: the trivia break and some sounds came during class, quiet hours or Calm mode. Fixed.
+
+Not fixed yet: Goldie and the lighthouse use different rules to pick one task; Rate a line has no "keep it as an inside joke" choice yet; days a streak shield covered still count toward honey and stars.
+Not built in this round, because they need things that are not set up yet: sync between laptops and the phone page, phone notifications, gifts from friends, study buddy, sharing a list, Google Calendar, importing from the school's class system, and Siri. Making the repository private is also waiting for Conner, because it would stop the update check from working.
+What was tested: the automatic self-test, which checks the fixes above, on every release; the real app on the x64 server driven with UI Automation: the toolbox, its search, the Bunny tab, walking into Bunny's world and the map room, Escape back out, Quick add saving, and File, Exit.
+What could not be tested: NVDA and braille were not used; no ARM64 machine; no real Claude key, so Bunny-written lines, the spending cap and the imports were checked by the self-test and by reading the code.
+
 Version 0.13.0, November 4, 2026
 
 Found by the second reviewer of the new toolbox and engines, all fixed before release:

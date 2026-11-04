@@ -37,7 +37,7 @@ namespace BusyBunny
             Folk.Tool("folk.poem", "Bunny's poems", Drawers.World, "A poem your bunny writes you at the end of each semester.", Poems);
             Folk.Tool("folk.playlist", "Bunny's playlist", Drawers.Rest, "Your bunny picks music for your mood from the sounds you have.", Playlist);
 
-            Folk.Visit("folk.mood", (_, now) => { var (m, r) = MoodNow(S, now); return new[] { S.Data.Game.BunnyName + " feels " + m + ". " + Folk.End(r) }; });
+            // Bunny's mood is said once, in the visit's own "how Bunny is" lines (GameFeature.Mood reads MoodNow).
             Folk.Visit("folk.traits", (_, now) => MonthLine(S, now) is string l ? new[] { l } : Array.Empty<string>());
             Folk.Visit("folk.anniv", (_, now) => Today(S, now).Select(a => Folk.Pick(S, "folk.anniv", ("when", a.When), ("what", a.What))).Take(2));
             Folk.Visit("folk.jokes", (_, now) => JokeLine(S, now) is string j ? new[] { j } : Array.Empty<string>());
@@ -47,7 +47,7 @@ namespace BusyBunny
                 ? new[] { S.Data.Game.BunnyName + " is still glowing about today: " + liked.ToLowerInvariant() + " is one of its very favorite things. Thank you for that." } : Array.Empty<string>());
             GameEvents.ToolUsed += id => Liked(S, id, DateTime.Now);
             FolkShop.OnPlaceActivity += (place, activity) => Liked(S, place + " " + activity, DateTime.Now);
-            Folk.Visit("folk.nap", (_, now) => Folk.RestToday(S, now) ? new[] { Folk.Pick(S, "folk.nap") } : Array.Empty<string>());
+            Folk.Visit("folk.nap", (_, now) => Folk.RestToday(S, now) && Folk.First(S, "nap." + S.Key(now)) ? new[] { Folk.Pick(S, "folk.nap") } : Array.Empty<string>());
 
             // Small rules move the traits (sweep 12.8 A). Never in a self-test: these are only raised by real use.
             GameEvents.TaskDone += t =>
@@ -58,7 +58,8 @@ namespace BusyBunny
             };
             GameEvents.SprintDone += _ => { if (Tools.IsOn("folk.traits")) Nudge(S, "brave", 0.2, DateTime.Now); };
             GameEvents.ToolUsed += id => { if (Tools.IsOn("folk.traits")) ForActivity(S, id, DateTime.Now); };
-            GameEvents.DayEnded += day => { if (Tools.IsOn("folk.traits") && S.Data.PeekDay(day).Mode != DayMode.Normal) Nudge(S, "outdoorsy", -0.4, DateTime.Now); };
+            GameEvents.DayEnded += day => { if (Tools.IsOn("folk.traits")) DayDone(S, day, DateTime.Now); };
+            GameEvents.WeekStarted += _ => { if (Tools.IsOn("folk.traits")) Drift(S); };
             FolkShop.OnPlaceActivity += (place, activity) => { if (Tools.IsOn("folk.traits")) ForActivity(S, place + " " + activity, DateTime.Now); };
         }
 
@@ -122,8 +123,13 @@ namespace BusyBunny
             s.World.Save();
         }
 
-        private static readonly string[] OutdoorWords = { "pond", "trail", "atv", "garden", "stable", "cove", "beach", "meadow", "hill", "woods", "fish", "ride", "swim", "dive", "sled", "boat", "kite", "pool", "creek", "star", "orchard", "hike" };
-        private static readonly string[] CozyWords = { "nook", "fire", "bed", "read", "journal", "nap", "tea", "kitchen", "bake", "cocoa", "spa", "tub", "quilt", "library", "guest", "sleepover", "fireside" };
+        private static readonly string[] OutdoorWords = { "pond", "trail", "atv", "garden", "stable", "cove", "beach", "meadow", "hill", "hills", "woods", "fish", "ride", "swim", "dive", "sled", "boat", "kite", "pool", "creek", "star", "stars", "orchard", "hike", "balloon", "waterfall" };
+        private static readonly string[] CozyWords = { "nook", "fireplace", "bed", "bedroom", "read", "journal", "nap", "tea", "teahouse", "kitchen", "bake", "bakery", "cocoa", "spa", "tub", "hottub", "quilt", "library", "guest", "sleepover", "fireside" };
+        /// <summary>Reading the neighbors' stories and letters settles Bunny a little (curious toward settled).</summary>
+        private static readonly string[] StoryTools = { "folk.mail", "folk.penpal", "folk.mysterious", "folk.neighbors", "folk.fireside", "folk.sleepover" };
+
+        /// <summary>The whole words of a tool id or place activity ("place.stars fish" gives place, stars, fish), so "startstreak" is not "star".</summary>
+        public static HashSet<string> Words(string what) => what.ToLowerInvariant().Split(new[] { '.', ' ', ',', '_', '-' }, StringSplitOptions.RemoveEmptyEntries).ToHashSet();
 
         /// <summary>What she did with Bunny shapes it: trips outside make it outdoorsy, reading nook time makes it cozier.</summary>
         private sealed class LikedDay { public string Day { get; set; } = ""; public string What { get; set; } = ""; }
@@ -149,10 +155,39 @@ namespace BusyBunny
         public static void ForActivity(Store s, string what, DateTime now)
         {
             what = what.ToLowerInvariant();
-            if (OutdoorWords.Any(what.Contains)) Nudge(s, "outdoorsy", 0.3, now);
-            else if (CozyWords.Any(what.Contains)) Nudge(s, "outdoorsy", -0.3, now);
+            var words = Words(what);
+            if (OutdoorWords.Any(words.Contains)) Nudge(s, "outdoorsy", 0.3, now);
+            else if (CozyWords.Any(words.Contains)) Nudge(s, "outdoorsy", -0.3, now);
             if (what.StartsWith("folk.mood") || what.StartsWith("folk.doing") || what.StartsWith("folk.opinions") || what.StartsWith("folk.dream")) Nudge(s, "chatty", 0.2, now);
-            if (what.Contains("adventure") || what.Contains("mystery") || what.Contains("treasure")) Nudge(s, "curious", 0.3, now);
+            if (words.Contains("adventure") || words.Contains("mystery") || words.Contains("treasure")) Nudge(s, "curious", 0.3, now);
+            if (StoryTools.Any(t => what.StartsWith(t))) Nudge(s, "curious", -0.2, now);
+        }
+
+        /// <summary>
+        /// The end of a day moves Bunny back the other way too: a rough day makes it more careful, quieter and cozier; a
+        /// vacation day (Bunny travels on those) more outdoorsy; a day with no chatting tools a little quieter.
+        /// </summary>
+        public static void DayDone(Store s, DateTime day, DateTime now)
+        {
+            var b = Traits(s);
+            bool chatted = b.Day == s.Key(day) && b.MovedToday.GetValueOrDefault("chatty") > 0;
+            var mode = s.Data.PeekDay(day).Mode;
+            if (mode == DayMode.RoughDay) { Nudge(s, "outdoorsy", -0.4, now); Nudge(s, "brave", -0.3, now); Nudge(s, "chatty", -0.3, now); }
+            else if (mode == DayMode.Vacation) Nudge(s, "outdoorsy", 0.4, now);
+            if (!chatted && mode != DayMode.RoughDay) Nudge(s, "chatty", -0.2, now);
+        }
+
+        /// <summary>Once a week every trait drifts half a step back toward the middle, so no Bunny ends up at the same ends as every other.</summary>
+        public static void Drift(Store s)
+        {
+            var b = Traits(s);
+            foreach (var a in Axes)
+            {
+                double v = b.V.GetValueOrDefault(a.Id);
+                b.V[a.Id] = v > 0 ? Math.Max(0, v - 0.5) : Math.Min(0, v + 0.5);
+            }
+            s.World.SetKept("folk.traits", b);
+            s.World.Save();
         }
 
         public static string Word(string id, double v)
@@ -293,6 +328,7 @@ namespace BusyBunny
             var box = S.World.GetKept<DreamBox>("folk.dream");
             if (box.Day != S.Key(now))
             {
+                if (WillWrite(S, "folk.dream")) _w.Say(S.Data.Game.BunnyName + " is remembering its dream.", true);
                 string text = await Folk.Write(S, "folk.dream", "Write the strange, sweet, silly dream Bunny had last night, in Bunny's own first-person voice, 2 or 3 sentences, cozy and never scary.",
                     () => Folk.Pick(S, "folk.dream"));
                 box = new DreamBox { Day = S.Key(now), Text = text };
@@ -354,6 +390,7 @@ namespace BusyBunny
             if (!written.ContainsKey(today) && SmartBunny.Ready && !Calm.FunPaused)
             {
                 var wins = Folk.VisibleWins(S, now.Date);
+                if (WillWrite(S, "folk.journal")) _w.Say(S.Data.Game.BunnyName + " is writing in its journal.", true);
                 string text = await Folk.Write(S, "folk.journal", "Write Bunny's diary entry about today, 2 to 4 sentences, from Bunny's point of view, warm and a little funny, never disappointed. "
                     + (wins.Count == 0 ? "Nothing got finished today, and that is fine: write about resting." : "Today she finished " + wins.Count + " tasks, including " + string.Join(", ", wins.Take(3)) + "."), () => "");
                 if (text.Length > 0) { written[today] = text; S.World.SetKept("folk.journal", written); S.World.Save(); }
@@ -402,9 +439,13 @@ namespace BusyBunny
             box.Text = take;
             Remember(S, take);
             var agree = Layout.Button("_Agree");
-            agree.Click += (_, _) => { Nudge(S, "silly", 0.2, DateTime.Now); Show(Folk.Pick(S, "folk.agree")); };
+            agree.Click += (_, _) => { if (Tools.IsOn("folk.traits")) Nudge(S, "silly", 0.2, DateTime.Now); Show(Folk.Pick(S, "folk.agree")); };
             var argue = Layout.Button("_Disagree");
-            argue.Click += (_, _) => { Nudge(S, "brave", 0.1, DateTime.Now); Show(Folk.Pick(S, "folk.argue")); };
+            argue.Click += (_, _) =>
+            {
+                if (Tools.IsOn("folk.traits")) { Nudge(S, "brave", 0.1, DateTime.Now); Nudge(S, "silly", -0.2, DateTime.Now); }
+                Show(Folk.Pick(S, "folk.argue"));
+            };
             var another = Layout.Button("A_nother");
             another.Click += (_, _) => Show(Folk.Pick(S, "folk.hottakes"));
             var funny = Layout.Button("That was _funny");
@@ -467,7 +508,7 @@ namespace BusyBunny
             if (list.Count > 50) list.RemoveAt(0);
             s.World.SetKept("folk.jokes", list);
             s.World.Save();
-            Nudge(s, "silly", 0.5, DateTime.Now);
+            if (Tools.IsOn("folk.traits")) Nudge(s, "silly", 0.5, DateTime.Now);
             return true;
         }
 
@@ -492,9 +533,13 @@ namespace BusyBunny
             Folk.List(_w, "Inside jokes", () =>
             {
                 var rows = new List<Folk.Row>();
+                // The same last line Rate a line uses (the library line she actually heard), then Bunny's last written line if that was something else.
+                string heard = RecordsStyle.Heard?.Said.Trim() ?? "";
+                if (heard.Length > 0 && !JokesOf(S).Contains(heard))
+                    rows.Add(new Folk.Row("Call the last line funny: " + heard, win => { AddJoke(S, heard); Folk.Say(win, "Noted. That one is an inside joke now."); }));
                 string last = S.World.GetKept<Last>("folk.last").Text;
-                if (last.Length > 0 && !JokesOf(S).Contains(last))
-                    rows.Add(new Folk.Row("Call the last line funny: " + last, win => { AddJoke(S, last); Folk.Say(win, "Noted. That one is an inside joke now."); }));
+                if (last.Length > 0 && last != heard && !JokesOf(S).Contains(last))
+                    rows.Add(new Folk.Row("Call " + S.Data.Game.BunnyName + "'s last written line funny: " + last, win => { AddJoke(S, last); Folk.Say(win, "Noted. That one is an inside joke now."); }));
                 foreach (var j in Enumerable.Reverse(JokesOf(S)))
                     rows.Add(new Folk.Row(j, win => { DropJoke(S, j); Folk.Say(win, "Okay, " + S.Data.Game.BunnyName + " will retire that one."); }));
                 if (rows.Count == 0) rows.Add(new Folk.Row("No inside jokes yet. When a Bunny line makes you laugh, press That was funny, or come here and call the last line funny."));
@@ -504,10 +549,13 @@ namespace BusyBunny
 
         // ---- Anniversaries (sweep 12.6 item 2) ----
 
+        /// <summary>Its anniversary is the seasons calendar's village anniversary, so it is listed but not said again here.</summary>
+        public const string CameToVillage = "you came to the village";
+
         public static List<(DateTime When, string What)> Milestones(Store s)
         {
             var d = s.Data;
-            var list = new List<(DateTime, string)> { (Folk.Start(s), "you came to the village") };
+            var list = new List<(DateTime, string)> { (Folk.Start(s), CameToVillage) };
             var done = Folk.Finished(s);
             if (done.Count > 0) list.Add((done[0].When.Date, "you finished your first task here"));
             if (done.Count >= 100) list.Add((done[99].When.Date, "you finished your hundredth task"));
@@ -528,7 +576,7 @@ namespace BusyBunny
         public static List<(string When, string What)> Today(Store s, DateTime now)
         {
             var list = new List<(string, string)>();
-            foreach (var (when, what) in Milestones(s))
+            foreach (var (when, what) in Milestones(s).Where(m => m.What != CameToVillage))
             {
                 if (when.Month == now.Month && when.Day == now.Day && when.Year < now.Year)
                 {
@@ -559,7 +607,9 @@ namespace BusyBunny
             var (name, from, to) = GameFeature.Semester(now);
             if (PoemReady(S, now) && !poems.ContainsKey(name))
             {
-                int n = Folk.FinishedBetween(S, from, to.AddDays(1));
+                // Only tasks Bunny may see count: nothing from a private list reaches Claude, not even a number.
+                int n = VisibleFinished(S, from, to.AddDays(1));
+                if (WillWrite(S, "folk.poem")) _w.Say(S.Data.Game.BunnyName + " is writing you a poem.", true);
                 string poem = await Folk.Write(S, "folk.poem", "Write her an original short poem for the end of her " + name + " semester, 6 to 10 lines, one poem line per text line, warm and proud, touch and sound images, no classes or grades named. She finished " + n + " tasks this semester.",
                     () => Folk.Fill(S, Folk.NthBlock("folk.poems", Folk.SemesterIndex(now))?.Body ?? ""));
                 poems[name] = poem;
@@ -598,6 +648,16 @@ namespace BusyBunny
 
         // ---- For Smart Bunny (sweep 12.8 D) ----
 
+        /// <summary>Whether Folk.Write will ask Claude now (so she hears that Bunny is writing instead of a silent wait).</summary>
+        public static bool WillWrite(Store s, string featureId) => SmartBunny.Ready && !Calm.FunPaused && BunnyWrite.MayAsk(s, featureId, DateTime.Now);
+
+        /// <summary>Tasks she finished between two times that Bunny may see (never private or archived ones), for counts in a prompt.</summary>
+        public static int VisibleFinished(Store s, DateTime from, DateTime to)
+        {
+            var visible = BunnyWrite.Visible(s).Select(t => t.Id).ToHashSet();
+            return Folk.Finished(s).Count(x => x.When >= from && x.When < to && visible.Contains(x.Id));
+        }
+
         /// <summary>Who Bunny is now, for any prompt that has Claude write as Bunny: traits, likes, mood, her notes.</summary>
         public static string Persona(Store s, DateTime now)
         {
@@ -607,7 +667,7 @@ namespace BusyBunny
             string fav = string.Join("; ", likes.Where(l => !l.Key.StartsWith("dislike")).Select(l => l.Key + ": " + l.Value.Get("value")));
             string dis = string.Join(", ", likes.Where(l => l.Key.StartsWith("dislike")).Select(l => l.Value.Get("value")));
             var (mood, reason) = MoodNow(s, now);
-            var notes = s.Data.BunnyNotes.Take(8).ToList();
+            var notes = s.Data.BunnyNotes.TakeLast(8).ToList();
             return "You are writing as Bunny, her companion bunny, named " + s.Data.Game.BunnyName + ". Bunny's personality now: " + traits + ". Favorites: " + fav + ". Dislikes: " + dis
                 + ". Mood today: " + mood + ", because " + reason + (notes.Count > 0 ? " Her notes for Bunny: " + string.Join(" ", notes) : "")
                 + " Bunny is always warm, never disappointed in her, never cold, never sad or scary. Touch and sound first in descriptions.";
@@ -678,6 +738,28 @@ namespace BusyBunny
             ForActivity(store, "place.pond fish", now.AddDays(500));
             Need(Traits(store).V.GetValueOrDefault("outdoorsy") > 0, "a pond trip did not make Bunny outdoorsy");
             Need(Word("brave", 7) == "very brave" && Word("outdoorsy", -3) == "cozy", "trait words");
+            // Whole words only: the streak tool is not a star, the fireflies are not a fire, bread is not a bed.
+            store.World.SetKept("folk.traits", new TraitBox());
+            foreach (var id in new[] { "records.startstreak", "place.fireflies", "steam bread", "team snap" }) ForActivity(store, id, now.AddDays(600));
+            Need(Math.Abs(Traits(store).V.GetValueOrDefault("outdoorsy")) < 1e-9, "a substring moved Bunny outdoorsy or cozy");
+            // Traits move back the other way too: rough days, quiet days, reading stories, and a weekly drift to the middle.
+            store.World.SetKept("folk.traits", new TraitBox { V = new() { ["brave"] = 5, ["chatty"] = 5, ["curious"] = 5, ["outdoorsy"] = -4 } });
+            var roughDay = now.AddDays(700);
+            store.Data.Day(roughDay).Mode = DayMode.RoughDay;
+            DayDone(store, roughDay, roughDay.AddDays(1));
+            store.Data.Day(roughDay).Mode = DayMode.Normal;
+            Need(Traits(store).V["brave"] < 5 && Traits(store).V["chatty"] < 5, "a rough day never made Bunny more careful or quieter");
+            ForActivity(store, "folk.mail", roughDay.AddDays(2));
+            Need(Traits(store).V["curious"] < 5, "reading letters never settled Bunny");
+            var vac = now.AddDays(710);
+            store.Data.Day(vac).Mode = DayMode.Vacation;
+            double before = Traits(store).V["outdoorsy"];
+            DayDone(store, vac, vac.AddDays(1));
+            store.Data.Day(vac).Mode = DayMode.Normal;
+            Need(Traits(store).V["outdoorsy"] > before, "a vacation day made Bunny cozier, but Bunny travels then");
+            double c = Traits(store).V["curious"];
+            Drift(store);
+            Need(Traits(store).V["curious"] < c && Traits(store).V["outdoorsy"] > before, "the weekly drift toward the middle");
             // The monthly line: nothing the first month, then the biggest change.
             store.World.SetKept("folk.traits", new TraitBox());
             Need(MonthLine(store, now) == null, "a monthly line in the very first month");
@@ -694,6 +776,21 @@ namespace BusyBunny
             Liked(store, "place.room." + roomWord, now);
             Need(LikedToday(store, now) != null && LikedToday(store, now.AddDays(1)) == null, "doing what Bunny likes was not noticed");
             Need(Persona(store, now).Contains("brave") || Persona(store, now).Contains("careful"), "Smart Bunny's prompt has no traits");
+
+            // Private lists: their finished tasks never count in a number sent to Claude.
+            var pl = new TaskList { Name = "Folk private test", PrivateFromBunny = true };
+            store.Data.Lists.Add(pl);
+            var hidden = new TaskItem { Name = "hidden", List = pl.Name, Status = Status.Done };
+            var shown = new TaskItem { Name = "shown", List = store.Data.Lists[0].Name, Status = Status.Done };
+            store.Data.Tasks.Add(hidden);
+            store.Data.Tasks.Add(shown);
+            store.Data.Log.Add(new LogEntry { Kind = "Done", When = now, Points = 1, TaskId = hidden.Id });
+            store.Data.Log.Add(new LogEntry { Kind = "Done", When = now, Points = 1, TaskId = shown.Id });
+            Need(VisibleFinished(store, now.Date, now.Date.AddDays(1)) == 1, "a private list's task was counted for Claude");
+            store.Data.Log.RemoveAll(e => e.TaskId == hidden.Id || e.TaskId == shown.Id);
+            store.Data.Tasks.Remove(hidden);
+            store.Data.Tasks.Remove(shown);
+            store.Data.Lists.Remove(pl);
 
             // Moods always have a reason; a rough day wins.
             var (m1, r1) = MoodNow(store, now);
@@ -718,6 +815,7 @@ namespace BusyBunny
             Folk.SetStart(store, now.AddYears(-1));
             d.Log.Add(new LogEntry { Kind = "Boss", When = now.AddYears(-1), Points = 0 });
             Need(Today(store, now).Any(a => a.What.Contains("first boss") && a.When == "a year ago today"), "a year ago today, the first boss");
+            Need(Today(store, now).All(a => a.What != CameToVillage), "the village anniversary was celebrated twice");
             Need(HobbyNow(store, now).Stage >= 1 && HobbyNow(store, now).Line.Length > 0, "the hobby");
             d.Log.Clear();
             d.Log.AddRange(keep);

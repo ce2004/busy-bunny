@@ -17,7 +17,7 @@ namespace BusyBunny
         private MainWindow _w = null!;
         private Store S => _w.Store;
 
-        public sealed class Quiz { public List<int> Asked { get; set; } = new(); public string Day { get; set; } = ""; public int PaidToday { get; set; } public bool AfterSprint { get; set; } }
+        public sealed class Quiz { public List<int> Asked { get; set; } = new(); public string Day { get; set; } = ""; public int PaidToday { get; set; } public bool AfterSprint { get; set; } public string SprintDay { get; set; } = ""; }
         public sealed class Spins { public int Ready { get; set; } }
         public sealed record Question(string Text, string Right, List<string> Choices, string Why);
 
@@ -38,10 +38,22 @@ namespace BusyBunny
                 }
                 var q = S.World.GetKept<Quiz>(TriviaId);
                 q.AfterSprint = true;
+                q.SprintDay = S.Key(DateTime.Now);
                 S.World.SetKept(TriviaId, q);
                 S.World.Save();
-                // After the sprint's own line and window, when Busy Bunny is idle.
-                w.Dispatcher.BeginInvoke(() => { if (w.IsActive) Ask(fromSprint: true); }, DispatcherPriority.ApplicationIdle);
+                // After the sprint's own line and window, when Busy Bunny is idle. The recipe opens it by itself, but only
+                // when an unprompted line may come now (no quiet hours, class, sprint or cap) and she is in the main
+                // window; otherwise it waits in What happened today, and the question she opens later is the paid one.
+                w.Dispatcher.BeginInvoke(() =>
+                {
+                    var now = DateTime.Now;
+                    if (w.IsActive && Calm.CanSpeakUnprompted(S, w.AppSettings, now))
+                    {
+                        Calm.Count(S, now);
+                        Ask(fromSprint: true);
+                    }
+                    else Game.Note(S, "A trivia question is waiting for you, for that sprint: toolbox, Games, Trivia break.");
+                }, DispatcherPriority.ApplicationIdle);
             };
         }
 
@@ -74,11 +86,14 @@ namespace BusyBunny
             return (pick, all[pick]);
         }
 
-        /// <summary>Whether a right answer pays now: always for the question after a sprint, otherwise 3 a day.</summary>
+        /// <summary>The sprint's question is still waiting: a sprint ended today and no question was answered or skipped since.</summary>
+        private static bool SprintWaiting(Quiz q, Store s, DateTime now) => q.AfterSprint && q.SprintDay == s.Key(now);
+
+        /// <summary>Whether a right answer pays now: always for the question after a sprint (that day), otherwise 3 a day.</summary>
         public static bool WillPay(Store s, DateTime now)
         {
             var q = s.World.GetKept<Quiz>(TriviaId);
-            return q.AfterSprint || q.Day != s.Key(now) || q.PaidToday < PaidQuestionsADay;
+            return SprintWaiting(q, s, now) || q.Day != s.Key(now) || q.PaidToday < PaidQuestionsADay;
         }
 
         /// <summary>Pays a right answer as its own Control Z step, and counts it. Returns what it paid.</summary>
@@ -87,7 +102,7 @@ namespace BusyBunny
             var q = s.World.GetKept<Quiz>(TriviaId);
             bool pays = WillPay(s, now);
             if (q.Day != s.Key(now)) { q.Day = s.Key(now); q.PaidToday = 0; }
-            if (pays && !q.AfterSprint) q.PaidToday++;
+            if (pays && !SprintWaiting(q, s, now)) q.PaidToday++;
             q.AfterSprint = false;
             s.World.SetKept(TriviaId, q);
             s.World.Save();
@@ -187,7 +202,9 @@ namespace BusyBunny
             int before = Engine.Total(store.Data);
             for (int k = 0; k < 4; k++) PayRight(store, now);
             Need(Engine.Total(store.Data) == before + PaidQuestionsADay * TriviaPrize, "more than three paid questions a day");
-            var q = store.World.GetKept<Quiz>(TriviaId); q.AfterSprint = true; store.World.SetKept(TriviaId, q);
+            var q = store.World.GetKept<Quiz>(TriviaId); q.AfterSprint = true; q.SprintDay = store.Key(now.AddDays(-1)); store.World.SetKept(TriviaId, q);
+            Need(PayRight(store, now) == 0, "yesterday's sprint question paid outside the 3 a day");
+            q = store.World.GetKept<Quiz>(TriviaId); q.AfterSprint = true; q.SprintDay = store.Key(now); store.World.SetKept(TriviaId, q);
             Need(PayRight(store, now) == TriviaPrize, "the question after a sprint did not pay");
             store.Undo();
             Need(Engine.Total(store.Data) == before + PaidQuestionsADay * TriviaPrize, "Control Z did not take the trivia points back");

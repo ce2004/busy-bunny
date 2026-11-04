@@ -21,7 +21,42 @@ namespace BusyBunny
         public const double Gap = 0.22;
         private MainWindow _w = null!;
 
-        public sealed class Tune { public List<int> Notes { get; set; } = new() { 0, 4, 7, 12 }; public string Instrument { get; set; } = "Piano"; public bool Saved { get; set; } }
+        public sealed class Tune { public List<int> Notes { get; set; } = new() { 0, 4, 7, 12 }; public string Instrument { get; set; } = "Piano"; public bool Saved { get; set; } public string? Before { get; set; } public string? SavedAs { get; set; } public bool InKept { get; set; } }
+
+        /// <summary>Her tune, in the bookkeeping: it is her taste, like ratings, so Control Z of something else never puts old notes back.</summary>
+        public static Tune Load(Store s)
+        {
+            var t = s.World.GetKept<Tune>(Id + ".kept");
+            // Until it is first kept there, a tune made by an older version (in the undoable bag) is the one.
+            return t.InKept ? t : s.World.Get<Tune>(Id);
+        }
+
+        public static void Keep(Store s, Tune t) { t.InKept = true; s.World.SetKept(Id + ".kept", t); s.World.Save(); }
+
+        /// <summary>Makes the tune her task-done sound, keeping what she had picked before (null for the usual sound) the first time.</summary>
+        public static void UseTune(Dictionary<string, string> choices, Tune t, string soundName)
+        {
+            string key = Sounds.Event.TaskDone.ToString();
+            if (!t.Saved) t.Before = choices.TryGetValue(key, out var had) && had != soundName ? had : null;
+            choices[key] = soundName;
+            t.Saved = true;
+            t.SavedAs = soundName;
+        }
+
+        /// <summary>Puts back the sound she had before the tune, only while the tune is still her choice. False when there was nothing to undo.</summary>
+        public static bool UseOld(Dictionary<string, string> choices, Tune t)
+        {
+            string key = Sounds.Event.TaskDone.ToString();
+            if (!t.Saved) return false;
+            bool stillTune = choices.TryGetValue(key, out var now) && now == t.SavedAs;
+            if (stillTune)
+            {
+                if (t.Before == null) choices.Remove(key); else choices[key] = t.Before;
+            }
+            t.Saved = false;
+            t.Before = null;
+            return stillTune;
+        }
 
         /// <summary>The notes she can pick: scale steps above the home note of her sound key, and a rest.</summary>
         public static readonly (string Name, int Step)[] Notes =
@@ -76,7 +111,7 @@ namespace BusyBunny
         }
 
         /// <summary>Saves the tune into her Sounds folder and makes it the finished-task sound. Returns the sound's name, or null.</summary>
-        private string? SaveAsDoneSound(byte[] wav, out string error)
+        private string? SaveAsDoneSound(byte[] wav, Tune tune, out string error)
         {
             error = "";
             string folder = Path.Combine(Path.GetTempPath(), "Busy Bunny tune " + Environment.ProcessId);
@@ -87,7 +122,7 @@ namespace BusyBunny
                 File.WriteAllBytes(file, wav);
                 var name = Sounds.Import(file, out error);
                 if (name == null) return null;
-                _w.AppSettings.SoundChoices[Sounds.Event.TaskDone.ToString()] = name;
+                UseTune(_w.AppSettings.SoundChoices, tune, name);
                 _w.AppSettings.Save();
                 _w.AppSettings.Apply();
                 return name;
@@ -99,7 +134,7 @@ namespace BusyBunny
         private void Show()
         {
             var s = _w.Store;
-            var tune = s.World.Get<Tune>(Id);
+            var tune = Load(s);
             var dlg = Layout.Dialog(_w, "Your own victory tune");
             var panel = new StackPanel { Margin = new Thickness(14), Width = 460 };
             panel.Children.Add(new TextBlock { Text = "Add up to " + MaxNotes + " notes, pick an instrument, play it, then save it as the sound for a finished task.", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) });
@@ -116,7 +151,7 @@ namespace BusyBunny
                 list.SelectedIndex = Math.Clamp(select, 0, list.Items.Count - 1);
                 AutomationProperties.SetName(list, "Your tune, " + GamesFunKit.Plural(tune.Notes.Count, "note"));
             }
-            void Keep() { tune.Instrument = inst.SelectedItem as string ?? "Piano"; s.World.Set(Id, tune); s.World.Save(); }
+            void Keep() { tune.Instrument = inst.SelectedItem as string ?? "Piano"; RecordsTune.Keep(s, tune); }
             Fill(0);
             panel.Children.Add(Layout.Row("Your _tune", list, 460));
             panel.Children.Add(Layout.Row("_Note to add", pick, 300));
@@ -158,20 +193,18 @@ namespace BusyBunny
             save.Click += (_, _) =>
             {
                 if (Render(tune.Notes, inst.SelectedItem as string ?? "Piano") is not byte[] wav) { Speech.Say(dlg, "Add a note first.", true); return; }
-                if (SaveAsDoneSound(wav, out string error) == null) { Speech.Say(dlg, "Could not save it: " + error, true); return; }
-                tune.Saved = true;
+                if (SaveAsDoneSound(wav, tune, out string error) == null) { Speech.Say(dlg, "Could not save it: " + error, true); return; }
                 Keep();
                 Speech.Say(dlg, "Saved. Finishing a task now plays your tune. A list with its own sound pack still plays the pack's sound.", true);
             };
-            var usual = Layout.Button("Use the _usual sound");
+            var usual = Layout.Button("Use my _old sound");
             usual.Click += (_, _) =>
             {
-                _w.AppSettings.SoundChoices.Remove(Sounds.Event.TaskDone.ToString());
-                _w.AppSettings.Save();
-                _w.AppSettings.Apply();
-                tune.Saved = false;
+                if (!tune.Saved) { Speech.Say(dlg, "Your tune is not your task-done sound, so nothing changed. Your tune is kept here.", true); return; }
+                bool back = UseOld(_w.AppSettings.SoundChoices, tune);
+                if (back) { _w.AppSettings.Save(); _w.AppSettings.Apply(); }
                 Keep();
-                Speech.Say(dlg, "Finishing a task plays the usual sound again. Your tune is kept here.", true);
+                Speech.Say(dlg, back ? "Finishing a task plays the sound you had before again. Your tune is kept here." : "You already picked another task-done sound since, so that one stays. Your tune is kept here.", true);
             };
             row.Children.Add(play);
             row.Children.Add(save);
@@ -194,7 +227,24 @@ namespace BusyBunny
             Need(one != null && tune != null && tune.Length > one.Length, "the tune did not render longer than one note");
             Need(Render(new[] { -1, -1 }, "Piano") == null, "a tune of rests made a sound");
             Need(Render(Enumerable.Repeat(0, 20).ToList(), "Flute")!.Length <= Render(Enumerable.Repeat(0, MaxNotes).ToList(), "Flute")!.Length, "more than 8 notes were played");
-            Need(store.World.Get<Tune>(Id).Notes.Count is > 0 and <= MaxNotes, "the starting tune");
+            Need(Load(store).Notes.Count is > 0 and <= MaxNotes, "the starting tune");
+            // Saving keeps the sound she had picked before; Use my old sound puts it back, and does nothing without a saved tune.
+            var choices = new Dictionary<string, string> { [Sounds.Event.TaskDone.ToString()] = "Flute, sparkle" };
+            var t = new Tune();
+            Need(!UseOld(choices, t) && choices[Sounds.Event.TaskDone.ToString()] == "Flute, sparkle", "Use my old sound changed her sound with no tune saved");
+            UseTune(choices, t, "My victory tune");
+            UseTune(choices, t, "My victory tune");
+            Need(choices[Sounds.Event.TaskDone.ToString()] == "My victory tune" && t.Before == "Flute, sparkle", "saving the tune lost the sound she had before");
+            Need(UseOld(choices, t) && choices[Sounds.Event.TaskDone.ToString()] == "Flute, sparkle", "Use my old sound did not put her own sound back");
+            var empty = new Dictionary<string, string>();
+            var t2 = new Tune();
+            UseTune(empty, t2, "My victory tune");
+            Need(UseOld(empty, t2) && empty.Count == 0, "Use my old sound did not go back to the usual sound");
+            // The tune is her taste: Control Z of another change keeps her notes.
+            store.Remember("before a tune");
+            var mine = Load(store); mine.Notes = new List<int> { 0, 2 }; Keep(store, mine);
+            store.Undo();
+            Need(Load(store).Notes.SequenceEqual(new[] { 0, 2 }), "Control Z put old notes back in the tune");
         }
     }
 }

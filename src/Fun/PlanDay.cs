@@ -108,13 +108,13 @@ namespace BusyBunny
             }
             if (Tools.IsOn(EnoughId) && s.World.Get<TaskTexts>(EnoughId).Of.ContainsKey(t.Id))
             {
-                if (Ledger.PayExtra(s, t, Ledger.BaseOf(s, t), Ledger.Boost(s, 5), "Good enough is done: " + t.Name, EnoughId) is Outcome o) Game.Queue(_w, o);
+                if (Ledger.PayExtra(s, t, Ledger.BaseOf(s, t), 5, "Good enough is done: " + t.Name, EnoughId) is Outcome o) Game.Queue(_w, o);
                 s.Save();
                 Calm.AfterTaskDone(_w, Game.Other, Content.Pick(s, "plan.goodenough"));
             }
             if (Tools.IsOn(DreadId) && DreadBonus(DreadOf(s, t.Id)) is int bonus and > 0)
             {
-                if (Ledger.PayExtra(s, t, Ledger.BaseOf(s, t), Ledger.Boost(s, bonus), "Did a dreaded one: " + t.Name, DreadId) is Outcome o) Game.Queue(_w, o);
+                if (Ledger.PayExtra(s, t, Ledger.BaseOf(s, t), bonus, "Did a dreaded one: " + t.Name, DreadId) is Outcome o) Game.Queue(_w, o);
                 s.Save();
             }
             if (Tools.IsOn(PairId) && s.World.Get<TaskTexts>(PairId).Of.TryGetValue(t.Id, out var reward))

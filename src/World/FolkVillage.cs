@@ -34,31 +34,30 @@ namespace BusyBunny
             Folk.Tool("folk.show", "Talent show and choir", Drawers.World, "Vote for this month's talent show act, and hear the choir at festivals.", () => Show(null));
             Folk.Tool("folk.mayor", "Mayor election", Drawers.World, "Vote for mayor once a semester; the winner changes one village rule.", () => Mayor(null));
             Folk.Tool("folk.keeper", "The lighthouse keeper's log", Drawers.Rest, "Marlow's log of every rough day you got through.", () => Keeper(null));
-            Folk.Tool("folk.fireside", "Fireside and campfire stories", Drawers.Rest, "Hazel reads by the fire on winter evenings; campfire stories on weekend nights.", () => Fireside(null));
+            Folk.Tool("folk.fireside", "Fireside and campfire stories", Drawers.Rest, "Hazel reads by the fire on winter evenings; a campfire story on Saturday nights.", () => Fireside(null));
             Folk.Tool("folk.sleepover", "Sleepover", Drawers.Rest, "A neighbor stays over and tells a bedtime story, once a week.", () => Sleepover(null));
             Folk.Tool("folk.paper", "The Acorn Gazette", Drawers.Wins, "The village newspaper, with your week's wins as headlines.", () => Paper(null));
-            Folk.Tool("folk.anniversary", "Village anniversary", Drawers.Wins, "Each year, a recap of your time in the village.", () => Anniversary(null));
+            Folk.Tool("folk.anniversary", "Village anniversary", Drawers.Wins, "A recap of your time in the village since your last anniversary.", () => Anniversary(null));
             Folk.Tool("folk.radio", "Bunny's radio drama", Drawers.World, "A weekly episode about the village; old episodes are kept.", () => Radio(null), "this week's episode and the old ones");
             Folk.Tool("folk.shelter", "The animal shelter", Drawers.World, "Foster a rescue animal with your finished tasks until it finds its family.", () => Shelter(null));
             Folk.Tool("folk.band", "Bunny's band", Drawers.World, "The neighbors' band, playing the instruments you bought.", () => Band(null));
             RenameGoldie(w.Store);
 
-            Folk.Visit("folk.mail", (_, now) => Unread(S, now) is int n and > 0 ? new[] { Folk.Plural(n, "new letter", "new letters") + " in Bunny's mail." } : Array.Empty<string>());
-            Folk.Visit("folk.neighbors", (_, now) => NewChapters(S, now) is { Count: > 0 } c ? new[] { "New chapters waiting from " + string.Join(", ", c) + ". The neighbors, in the toolbox." } : Array.Empty<string>());
-            Folk.Visit("folk.goldie", (_, now) => Folk.RoughToday(S, now) ? new[] { Folk.Fill(S, "{goldie} is lying by the door today, tail thumping softly. When you want, I am stuck has {goldie}, and she will walk you to one thing.") } : Array.Empty<string>());
+            // Things waiting for her are reminders: folded into one short line, each at most once a day.
+            Folk.Reminder("folk.mail", "mail", (s, now) => Unread(s, now) is int n and > 0 ? Folk.Plural(n, "new letter", "new letters") + " in Bunny's mail" : null);
+            Folk.Reminder("folk.neighbors", "chapters", (s, now) => NewChapters(s, now) is { Count: > 0 } c ? ChaptersWaiting(c) : null);
+            Folk.Visit("folk.goldie", (_, now) => Folk.RoughToday(S, now) && Folk.First(S, "goldie.rough." + S.Key(now)) ? new[] { Folk.Fill(S, "{goldie} is lying by the door today, tail thumping softly. When you want, I am stuck has {goldie}, and she will walk you to one thing.") } : Array.Empty<string>());
             Folk.Visit("folk.cousins", (_, now) => Folk.FestivalNear(now) is string f && Folk.First(S, "cousins." + f + now.Year) ? new[] { CousinsLine(S, f, now) } : Array.Empty<string>());
             Folk.Visit("folk.show", (_, now) => Folk.FestivalNear(now) is string f && Folk.First(S, "choir." + f + now.Year) ? new[] { Folk.Pick(S, "folk.choir", ("holiday", f)) } : Array.Empty<string>());
             Folk.Visit("folk.band", (_, now) => Folk.FestivalNear(now) is string f && Folk.First(S, "band." + f + now.Year) ? new[] { "At " + f + ": " + BandLine(S) } : Array.Empty<string>());
-            Folk.Visit("folk.babies", (_, now) => RealWorld.Season(now) == "Spring" && BabyNames(S, now.Year).Count == 0 ? new[] { "Baby bunnies were born next door! They need names. Baby bunnies, in the toolbox." } : Array.Empty<string>());
-            Folk.Visit("folk.radio", (_, now) => !Episodes(S).Any(e => e.Week == Folk.WeekKey(now)) ? new[] { "A new episode of the radio drama is ready to play: Bunny's radio drama, on the Bunny tab." } : Array.Empty<string>());
+            Folk.Reminder("folk.babies", "babies", (s, now) => RealWorld.Season(now) == "Spring" && BabyNames(s, now.Year).Count == 0 ? "baby bunnies next door who need names" : null);
+            Folk.Reminder("folk.radio", "radio", (s, now) => !Episodes(s).Any(e => e.Week == Folk.WeekKey(now)) ? "this week's radio episode" : null);
 
-            // Village places from the places stage, when it is there; otherwise our own village green.
-            Func<Store, List<PlaceThing>> green = st => Things(st);
-            if (!FolkShop.AddThings("Village", green))
-                World.Places.Register(new Place("folk.green", "The village green", st => "where the neighbors live, with the post box and the notice board", _ => true, green));
-            FolkShop.AddThings("Pond", _ => Tools.IsOn("folk.ducks") ? new List<PlaceThing> { new("Dot and her ducklings", DuckStage(S, DateTime.Now), win => Ducks(win)) } : new());
-            FolkShop.AddThings("Lighthouse", _ => Tools.IsOn("folk.keeper") ? new List<PlaceThing> { new("Marlow's log", "the keeper's notes on the rough days you got through", win => Keeper(win)) } : new());
-            FolkShop.AddThings("Stable", _ => Tools.IsOn("folk.neighbors") ? new List<PlaceThing> { new("Clover the pony", "your friend at the stable", win => Chapters(win, "clover")) } : new());
+            // The neighbors live in the places stage's village; the ducks, the keeper and Clover in theirs.
+            PlaceHooks.AddThings(PlaceIds.Village, Things);
+            PlaceHooks.AddThings(PlaceIds.Pond, _ => Tools.IsOn("folk.ducks") ? new List<PlaceThing> { new("Dot and her ducklings", DuckStage(S, DateTime.Now), win => Ducks(win)) } : new());
+            PlaceHooks.AddThings(PlaceIds.Lighthouse, _ => Tools.IsOn("folk.keeper") ? new List<PlaceThing> { new("Marlow's log", "the keeper's notes on the rough days you got through", win => Keeper(win)) } : new());
+            PlaceHooks.AddThings(PlaceIds.Stable, _ => Tools.IsOn("folk.neighbors") ? new List<PlaceThing> { new("Clover the pony", "your friend at the stable", win => Chapters(win, "clover")) } : new());
 
             GameEvents.TaskDone += OnDone;
             GameEvents.LevelUp += level => Visitor(S, "level." + level, "you reached level " + level);
@@ -108,6 +107,14 @@ namespace BusyBunny
         private static void MarkRead(Store s, string key) { var r = Read(s); if (r.Add(key)) { s.World.SetKept("folk.read", r); s.World.Save(); } }
 
         public static List<string> NewChapters(Store s, DateTime now) => Ids.Where(id => Unlocked(s, id, now) is int n && n > 0 && !Read(s).Contains("chapter." + id + "." + n)).Select(id => NameOf(s, id)).ToList();
+
+        /// <summary>"a new chapter from Hazel", or "new chapters from Hazel, Otis and 3 more", for the visit's reminder line.</summary>
+        public static string ChaptersWaiting(List<string> names)
+        {
+            if (names.Count == 1) return "a new chapter from " + names[0];
+            if (names.Count <= 3) return "new chapters from " + string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+            return "new chapters from " + names[0] + ", " + names[1] + " and " + (names.Count - 2) + " more";
+        }
 
         public static bool NewChapterThisWeek(Store s, DateTime now) =>
             s.World.GetKept<Dictionary<string, string>>("folk.chapter.week").Values.Contains(Folk.WeekKey(now));
@@ -353,8 +360,15 @@ namespace BusyBunny
             list.Add(new Guest { When = DateTime.Now, Who = item.Get("who"), Line = Folk.Fill(s, item.Get("line")), For = why });
             s.World.SetKept("folk.visitors", list);
             s.World.Save();
-            if (_w != null) Folk.AfterTask(_w, "A visitor came because " + why + ": " + item.Get("who") + ". " + Folk.Fill(s, item.Get("line")));
+            if (_w == null || s != S) return;
+            string line = "A visitor came because " + why + ": " + item.Get("who") + ". " + Folk.Fill(s, item.Get("line"));
+            // A level can also come from points that are not a finished task (a dig, a solved puzzle): then it is unprompted.
+            if (JustFinished(s, DateTime.Now)) Folk.AfterTask(_w, line);
+            else Calm.SayUnprompted(_w, line);
         }
+
+        /// <summary>Whether a task was finished in the last few seconds, so a level up or badge belongs to that finish.</summary>
+        public static bool JustFinished(Store s, DateTime now) => s.Data.Log.Any(e => e.Kind == "Done" && e.When <= now && (now - e.When).TotalSeconds <= 10);
 
         private static void Visitors(Window? owner)
         {
@@ -437,7 +451,8 @@ namespace BusyBunny
         private sealed class FireBox { public string Evening { get; set; } = ""; public int Chapters { get; set; } public List<int> Campfires { get; set; } = new(); }
 
         public static bool FiresideNow(DateTime now) => now.Month is 12 or 1 or 2 && now.Hour >= 17;
-        public static bool CampfireNow(DateTime now) => now.DayOfWeek is DayOfWeek.Friday or DayOfWeek.Saturday or DayOfWeek.Sunday && now.Hour >= 18;
+        /// <summary>Campfire night is Saturday evening, the same night as the seasons calendar's campfire night.</summary>
+        public static bool CampfireNow(DateTime now) => now.DayOfWeek == DayOfWeek.Saturday && now.Hour >= 17;
 
         private static void Fireside(Window? owner)
         {
@@ -462,7 +477,7 @@ namespace BusyBunny
                     if (stories.Count > 0) rows.Add(new Folk.Row("Tonight at the campfire: " + stories[i].Get("title"), win => Folk.Read(win, stories[i].Get("title"), Folk.Fill(S, stories[i].Body))));
                 }
                 if (!FiresideNow(now) && !CampfireNow(now))
-                    rows.Add(new Folk.Row("Hazel reads by the fireplace on winter evenings, and the campfire is lit on weekend nights. The stories you have heard are below."));
+                    rows.Add(new Folk.Row("Hazel reads by the fireplace on winter evenings, and the campfire is lit on Saturday nights. The stories you have heard are below."));
                 for (int c = b.Chapters; c >= 1; c--)
                 {
                     var ch = chapters[c - 1];
@@ -539,20 +554,19 @@ namespace BusyBunny
                 + Folk.Plural(visitors, "visitor", "visitors") + " welcomed and " + Folk.Plural(adopted, "shelter animal", "shelter animals") + " sent home to happy families.";
         }
 
-        private static void Anniversary(Window? owner)
+        /// <summary>The recap of her time in the village. The anniversary itself is celebrated once, by the seasons calendar, on the same day.</summary>
+        public static string AnniversaryText(Store s, DateTime now)
         {
-            var now = DateTime.Now;
-            var start = Folk.Start(S);
+            var start = Folk.Start(s);
             int years = now.Year - start.Year - (now.Date < start.AddYears(now.Year - start.Year) ? 1 : 0);
             var last = start.AddYears(Math.Max(0, years));
-            if (years >= 1 && (now.Date - last).TotalDays <= 7)
-            {
-                SoundBank.Play("Singing bells, sparkle");
-                Folk.Read(owner, "Village anniversary", Folk.Nth(S, "folk.anniversary", years, ("years", years.ToString())) + "\n\n" + Recap(S, last.AddYears(-1), now));
-                return;
-            }
-            Folk.Read(owner, "Village anniversary", "Your " + (years < 1 ? "first" : "next") + " village anniversary is on " + start.AddYears(years + 1).ToString("MMMM d, yyyy") + ". There will be cake.\n\n" + Recap(S, years < 1 ? start : last, now));
+            string when = years >= 1 && (now.Date - last).TotalDays <= 7
+                ? "Your village anniversary was " + Folk.Day(last) + ": " + Folk.Plural(years, "year", "years") + " in the village. The seasons calendar has the party."
+                : "Your " + (years < 1 ? "first" : "next") + " village anniversary is on " + start.AddYears(years + 1).ToString("MMMM d, yyyy") + ". The seasons calendar will have the party.";
+            return when + "\n\n" + Recap(s, years < 1 ? start : last, now);
         }
+
+        private static void Anniversary(Window? owner) => Folk.Read(owner, "Village anniversary", AnniversaryText(S, DateTime.Now));
 
         // ---- Bunny's radio drama (Part 10 item 9) ----
 
@@ -583,6 +597,7 @@ namespace BusyBunny
             if (!Episodes(S).Any(e => e.Week == Folk.WeekKey(now)))
             {
                 var wins = Folk.VisibleWins(S, Engine.WeekStart(now));
+                if (FolkBunny.WillWrite(S, "folk.radio")) Folk.Say(owner, "Tuning in. The village radio is recording this week's episode.");
                 string fresh = await Folk.Write(S, "folk.radio", "Write one scene for this week's Village Radio drama about Bunny's village and its neighbors (Hazel the hedgehog librarian, Otis the night-shift owl, Pip the gossiping squirrel, Rocco the rooster, Clover the pony, Bramble the badger, Fennel the frog). Two or three short paragraphs separated by a blank line, under 900 characters in all, sound effects described in words, gentle and funny."
                     + (wins.Count > 0 ? " The village is cheering her week: she finished " + string.Join(", ", wins.Take(4)) + "." : ""), () => "");
                 var ep = Compose(S, now, fresh.Length > 0 ? fresh : null);
@@ -661,7 +676,7 @@ namespace BusyBunny
             foreach (var id in ids) Need(Folk.Blocks("folk.chapters." + id).Count >= 10 && Folk.Blocks("folk.chapters." + id).All(c => c.Get("title").Length > 0 && c.Body.Length > 100), id + " needs 10 chapters with titles");
             foreach (var (t, n) in new[] { ("folk.letters", 20), ("folk.penpal", 12), ("folk.mystery.letters", 16), ("folk.fireside", 20), ("folk.campfire", 20), ("folk.bedtime", 20), ("folk.radio.scene", 20) })
                 Need(Folk.Blocks(t).Count >= n, t + " has fewer than " + n);
-            foreach (var t in new[] { "folk.goldie.guide", "folk.keeper", "folk.unlock.chapter", "folk.cousins", "folk.choir", "folk.show.winner", "folk.gossip", "folk.headlines", "folk.anniversary",
+            foreach (var t in new[] { "folk.goldie.guide", "folk.keeper", "folk.unlock.chapter", "folk.cousins", "folk.choir", "folk.show.winner", "folk.gossip", "folk.headlines",
                 "folk.radio.open", "folk.radio.wins", "folk.radio.close", "folk.shelter.adopt", "folk.shelter.thanks", "folk.band" })
                 Need(Content.Lines(t).Count >= 20, t + " has fewer than 20 lines");
             Need(Content.Lines("folk.ducks").Count >= 16 && Content.Lines("folk.babies").Count >= 16 && Content.Lines("folk.shelter.steps").Count == 6, "ducks, babies or shelter steps");
@@ -714,6 +729,10 @@ namespace BusyBunny
             store.World.Set("folk.names", new Folk.Names { Goldie = "Sunny" });
             Need(Folk.Fill(store, "{goldie} walks to {task}", ("task", "laundry")) == "Sunny walks to laundry", "Goldie's name");
             Need(GoldiePick(store, now) is null || GoldiePick(store, now) is TaskItem, "Goldie's pick");
+            Need(ChaptersWaiting(new List<string> { "Hazel" }) == "a new chapter from Hazel" && ChaptersWaiting(new List<string> { "A", "B", "C", "D", "E" }) == "new chapters from A, B and 3 more", "the chapters reminder");
+            Need(CampfireNow(new DateTime(2026, 11, 7, 19, 0, 0)) && !CampfireNow(new DateTime(2026, 11, 6, 19, 0, 0)), "campfire night is Saturday");
+            Need(AnniversaryText(store, now).Length > 40 && !AnniversaryText(store, now).Contains('{'), "the anniversary recap");
+            Need(!JustFinished(store, now.AddYears(5)), "a level from a dig counted as a finish");
             store.World.Set("folk.names", new Folk.Names());
             d.Log.Clear();
             d.Log.AddRange(keepLog);

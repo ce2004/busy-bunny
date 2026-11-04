@@ -7,14 +7,15 @@ using System.Windows.Controls;
 namespace BusyBunny
 {
     /// <summary>
-    /// Stage 8: seasons, festivals and the real sky in Bunny's world. Three places of its own (the village green, the round
-    /// window and the moonlit hill), nine toolbox switches, a Settings page for her dates, and the calendar events of
+    /// Stage 8: seasons, festivals and the real sky in Bunny's world. Two places of its own, each living inside a Stage 7 place
+    /// (the village green in the village, the round window in the burrow), the moon on Stage 7's stargazing hill, nine toolbox switches, a Settings page for her dates, and the calendar events of
     /// SeasonCalendar with the sky of SeasonSky. Everything is optional, said once through Calm, and pays through the Ledger.
     /// </summary>
     public sealed class SeasonWorld : IFeature
     {
         private const string Since = "0.14.0";
-        private const string Green = "season.green", WindowPlace = "season.window", Hill = "season.hill", MusicTool = "season.music", ReportTool = "season.weather";
+        public const string Green = "season.green", WindowPlace = "season.window";
+        private const string MusicTool = "season.music", ReportTool = "season.weather";
         /// <summary>Dates are written in English, the way Dates.Parse reads them back, whatever language Windows uses.</summary>
         private static readonly System.Globalization.CultureInfo English = System.Globalization.CultureInfo.GetCultureInfo("en-US");
         private MainWindow _w = null!;
@@ -31,21 +32,28 @@ namespace BusyBunny
             _w = w;
             MusicLoop.Arranger = SeasonSky.Arrange;
             void Reg(string id, string name, string drawer, string what, Action run) => Tools.Register(new BunnyTool(id, name, drawer, what, run) { Since = Since });
-            Reg(SeasonCalendar.Tool, "Seasons and festivals", Drawers.World, "Holidays, the seasons and festivals on the village green, and what is coming up.", () => WorldWindow.Show(_w, Green));
+            Reg(SeasonCalendar.Tool, "Seasons and festivals", Drawers.World, "Holidays, the seasons and festivals on the village green, and what is coming up.", () => PlaceWorld.Show(_w, Green));
             Reg(SeasonCalendar.Village, "Village days", Drawers.World, "Games day, the fishing tournament, the garden club, the Friday market, bonfires and campfires.", SayVillageDays);
-            Reg(SeasonCalendar.Weather, "The weather window", Drawers.World, "The real weather at the burrow window, night mode, and fog, rain, storm and picnic days.", () => WorldWindow.Show(_w, WindowPlace));
+            Reg(SeasonCalendar.Weather, "The weather window", Drawers.World, "The real weather at the burrow window, night mode, and fog, rain, storm and picnic days.", () => PlaceWorld.Show(_w, WindowPlace));
             Reg(ReportTool, "Bunny's weather report", Drawers.World, "Bunny tells you the real weather in its own silly way.", () => _ = Report());
-            Reg(SeasonCalendar.Moon, "Full moon intentions", Drawers.Notes, "Set one private intention at the full moon; Bunny reads it back at the next one.", () => WorldWindow.Show(_w, Hill));
+            Reg(SeasonCalendar.Moon, "Full moon intentions", Drawers.Notes, "Set one private intention at the full moon; Bunny reads it back at the next one.", MoonTool);
             Reg(MusicTool, "Seasonal soundtrack", Drawers.Rest, "The background music changes with the season, the weather and the night.", SayMusic);
             Reg(SeasonCalendar.Winter, "Snowman and snow days", Drawers.World, "A snowman that grows each day you meet your daily goal, snow days and snowball fights.", SayWinter);
             Reg(SeasonCalendar.Yearly, "Birthdays and big days", Drawers.World, "Your birthday, Bunny's birthday party, the village anniversary and moving day.", SayYearly);
             Reg(SeasonCalendar.Semester, "End of the semester", Drawers.World, "The lantern walk, the grand train ride and the butterfly garden when the semester ends.", SaySemester);
-            BunnyTab.Register("Seasons and festivals", "what is on in the village today and coming up", () => WorldWindow.Show(_w, Green), SeasonCalendar.Tool);
-            BunnyTab.Register("The weather window", "the real weather and the night sky from the burrow", () => WorldWindow.Show(_w, WindowPlace), SeasonCalendar.Weather);
+            BunnyTab.Register("Seasons and festivals", "what is on in the village today and coming up", () => PlaceWorld.Show(_w, Green), SeasonCalendar.Tool);
+            BunnyTab.Register("The weather window", "the real weather and the night sky from the burrow", () => PlaceWorld.Show(_w, WindowPlace), SeasonCalendar.Weather);
 
             World.Places.Register(new Place(Green, "The village green", s => GreenSummary(s, DateTime.Now), _ => Tools.IsOn(SeasonCalendar.Tool) || Tools.IsOn(SeasonCalendar.Village) || Tools.IsOn(SeasonCalendar.Winter) || Tools.IsOn(SeasonCalendar.Yearly) || Tools.IsOn(SeasonCalendar.Semester), s => GreenThings(s, DateTime.Now)));
             World.Places.Register(new Place(WindowPlace, "The round window", _ => "It is " + (SeasonSky.Sky == "mystery" ? "hard to say what the weather is" : SeasonSky.Sky) + (SeasonSky.Night(DateTime.Now, Engines.Settings) ? ", and night has fallen" : ""), _ => Tools.IsOn(SeasonCalendar.Weather), s => WindowThings(s, DateTime.Now)));
-            World.Places.Register(new Place(Hill, "The moonlit hill", _ => "Tonight there is " + RealWorld.MoonPhase(DateTime.Today.AddHours(21)), _ => Tools.IsOn(SeasonCalendar.Moon) || Tools.IsOn(SeasonCalendar.Weather), s => HillThings(s, DateTime.Now)));
+            // One village, one weather window, one hill: the green lives in Stage 7's village, the round window in the burrow, and
+            // the moon and full moon intentions on Stage 7's stargazing hill.
+            PlaceWorld.Adopt(Green, PlaceIds.Village);
+            PlaceWorld.Adopt(WindowPlace, PlaceIds.Burrow);
+            PlaceHooks.AddThings(PlaceIds.Stars, s => HillThings(s, DateTime.Now));
+            // The Friday night market is a stall at the village market, not a second market.
+            PlaceHooks.AddThings(PlaceIds.Market, s => Tools.IsOn(SeasonCalendar.Village) && DateTime.Now.DayOfWeek == DayOfWeek.Friday
+                ? new List<PlaceThing> { Line("Wander the night market", "lanterns and stalls every Friday", s, "season.market") } : new List<PlaceThing>());
 
             GameEvents.DayStarted += day => OnDay(DateTime.Now);
             GameEvents.CalendarDay += OnCalendarDay;
@@ -113,7 +121,8 @@ namespace BusyBunny
                 if (o != null) Game.Queue(_w, o);
                 S.Save();
                 if (e.Id == "icecream" && !Calm.FunPaused) SoundBank.Play("Xylophone, sparkle");
-                Calm.AfterTaskDone(_w, Game.Other, SeasonCalendar.PrizeLine(S, e));
+                string gift = WeatherShell(S, t, e.Id, now) is string shell ? " The gift: " + shell + ", now in the treasure chest." : "";
+                Calm.AfterTaskDone(_w, Game.Other, SeasonCalendar.PrizeLine(S, e) + gift);
                 return;
             }
             // In a real storm, the next few tasks keep the cocoa warm (three a day at most, so it never chatters).
@@ -149,6 +158,20 @@ namespace BusyBunny
 
         // ---- Logic the self-test checks ----
 
+        /// <summary>
+        /// A foggy morning or a rainy day prize also leaves a shell for the treasure chest, tied to the task, so un-finishing
+        /// it takes the shell back (WorldPlaces' TaskUndone handler). Returns the shell's name, or null for other prizes.
+        /// </summary>
+        public static string? WeatherShell(Store s, TaskItem t, string eventId, DateTime now)
+        {
+            if (eventId is not ("fog" or "rain")) return null;
+            var shells = PlaceUi.Items("place.shells");
+            var gift = shells.Count == 0 ? null : shells[now.DayOfYear % shells.Count];
+            string name = gift?.Get("name") ?? "A smooth pebble";
+            Treasure.Add(s, name, PlaceUi.Feel(gift), eventId == "fog" ? "the doorstep on a foggy morning" : "under a rainbow", t.Id);
+            return name.ToLowerInvariant().StartsWith("a ") || name.ToLowerInvariant().StartsWith("an ") ? char.ToLowerInvariant(name[0]) + name[1..] : name;
+        }
+
         /// <summary>A snowman piece for every day of this winter she met her daily goal, up to the whole snowman.</summary>
         /// <summary>Which winter a date is in, named by the year its December falls in.</summary>
         public static string WinterOf(DateTime now) => "winter " + (now.Month == 12 ? now.Year : now.Year - 1);
@@ -161,7 +184,7 @@ namespace BusyBunny
             return Math.Min(n, Math.Max(1, Content.Lines("season.snowman").Count));
         }
 
-        public static readonly string[] Burrows = { "a snug little burrow", "a roomy burrow with a second tunnel", "a burrow with a sunny kitchen", "a burrow with a round guest room", "a grand burrow with a sunroom", "a burrow so big it has an echo" };
+        public static readonly string[] Burrows = { "a snug little burrow", "a roomier burrow", "a burrow with wider tunnels", "a burrow with taller ceilings", "a grand burrow", "a burrow so big it has an echo" };
 
         /// <summary>Moving day, once a year: the burrow gets bigger and nothing is left behind (no other bag is touched).</summary>
         public static bool Move(Store s, DateTime now)
@@ -273,8 +296,9 @@ namespace BusyBunny
                 if (On("harvest") || now.Date >= SeasonCalendar.Last(now.Year, 9, DayOfWeek.Saturday) && now.Date <= SeasonCalendar.Last(now.Year, 9, DayOfWeek.Saturday).AddDays(7))
                     things.Add(new("Have your garden judged", "the harvest festival", owner =>
                     {
-                        int grown = s.Data.Tasks.Count(t => t.DoneAt is DateTime at && at >= new DateTime(now.Year, 9, 1) && at <= now);
-                        string text = "Your garden grew a row for every task you finished since September began: " + grown + (grown == 1 ? " row. " : " rows. ") + Content.Pick(s, "season.harvest");
+                        var garden = PlaceGarden.Bag(s);
+                        int growing = garden.Plots.Count(p => PlaceGarden.Stage(p) > 0);
+                        string text = "The judges walk your carrot garden: " + PlaceUi.N(garden.Harvested, "carrot") + " grown so far, and " + PlaceUi.N(growing, "plot") + " growing now. " + Content.Pick(s, "season.harvest");
                         if (Ribbon(s, "harvest", now.Year.ToString(), 5, "a harvest festival ribbon")) text += " " + PlayTime.SpendLine(s.Data) + ".";
                         Speech.Say(owner, text, true);
                     }));
@@ -285,11 +309,11 @@ namespace BusyBunny
                 if (On("fishing")) things.Add(Line("Cast a line", "the fishing tournament; every fish goes back", s, "season.fishing"));
                 if (On("gardenclub")) things.Add(new("Enter the garden club contest", "a ribbon once this month", owner =>
                 {
-                    string text = Content.Pick(s, "season.garden");
+                    var garden = PlaceGarden.Bag(s);
+                    string text = Content.Pick(s, "season.garden") + " Your carrot garden has " + PlaceUi.N(garden.Plots.Count(p => PlaceGarden.Stage(p) > 0), "plot") + " growing.";
                     if (Ribbon(s, "gardenclub", now.ToString("yyyy-MM"), 3, "a garden club ribbon")) text += " 3 points for the ribbon. " + PlayTime.SpendLine(s.Data) + ".";
                     Speech.Say(owner, text, true);
                 }));
-                if (now.DayOfWeek == DayOfWeek.Friday) things.Add(Line("Wander the night market", "lanterns and stalls every Friday", s, "season.market"));
                 if (On("bonfire")) things.Add(Line("Toast a marshmallow", "the Friday bonfire after a good week", s, "season.bonfire"));
                 if (now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday && now.Hour >= 17) things.Add(Line("Hear a campfire story", "a little spooky, always cozy", s, "season.campfire"));
             }
@@ -332,7 +356,7 @@ namespace BusyBunny
                     things.Add(new("The grand train ride", "through a town for each class you worked on", owner =>
                     {
                         var towns = Classes(s, now);
-                        string route = towns.Count == 0 ? "The train takes the scenic loop around the village. " : "All aboard. The train rolls through " + string.Join(", ", towns.Select(t => t + " town")) + ". ";
+                        string route = towns.Count == 0 ? "The train takes the scenic loop around the village. " : "All aboard. The train rolls through " + string.Join(", ", towns.Select(t => PlaceOutdoors.TownFor(s, t) + ", the " + t + " town")) + ". ";
                         Speech.Say(owner, route + Content.Pick(s, "season.train"), true);
                     }));
                 }
@@ -442,6 +466,16 @@ namespace BusyBunny
             Speech.Say(owner, text, false);
         }
 
+        private void MoonTool()
+        {
+            if (PlaceWorld.IsOpen(S, PlaceIds.Stars)) { PlaceWorld.Show(_w, PlaceIds.Stars); return; }
+            var line = HillThings(S, DateTime.Now).FirstOrDefault(x => x.Name != "The moon tonight");
+            if (line == null) return;
+            var back = _w.KeepFocus();
+            try { line.Run(_w); }
+            finally { back(); }
+        }
+
         private void SetIntention(Window owner, Store s, int lunation)
         {
             string? text = SeasonAsk.Text(owner, "Full moon intention", "Your _intention for this month (private, kept on this PC)");
@@ -491,7 +525,7 @@ namespace BusyBunny
         {
             var now = DateTime.Now;
             var lines = SeasonCalendar.ComingUp(S, now, 40).Where(l => SeasonCalendar.Catalog.Any(e => e.Group == SeasonCalendar.Village && l.StartsWith(SeasonCalendar.Name(e)))).Take(5).ToList();
-            _w.Say(lines.Count == 0 ? "No village days coming up soon." : "Village days: " + string.Join(". ", lines) + ". Bonfires are on Fridays after a good week. The village green in Bunny's world has them.", true);
+            _w.Say(lines.Count == 0 ? "No village days coming up soon." : "Village days: " + string.Join(". ", lines) + ". Bonfires are on Fridays after a good week. They are on the village green, in the village in Bunny's world.", true);
         }
 
         private void SayMusic()
@@ -671,6 +705,19 @@ namespace BusyBunny
                 Need(SeasonCalendar.TrySay(store, cfg, noon, l => { said++; return l.Contains(SeasonCalendar.Name(e2)); }) && said == 1, "an event was not said when allowed");
                 Need(!SeasonCalendar.TrySay(store, cfg, noon, _ => { said++; return true; }) && said == 1, "an event was said twice");
             }
+
+            // One village, one weather window, one hill: Stage 8's places live inside Stage 7's.
+            Need(World.Places.Find("season.hill") == null, "the moonlit hill is a second hill");
+            Need(PlaceWorld.Inside(Green) && PlaceWorld.Inside(WindowPlace), "the village green or the round window is in the top list");
+            Need(World.Places.Find(Green) is Place gp && !gp.Unlocked(store) && World.Places.Find(WindowPlace) is Place wp && !wp.Unlocked(store), "an adopted place shows in the top list");
+            Need(PlaceWorld.AdoptedInto(PlaceIds.Village).Contains(Green) && PlaceWorld.AdoptedInto(PlaceIds.Burrow).Contains(WindowPlace), "the green or the window has no way in");
+            // The fog prize brings a shell for the chest, tied to its task; un-finishing takes it back.
+            var fogTask = new TaskItem { Name = "season fog test", List = store.Data.Lists[0].Name };
+            int chest0 = Treasure.All(store).Count;
+            Need(WeatherShell(store, fogTask, "fog", now) != null && Treasure.All(store).Count == chest0 + 1 && WeatherShell(store, fogTask, "market", now) == null, "the fog prize shell");
+            Treasure.TakeBack(store, fogTask.Id);
+            Need(Treasure.All(store).Count == chest0, "the fog shell stayed after its task went back");
+            Need(Burrows.All(b => !b.Contains("kitchen") && !b.Contains("guest")), "moving day names rooms she may not have built");
 
             // Ribbons: once per occasion, its own undo step.
             int wallet = Ledger.Wallet(store);

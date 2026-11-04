@@ -13,6 +13,8 @@ namespace BusyBunny
         public int Harvested { get; set; }
         public Dictionary<string, int> Treats { get; set; } = new();
         public string LemonadeDay { get; set; } = "";
+        /// <summary>Tasks whose watering was harvested: finishing one of them again never waters a second time.</summary>
+        public HashSet<Guid> HarvestedTasks { get; set; } = new();
     }
 
     public sealed class Plot
@@ -49,7 +51,7 @@ namespace BusyBunny
         public static string? Water(Store s, TaskItem t, DateTime now)
         {
             var b = Bag(s);
-            if (b.Plots.Any(p => p.Waters.Any(w => w.TaskId == t.Id))) return null;
+            if (b.HarvestedTasks.Contains(t.Id) || b.Plots.Any(p => p.Waters.Any(w => w.TaskId == t.Id))) return null;
             var growing = b.Plots.Where(p => Stage(p) < Ready).ToList();
             if (growing.Count == 0) return null;
             var plot = growing.FirstOrDefault(p => !p.Waters.Any(w => w.Day.Date == now.Date)) ?? growing[0];
@@ -73,7 +75,11 @@ namespace BusyBunny
             int ready = b.Plots.Count(p => Stage(p) >= Ready);
             if (ready == 0) return 0;
             s.Remember("harvesting carrots");
-            foreach (var p in b.Plots.Where(p => Stage(p) >= Ready)) p.Waters.Clear();
+            foreach (var p in b.Plots.Where(p => Stage(p) >= Ready))
+            {
+                foreach (var w in p.Waters) b.HarvestedTasks.Add(w.TaskId);
+                p.Waters.Clear();
+            }
             b.Carrots += ready * PerPlot;
             b.Harvested += ready * PerPlot;
             Put(s, b);
@@ -159,7 +165,7 @@ namespace BusyBunny
                     if (PlaceUi.Pick(o, "Give a treat", "Which treat", have) is not int ti) return;
                     if (PlaceUi.Pick(o, "Give a treat", "To whom", Neighbors) is not int ni) return;
                     s.Remember("giving a treat");
-                    TakeTreat(s, have[ti]);
+                    if (!TakeTreat(s, have[ti])) { PlaceUi.Say(o, "That treat is all gone. Bake another at the bakery."); return; }
                     s.Save();
                     PlaceEvents.RaiseTreat(have[ti]);
                     PlaceUi.Say(o, "You gave " + have[ti].ToLowerInvariant() + " to " + Neighbors[ni] + ". " + PlaceUi.Line(s, "place.treat.thanks", ("treat", have[ti].ToLowerInvariant())));
@@ -183,13 +189,20 @@ namespace BusyBunny
         // ---- The farmers market ----
 
         /// <summary>Sells carrots for points (2 each), through the ledger, as one undo step. Returns the points.</summary>
-        public static int Sell(Store s, int count)
+        public static int Sell(Store s, int count) => Sell(s, count, out _);
+
+        /// <summary>Sells carrots; more is what the payment brought (a level up, a badge), to say after the sale, or empty.</summary>
+        public static int Sell(Store s, int count, out string more)
         {
+            more = "";
             var b = Bag(s);
             count = Math.Min(count, b.Carrots);
             if (count <= 0) return 0;
             if (Ledger.Pay(s, count * CarrotPoints, "selling " + PlaceUi.N(count, "carrot") + " at the farmers market", PlaceIds.Farmers, remember: true) is Outcome o)
+            {
                 foreach (var said in o.Said) Game.Note(s, said);
+                more = PlaceOutdoors.Said(o);
+            }
             b = Bag(s);
             b.Carrots -= count;
             Put(s, b);
@@ -207,10 +220,10 @@ namespace BusyBunny
                 int count = n;
                 things.Add(new PlaceThing(count == b.Carrots && count > 1 ? "Sell all " + PlaceUi.N(count, "carrot") : "Sell " + PlaceUi.N(count, "carrot"), (count * CarrotPoints) + " points", o =>
                 {
-                    int got = Sell(s, count);
+                    int got = Sell(s, count, out var more);
                     PlaceUi.Play("Coffee, two clinks");
                     PlaceEvents.RaiseDid(PlaceIds.Farmers, "sell");
-                    PlaceUi.Say(o, PlaceUi.Line(s, "place.farmers.sale", ("count", count.ToString())) + " " + got + " points. " + PlaceUi.N(Bag(s).Carrots, "carrot") + " left. " + PlayTime.SpendLine(s.Data) + ".");
+                    PlaceUi.Say(o, PlaceUi.Line(s, "place.farmers.sale", ("count", count.ToString())) + " " + got + " points. " + PlaceUi.N(Bag(s).Carrots, "carrot") + " left. " + PlayTime.SpendLine(s.Data) + "." + more);
                 }));
             }
             return things;
@@ -235,6 +248,9 @@ namespace BusyBunny
             s.Undo();
             Need(Bag(s).Carrots == carrots, "undo did not put the harvest back");
             Harvest(s);
+            // After a harvest, un-finishing and finishing a task again never waters a second time.
+            Unwater(s, tasks[1]);
+            Need(Water(s, tasks[1], day.AddDays(6)) == null && !Bag(s).Plots.Any(p => p.Waters.Any(w => w.TaskId == tasks[1].Id)), "a harvested task watered again");
             // Baking spends carrots; selling pays through the ledger, and undo puts both back.
             var recipe = Recipes.OrderBy(r => int.Parse(r.Get("carrots"))).First();
             b = Bag(s); b.Carrots = 20; s.World.Set(Id, b);

@@ -87,17 +87,10 @@ namespace BusyBunny
                 if (Build(s, left[i], out var said)) { Sounds.Play(Sounds.Event.SurpriseReward); PlaceWorld.Open(o, PlaceIds.Room(left[i])); }
                 PlaceUi.Say(o, said);
             }));
-            things.Add(new PlaceThing("The market", "things to buy for your rooms", o => ShopWindow.Market(o, Engines.Window!)));
-            things.Add(new PlaceThing("Your wish list", Shop.Wishes(s).Count == 0 ? "nothing on it yet" : PlaceUi.N(Shop.Wishes(s).Count, "wish", "wishes"), o => ShopWindow.Wishes(o, Engines.Window!)));
+            // The weather window, night mode and storm shelter are Stage 8's round window, adopted into the burrow (SeasonWorld).
+            if (Tools.IsOn(MarketTool)) things.Add(new PlaceThing("The market", "things to buy for your rooms", o => ShopWindow.Market(o, Engines.Window!)));
+            if (Tools.IsOn(WishTool)) things.Add(new PlaceThing("Your wish list", Shop.Wishes(s).Count == 0 ? "nothing on it yet" : PlaceUi.N(Shop.Wishes(s).Count, "wish", "wishes"), o => ShopWindow.Wishes(o, Engines.Window!)));
             things.Add(new PlaceThing("Your things in storage", PlaceUi.N(Shop.InRoom(s, Shop.Storage).Count, "thing"), o => ShopWindow.Things(o, s, Shop.Storage)));
-            things.Add(new PlaceThing("The weather window", "the real weather outside, and the moon at night", o => Window(o, s)));
-            if (Night(s, now)) things.Add(new PlaceThing("Night in the burrow", RealWorld.MoonPhase(now) + " tonight", o => { PlaceUi.Play("Soft piano, sigh"); PlaceUi.Say(o, PlaceUi.Line(s, "place.night.say") + " Tonight there is " + RealWorld.MoonPhase(now) + "."); }));
-            if (PlaceDefs.Stormy)
-                things.Add(new PlaceThing("Storm shelter", "the neighbors are in from the storm", o =>
-                {
-                    int done = s.Data.Log.Count(e => e.Kind == "Done" && e.When.Date == now.Date);
-                    PlaceUi.Say(o, PlaceUi.Line(s, "place.storm.say") + " " + (done == 0 ? "The cocoa is warming up." : "Your " + PlaceUi.N(done, "task") + " today kept the cocoa " + (done >= 4 ? "piping hot." : "nice and warm.")));
-                }));
             if (RestDay(s, now)) things.Add(new PlaceThing("The pillow fort", "built for a rest day", o => { PlaceUi.Play("Bunny, two hops"); PlaceUi.Say(o, PlaceUi.Line(s, "place.pillowfort.say")); }));
             things.Add(Puzzle(s));
             var passages = Passages(s);
@@ -115,25 +108,13 @@ namespace BusyBunny
             return things;
         }
 
-        public static bool Night(Store s, DateTime now)
-        {
-            var cfg = Engines.Settings;
-            if (cfg != null && (cfg.WeatherLat != 0 || cfg.WeatherLon != 0) && RealWorld.Sunset(now.Date, cfg.WeatherLat, cfg.WeatherLon) is DateTime set) return now >= set || now.Hour < 5;
-            return now.Hour >= 19 || now.Hour < 5;
-        }
+        public const string MarketTool = "shop.market", WishTool = "shop.wishes", ChestTool = "place.chest", MusicTool = "place.music";
+
+        /// <summary>Night, the same everywhere in Bunny's world: Stage 8's night mode (after sunset, until 5 in the morning).</summary>
+        public static bool Night(Store s, DateTime now) => SeasonSky.Night(now, Engines.Settings);
 
         public static bool RestDay(Store s, DateTime now) =>
             s.Data.Days.TryGetValue(now.ToString("yyyy-MM-dd"), out var i) && i.Mode is DayMode.RoughDay or DayMode.Vacation;
-
-        private static async void Window(Window o, Store s)
-        {
-            PlaceUi.Say(o, "Looking out the window.");
-            string w = Engines.Settings is Settings cfg ? await RealWorld.Weather(cfg) : RealWorld.Mystery;
-            var now = DateTime.Now;
-            string night = Night(s, now) ? " It is dark out, with " + RealWorld.MoonPhase(now) + "." : "";
-            string season = " It is " + RealWorld.Season(now).ToLowerInvariant() + " in the village.";
-            if (o.IsVisible) PlaceUi.Say(o, w + night + season);
-        }
 
         /// <summary>Secret passages found over time: one every 15 finished tasks, between rooms she has built.</summary>
         public static List<Dictionary<string, string>> Passages(Store s)
@@ -170,6 +151,7 @@ namespace BusyBunny
         public static List<PlaceThing> RoomThings(Store s, PlaceDef d)
         {
             string room = d.RoomId!;
+            var now = DateTime.Now;
             var things = new List<PlaceThing>();
             var old = PlayTime.Rooms.FirstOrDefault(r => r.Id == room);
             var tier = Shop.CurrentTier(s, room);
@@ -180,7 +162,11 @@ namespace BusyBunny
             things.AddRange(Special(s, room));
             var mine = Shop.InRoom(s, room);
             things.Add(new PlaceThing("Your things here", mine.Count == 0 ? "nothing yet" : string.Join(", ", mine.Take(4).Select(i => Shop.Find(i.ItemId)?.Name ?? i.ItemId)) + (mine.Count > 4 ? " and more" : ""), o => ShopWindow.Things(o, s, room)));
-            things.Add(new PlaceThing("Shop for this room", Shop.Catalog.Count(i => i.Room == room && !i.Bonus) + " things made for it, and anything from the market", o => ShopWindow.Market(o, Engines.Window!, room)));
+            if (Tools.IsOn(MarketTool))
+            {
+                int forRoom = Shop.ForRoom(s, room, now).Count;
+                things.Add(new PlaceThing("Shop for this room", (forRoom == 0 ? "nothing made just for it right now" : PlaceUi.N(forRoom, "thing") + " made for it") + ", and anything from the market", o => ShopWindow.Market(o, Engines.Window!, room)));
+            }
             var next = Shop.NextTier(s, room);
             if (next != null)
                 things.Add(new PlaceThing("Upgrade to " + next.Name, Shop.Price(s, next.Price) + " points. " + PlaceWorld.First(next.Touch), o =>
@@ -200,6 +186,7 @@ namespace BusyBunny
             switch (room)
             {
                 case "treasure":
+                    if (!Tools.IsOn(ChestTool)) break;
                     yield return new PlaceThing("Open the treasure chest", PlaceUi.N(Chest(s).Count, "treasure") + " inside", o => OpenChest(o, s));
                     break;
                 case "art":
@@ -264,6 +251,7 @@ namespace BusyBunny
                     if (RealWorld.Season(now) == "Summer") yield return new PlaceThing("Pool party", "the neighbors are here", o => { PlaceUi.Play("Pizzicato strings, bounce"); PlaceUi.Say(o, PlaceUi.Line(s, "place.pool.party")); });
                     break;
                 case "music":
+                    if (!Tools.IsOn(MusicTool)) break;
                     yield return new PlaceThing("Play an instrument", PlaceUi.N(PlaceRide.OwnedInstruments(s).Count, "instrument") + ", number keys play notes", o => PlaceRide.Instruments(o, s));
                     break;
                 case "observatory":
@@ -320,7 +308,7 @@ namespace BusyBunny
             var days = s.Data.Game.GoalDays.Select(d => DateTime.TryParse(d, out var x) ? x : DateTime.MinValue).Where(d => d > DateTime.MinValue).OrderByDescending(d => d).ToList();
             return days.Select(d =>
             {
-                int count = s.Data.Log.Count(e => e.Kind == "Done" && e.When.Date == d.Date);
+                int count = PlaceStats.DoneTasks(s.Data).Count(e => e.When.Date == d.Date);
                 string line = lines.Count == 0 ? "A snapshot of {day}." : lines[d.DayOfYear % lines.Count];
                 return line.Replace("{day}", d.ToString("MMMM d")).Replace("{count}", count.ToString());
             }).ToList();
@@ -340,8 +328,8 @@ namespace BusyBunny
                 s.World.SetKept(SnackKey, k);
                 s.World.Save();
             }
-            int carrots = PlaceGarden.Bag(s).Carrots;
-            return k.Line + (carrots > 0 ? " Bunny used a carrot from your basket, and there are plenty left." : "");
+            // Nothing is taken from her basket (calm rules): Bunny only tucks a garden carrot in, when she has grown some.
+            return k.Line + (PlaceGarden.Bag(s).Harvested > 0 ? " Bunny tucked in a carrot from your garden." : "");
         }
 
         private const string GamesKey = "place.games";
@@ -388,6 +376,10 @@ namespace BusyBunny
             Need(!Chest(s).Any(c => c.StartsWith("New find")), "an un-finished task's find stayed");
             Need(Snack(s, DateTime.Now) == Snack(s, DateTime.Now), "the snack changed within a day");
             Need(Trophies(s).Count >= 1 && Burrow(s).Count >= 6, "the trophy room or the burrow");
+            Need(!Snack(s, DateTime.Now).Contains("basket"), "the kitchen snack takes from her basket");
+            // Shop for this room counts what the list really shows.
+            Need(Shop.ForRoom(s, "kitchen", DateTime.Now).All(i => i.Room == "kitchen"), "the room shop lists things for other rooms");
+            Need(Shop.Catalog.Where(i => i.Room == "aquarium" && i.Regular).All(i => Shop.ForRoom(s, "aquarium", DateTime.Now).Contains(i)), "the room shop hides things made for the room");
         }
     }
 }

@@ -193,7 +193,7 @@ namespace BusyBunny
                 o.Fun.Insert(0, (Game.Other, "Plus " + o.Gained + " for " + string.Join(" and ", why) + "."));
                 Game.Queue(_w, o);
             }
-            if (Tools.IsOn(EarlyId) && WellAhead(t, now) is int ahead and > 0 && Ledger.PayExtra(s, t, basePts, Ledger.Boost(s, ahead), "Well ahead: " + t.Name, EarlyId) is Outcome e)
+            if (Tools.IsOn(EarlyId) && WellAhead(t, now) is int ahead and > 0 && Ledger.PayExtra(s, t, basePts, ahead, "Well ahead: " + t.Name, EarlyId) is Outcome e)
             {
                 e.Fun.Insert(0, (Game.Other, "Plus " + e.Gained + " more for being well ahead."));
                 Game.Queue(_w, e);

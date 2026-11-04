@@ -39,16 +39,29 @@ namespace BusyBunny
         private static PlaceThing Line(Store s, string name, string brief, string topic, string sound, string place, string activity = "visit", Func<string>? more = null) =>
             new(name, brief, o => { PlaceUi.Play(sound); PlaceEvents.RaiseDid(place, activity); PlaceUi.Say(o, PlaceUi.Line(s, topic) + (more?.Invoke() ?? "")); });
 
-        /// <summary>Points she earned in a place she asked for: through the ledger as its own undo step, then the bag change.</summary>
-        private static void Pay(Store s, int points, string reason, string place, Action<OutdoorBag> change)
+        /// <summary>
+        /// Points she earned in a place she asked for: through the ledger as its own undo step, then the bag change. Returns
+        /// what the payment brought (a level up, a badge) as " and the line", to say after the place's own line because she
+        /// asked; empty when nothing. Every line is also kept in What happened today.
+        /// </summary>
+        private static string Pay(Store s, int points, string reason, string place, Action<OutdoorBag> change)
         {
-            if (Ledger.Pay(s, points, reason, place, remember: true) is Outcome o) foreach (var said in o.Said) Game.Note(s, said);
+            string first = "";
+            if (Ledger.Pay(s, points, reason, place, remember: true) is Outcome o)
+            {
+                foreach (var said in o.Said) Game.Note(s, said);
+                first = Said(o);
+            }
             var b = Bag(s);
             change(b);
             s.World.Set(Id, b);
             s.World.Save();
             s.Save();
+            return first;
         }
+
+        /// <summary>The first thing a payment brought (a level up, a badge), with a space before it, or empty.</summary>
+        internal static string Said(Outcome o) => o.Said.FirstOrDefault(x => !string.IsNullOrWhiteSpace(x)) is string l ? " " + l : "";
 
         private static int DoneToday(Store s, DateTime now) => s.Data.Log.Count(e => e.Kind == "Done" && e.When.Date == now.Date);
         private static bool BigDay(Store s, DateTime now) => Engine.PointsOn(s.Data, now) >= Engine.DailyGoalFor(s, now) || s.Data.Log.Any(e => e.Kind == "Boss" && e.When.Date == now.Date);
@@ -92,24 +105,30 @@ namespace BusyBunny
             int polished = bag.Stones.Count(x => Polished(s, x));
             things.Add(new PlaceThing("The rock tumbler", PlaceUi.N(bag.Stones.Count, "stone") + " tumbling" + (polished > 0 ? ", " + polished + " polished" : ""), o =>
             {
-                var b = Bag(s);
                 var lines = new List<string>();
-                if (b.StoneDay != Today)
-                {
-                    var stones = PlaceUi.Items("place.stones");
-                    var pick = stones[Rng.Next(stones.Count)];
-                    Change(s, "a stone for the tumbler", x => { x.StoneDay = Today; x.Stones.Add(new Stone { Name = pick.Get("name"), Touch = PlaceUi.Feel(pick), Added = DateTime.Now }); });
-                    lines.Add("You found a rough " + pick.Get("name").ToLowerInvariant() + " and dropped it in. The tumbler rumbles.");
-                }
-                b = Bag(s);
+                var b = Bag(s);
+                bool fresh = b.StoneDay != Today;
                 var done = b.Stones.Where(x => Polished(s, x)).ToList();
-                if (done.Count > 0)
+                if (fresh || done.Count > 0)
                 {
-                    s.Remember("polished stones");
-                    foreach (var x in done) Treasure.Add(s, "Polished " + x.Name.ToLowerInvariant(), x.Touch, "the rock tumbler");
-                    b.Stones.RemoveAll(x => Polished(s, x));
+                    // One Control Z step for the whole visit: the new stone and the polished ones go back together.
+                    s.Remember("using the rock tumbler");
+                    b = Bag(s);
+                    if (done.Count > 0)
+                    {
+                        foreach (var x in done) Treasure.Add(s, "Polished " + x.Name.ToLowerInvariant(), x.Touch, "the rock tumbler");
+                        b.Stones.RemoveAll(x => Polished(s, x));
+                    }
+                    if (fresh)
+                    {
+                        var stones = PlaceUi.Items("place.stones");
+                        var pick = stones[Rng.Next(stones.Count)];
+                        b.StoneDay = Today;
+                        b.Stones.Add(new Stone { Name = pick.Get("name"), Touch = PlaceUi.Feel(pick), Added = DateTime.Now });
+                        lines.Add("You found a rough " + pick.Get("name").ToLowerInvariant() + " and dropped it in. The tumbler rumbles.");
+                    }
                     s.World.Set(Id, b); s.World.Save(); s.Save();
-                    lines.Add(PlaceUi.N(done.Count, "stone") + " came out shiny and smooth: " + string.Join(", ", done.Select(x => x.Name.ToLowerInvariant())) + ". They are in the treasure chest.");
+                    if (done.Count > 0) lines.Add(PlaceUi.N(done.Count, "stone") + " came out shiny and smooth: " + string.Join(", ", done.Select(x => x.Name.ToLowerInvariant())) + ". They are in the treasure chest.");
                 }
                 lines.Add(b.Stones.Count == 0 ? "The tumbler is empty for now." : PlaceUi.N(b.Stones.Count, "stone") + " still tumbling; each polishes after five days you finish tasks.");
                 PlaceUi.Play("Stove, simmer");
@@ -119,7 +138,7 @@ namespace BusyBunny
         }
 
         /// <summary>A stone is polished after five days with a finished task since it went in.</summary>
-        public static bool Polished(Store s, Stone x) => s.Data.Log.Where(e => e.Kind == "Done" && e.When.Date > x.Added.Date).Select(e => e.When.Date).Distinct().Count() >= 5;
+        public static bool Polished(Store s, Stone x) => PlaceStats.DoneTasks(s.Data).Where(e => e.When.Date > x.Added.Date).Select(e => e.When.Date).Distinct().Count() >= 5;
 
         public static List<PlaceThing> HotTub(Store s)
         {
@@ -182,15 +201,15 @@ namespace BusyBunny
             var things = new List<PlaceThing>
             {
                 new("Walk the aisles", PlayTime.SpendLine(s.Data), o => ShopWindow.Market(o, Engines.Window!)),
-                new("Your wish list", Shop.Wishes(s).Count == 0 ? "nothing on it yet" : PlaceUi.N(Shop.Wishes(s).Count, "wish", "wishes"), o => ShopWindow.Wishes(o, Engines.Window!)),
             };
+            if (Tools.IsOn(PlaceRooms.WishTool)) things.Add(new("Your wish list", Shop.Wishes(s).Count == 0 ? "nothing on it yet" : PlaceUi.N(Shop.Wishes(s).Count, "wish", "wishes"), o => ShopWindow.Wishes(o, Engines.Window!)));
             int jars = Honey(s);
             if (jars > 0)
                 things.Add(new PlaceThing("Trade a jar of honey", "10 points a jar, " + PlaceUi.N(jars, "jar") + " to trade", o =>
                 {
-                    Pay(s, 10, "trading a jar of honey at the market", PlaceIds.Hive, b => b.HoneyTraded++);
+                    string more = Pay(s, 10, "trading a jar of honey at the market", PlaceIds.Hive, b => b.HoneyTraded++);
                     PlaceUi.Play("Coffee, clink");
-                    PlaceUi.Say(o, "The stall keeper sniffs the jar and grins. 10 points. " + PlayTime.SpendLine(s.Data) + ".");
+                    PlaceUi.Say(o, "The stall keeper sniffs the jar and grins. 10 points. " + PlayTime.SpendLine(s.Data) + "." + more);
                 }));
             return things;
         }
@@ -220,10 +239,10 @@ namespace BusyBunny
             {
                 new("Sell lemonade", "5 bonus points, once a summer day", o =>
                 {
-                    Pay(s, 5, "selling lemonade", PlaceIds.Lemonade, b => b.LemonadeDay = Today);
+                    string more = Pay(s, 5, "selling lemonade", PlaceIds.Lemonade, b => b.LemonadeDay = Today);
                     PlaceUi.Play("Coffee, pour");
                     PlaceEvents.RaiseDid(PlaceIds.Lemonade, "sell");
-                    PlaceUi.Say(o, PlaceUi.Line(s, "place.lemonade.sale") + " 5 points. " + PlayTime.SpendLine(s.Data) + ".");
+                    PlaceUi.Say(o, PlaceUi.Line(s, "place.lemonade.sale") + " 5 points. " + PlayTime.SpendLine(s.Data) + "." + more);
                 }),
             };
         }
@@ -295,6 +314,18 @@ namespace BusyBunny
             return things;
         }
 
+        /// <summary>A class's town on the train line: the town at the class's place in her class list, so no two classes share one.</summary>
+        public static string TownFor(Store s, string tag) => TownItem(s, tag)?.Get("name") ?? tag + " town";
+
+        private static Dictionary<string, string>? TownItem(Store s, string tag)
+        {
+            var towns = PlaceUi.Items("place.towns");
+            if (towns.Count == 0) return null;
+            var tags = School.ClassTags(s.Data);
+            int i = tags.FindIndex(x => x.Equals(tag, StringComparison.OrdinalIgnoreCase));
+            return towns[(i >= 0 ? i : Math.Abs(tag.ToLowerInvariant().Sum(c => c))) % towns.Count];
+        }
+
         public static List<PlaceThing> Station(Store s)
         {
             var tags = School.ClassTags(s.Data);
@@ -309,8 +340,8 @@ namespace BusyBunny
             foreach (var tag in tags)
             {
                 string t = tag;
-                var town = towns[Math.Abs(t.ToLowerInvariant().Sum(c => c)) % towns.Count];
-                int earned = s.Data.Log.Count(e => e.Kind == "Done" && e.Tag.Equals(t, StringComparison.OrdinalIgnoreCase)) / 5;
+                var town = TownItem(s, t)!;
+                int earned = PlaceStats.DoneTasks(s.Data).Count(e => e.Tag.Equals(t, StringComparison.OrdinalIgnoreCase)) / 5;
                 int left = earned - (b.Tickets.TryGetValue(t, out int used) ? used : 0);
                 things.Add(new PlaceThing(town.Get("name") + ", the " + t + " town", left > 0 ? PlaceUi.N(left, "ticket") + ". Enter rides" : "a ticket every 5 " + t + " tasks", o =>
                 {
@@ -444,15 +475,16 @@ namespace BusyBunny
                     PlaceEvents.RaiseDid(PlaceIds.Cove, "beach");
                     PlaceUi.Say(o, "You found " + sh.Get("name").ToLowerInvariant() + ". " + PlaceUi.Feel(sh) + " It is in the treasure chest.");
                 }),
-                new("Sonar diving", PlaceDefs.SonarOpen(s) ? "arrows swim, the ping guides you to treasure" : "opens when you " + PlaceDefs.SonarWords(s), o =>
-                {
-                    if (!PlaceDefs.SonarOpen(s)) { PlaceUi.Say(o, "Sonar diving opens when you " + PlaceDefs.SonarWords(s) + "."); return; }
-                    Sonar.Show(o, s);
-                }),
                 SemesterBreak(DateTime.Now)
                     ? Line(s, "Go sailing", "it is semester break", "place.sailing.say", "Flute, rising", PlaceIds.Cove, "sail")
                     : new PlaceThing("The sailboat", "sails at semester break", o => PlaceUi.Say(o, "The sailboat rocks at its mooring, ropes creaking. It sails at semester break: mid May to August, and mid December to early January.")),
             };
+            if (Tools.IsOn(PlaceDefs.SonarTool))
+                things.Insert(Math.Max(0, things.Count - 1), new PlaceThing("Sonar diving", PlaceDefs.SonarOpen(s) ? "arrows swim, the ping guides you to treasure" : "opens when you " + PlaceDefs.SonarWords(s), o =>
+                {
+                    if (!PlaceDefs.SonarOpen(s)) { PlaceUi.Say(o, "Sonar diving opens when you " + PlaceDefs.SonarWords(s) + "."); return; }
+                    Sonar.Show(o, s);
+                }));
             return things;
         }
 
@@ -523,10 +555,10 @@ namespace BusyBunny
                 {
                     if (Bag(s).FairyDay == Today) { PlaceUi.Say(o, "The mushrooms glow softly. They are resting until tomorrow."); return; }
                     int points = 3 + Rng.Next(4);
-                    Pay(s, points, "a blessing from the fairy ring", PlaceIds.Mushrooms, b => b.FairyDay = Today);
+                    string more = Pay(s, points, "a blessing from the fairy ring", PlaceIds.Mushrooms, b => b.FairyDay = Today);
                     PlaceUi.Play("Singing bells, sparkle");
                     PlaceEvents.RaiseDid(PlaceIds.Mushrooms, "outdoors");
-                    PlaceUi.Say(o, PlaceUi.Line(s, "place.fairyring.say") + " " + points + " bonus points. " + PlayTime.SpendLine(s.Data) + ".");
+                    PlaceUi.Say(o, PlaceUi.Line(s, "place.fairyring.say") + " " + points + " bonus points. " + PlayTime.SpendLine(s.Data) + "." + more);
                 }),
             };
         }
@@ -567,7 +599,7 @@ namespace BusyBunny
         }
 
         public static List<string> FinishedClasses(Store s) => School.ClassTags(s.Data)
-            .Where(t => s.Data.Log.Count(e => e.Kind == "Done" && e.Tag.Equals(t, StringComparison.OrdinalIgnoreCase)) >= 10
+            .Where(t => PlaceStats.DoneTasks(s.Data).Count(e => e.Tag.Equals(t, StringComparison.OrdinalIgnoreCase)) >= 10
                 && !s.Data.Tasks.Any(x => x.Tag.Equals(t, StringComparison.OrdinalIgnoreCase) && x.Status is not (Status.Done or Status.DoneNotSubmitted))).ToList();
 
         public static List<PlaceThing> Bridges(Store s)
@@ -606,15 +638,22 @@ namespace BusyBunny
         public static int StarsEarned(Store s) => s.Data.Game.GoalDays.Select(d => DateTime.TryParse(d, out var x) ? Engine.WeekStart(x) : DateTime.MinValue)
             .Where(d => d > DateTime.MinValue).GroupBy(d => d).Count(g => g.Count() >= 5);
 
+        /// <summary>The constellations up in the evening sky this season (season: winter, spring, summer, fall or all year).</summary>
+        public static List<Dictionary<string, string>> InSeason(DateTime now)
+        {
+            string season = RealWorld.Season(now).ToLowerInvariant();
+            return PlaceUi.Items("place.constellations").Where(c => c.Get("season") is var w && (w == "all year" || w.Split(',').Select(x => x.Trim()).Contains(season))).ToList();
+        }
+
         public static List<PlaceThing> Stars(Store s)
         {
             var now = DateTime.Now;
             var things = new List<PlaceThing>();
-            var cons = PlaceUi.Items("place.constellations");
+            var cons = InSeason(now);
             if (PlaceRooms.Night(s, now) && cons.Count > 0)
             {
                 var c = cons[now.DayOfYear % cons.Count];
-                things.Add(new PlaceThing("Tonight's constellation", c.Get("name"), o => { PlaceUi.Play("Space, orbit"); PlaceEvents.RaiseDid(PlaceIds.Stars, "stargaze"); PlaceUi.Say(o, c.Get("name") + ". " + PlaceUi.Feel(c) + " " + c.Get("myth") + " Tonight there is " + RealWorld.MoonPhase(now) + "."); }));
+                things.Add(new PlaceThing("Tonight's constellation", c.Get("name"), o => { PlaceUi.Play("Space, orbit"); PlaceEvents.RaiseDid(PlaceIds.Stars, "stargaze"); PlaceUi.Say(o, c.Get("name") + ". " + PlaceUi.Feel(c) + " " + c.Get("myth")); }));
             }
             else things.Add(Line(s, "Look up", "the stars come out after dark", "place.stars.wait", "Space, orbit", PlaceIds.Stars));
             int named = Art.All(s).Count(a => a.Kind == "star"), earned = StarsEarned(s);
@@ -709,10 +748,21 @@ namespace BusyBunny
                 Need(f(s).Count > 0 && f(s).All(t => t.Name.Length > 0), f.Method.Name + " has nothing inside");
             // Paid places pay through the ledger once a day.
             int wallet = Ledger.Wallet(s);
-            Pay(s, 4, "test blessing", PlaceIds.Mushrooms, b => b.FairyDay = Today);
+            Need(Pay(s, 4, "test blessing", PlaceIds.Mushrooms, b => b.FairyDay = Today) is string, "a place payment's words");
             Need(Ledger.Wallet(s) == wallet + 4 && Bag(s).FairyDay == Today, "a place payment");
             s.Undo();
             Need(Ledger.Wallet(s) == wallet && Bag(s).FairyDay != Today, "undo of a place payment");
+            // Two classes never share a train town (PSY and SPY used to).
+            var classes0 = s.Data.Classes.ToList();
+            try
+            {
+                s.Data.Classes.Clear();
+                s.Data.Classes.Add(new ClassTime { Tag = "PSY" });
+                s.Data.Classes.Add(new ClassTime { Tag = "SPY" });
+                var tags = School.ClassTags(s.Data);
+                Need(tags.Count < 2 || TownFor(s, tags[0]) != TownFor(s, tags[1]), "two classes share a train town");
+            }
+            finally { s.Data.Classes.Clear(); s.Data.Classes.AddRange(classes0); }
         }
     }
 }

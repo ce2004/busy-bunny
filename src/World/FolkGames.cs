@@ -109,7 +109,8 @@ namespace BusyBunny
         {
             var g = s.World.GetKept<AdvState>("folk.adventure");
             var (key, index, _) = ThisWeek(s, now);
-            if (g.Key == key && g.Room.Length > 0) return g;
+            // A content update can rename a room or drop a puzzle: a saved game that no longer fits starts fresh.
+            if (g.Key == key && g.Room.Length > 0 && g.Index >= 0 && g.Index < Puzzles().Count && Puzzles()[g.Index].Rooms.ContainsKey(g.Room)) return g;
             return Fresh(key, index);
         }
 
@@ -256,14 +257,26 @@ namespace BusyBunny
                 string cmd = box.Text.Trim();
                 if (cmd.Length == 0) return;
                 box.Clear();
-                var game = Load(S, DateTime.Now);
-                bool wasSolved = game.Solved;
-                string reply = Do(S, game, cmd, HintsEarned(S, DateTime.Now));
-                if (game.Solved && !wasSolved && !game.Paid)
+                // The game loaded when the window opened stays for the window's life, even if Saturday brings a new puzzle meanwhile.
+                var game = g;
+                string reply;
+                try
                 {
-                    game.Paid = true;
-                    Ledger.Pay(_w, 10, "Solved the burrow adventure: " + Puzzles()[game.Index].Title, "folk.adventure", null, true, PayVoice.Silent);
-                    reply += " Plus 10 points. " + PlayTime.SpendLine(S.Data) + ".";
+                    bool wasSolved = game.Solved;
+                    reply = Do(S, game, cmd, HintsEarned(S, DateTime.Now));
+                    if (game.Solved && !wasSolved && !game.Paid)
+                    {
+                        game.Paid = true;
+                        // A solve cannot be undone, so its points are no Control Z step either.
+                        Ledger.Pay(_w, 10, "Solved the burrow adventure: " + Puzzles()[game.Index].Title, "folk.adventure", null, false, PayVoice.Silent);
+                        reply += " Plus 10 points. " + PlayTime.SpendLine(S.Data) + ".";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ErrorLog.Write("Folk adventure command failed: " + ex);
+                    Speech.Say(w, "That did not work just now.", true);
+                    return;
                 }
                 game.Log.Add("You typed: " + cmd);
                 game.Log.Add(reply);
@@ -423,6 +436,11 @@ namespace BusyBunny
             Do(store, live, "go " + dir, 1, false);
             Save(store, live);
             Need(Load(store, now).Room == live.Room && Load(store, now.AddDays(7)).Room == Puzzles()[ThisWeek(store, now.AddDays(7)).Index].Start, "progress saved, and a new puzzle next Saturday");
+            // A saved room that a content update removed starts the puzzle fresh instead of crashing.
+            var stale = Load(store, now);
+            stale.Room = "a room that is gone";
+            Save(store, stale);
+            Need(Load(store, now).Room == Puzzles()[Load(store, now).Index].Start, "a saved game with a missing room did not start fresh");
             Need(ThisWeek(store, new DateTime(2026, 11, 7)).Key == "2026-11-07" && ThisWeek(store, new DateTime(2026, 11, 13)).Key == "2026-11-07", "the puzzle changes on Saturday");
 
             // Mystery week: the Monday on or after the 8th, clues from tasks, a kind ending either way, paid once and undone together.

@@ -34,15 +34,21 @@ namespace BusyBunny
             Folk.Tool("folk.gerald", "Gerald the snail", Drawers.World, "Bunny's pet snail, who sometimes wanders off on slow adventures.", () => Gerald(null));
             Folk.Tool("folk.buried", "Bunny's buried gift", Drawers.Games, "Bunny buries a gift each week and leaves a clue a day; dig it up at the weekend.", () => Buried(null), "this week's clues and the dig");
 
-            Folk.Visit("folk.gerald", GeraldVisit);
-            Folk.Visit("folk.buried", (_, now) => CanDig(S, now) && !Dug(S, now) ? new[] { "The buried gift is ready to dig up: Bunny's buried gift, on the Bunny tab." } : Array.Empty<string>());
-            Folk.Visit("folk.lostfound", (_, now) => Found(S).ContainsKey(Folk.WeekKey(now)) ? Array.Empty<string>() : new[] { "Lost this week: " + LostItem(S, now).Get("item") + ". " + Folk.End(LostItem(S, now).Get("clue")) });
+            Folk.Visit("folk.gerald", GeraldVisit, ask: true);
+            Folk.Reminder("folk.gerald", "gerald", (s, now) => GeraldHome(s, now) == null && G(s).LostSince != null ? "Gerald, off exploring and perfectly fine" : null);
+            Folk.Reminder("folk.buried", "buried", (s, now) => CanDig(s, now) && !Dug(s, now) ? "the buried gift, ready to dig up" : null);
+            Folk.Reminder("folk.lostfound", "lost", (s, now) => Found(s).ContainsKey(Folk.WeekKey(now)) ? null : "this week's lost and found, " + LostItem(s, now).Get("item"));
 
             GameEvents.TaskDone += OnDone;
             GameEvents.TaskUndone += OnUndone;
-            GameEvents.DayStarted += day => Wander(S, DateTime.Now, Folk.Rng);
-            GameEvents.ToolUsed += id => { if (id.Contains("bakery", StringComparison.OrdinalIgnoreCase)) Bakery(S); };
-            FolkShop.OnPlaceActivity += (place, activity) => { if ((place + activity).Contains("bak", StringComparison.OrdinalIgnoreCase)) Bakery(S); };
+            GameEvents.DayStarted += day =>
+            {
+                var now = DateTime.Now;
+                if (GeraldHome(S, now) is string home) Game.Note(S, home);
+                Wander(S, now, Folk.Rng);
+            };
+            // Only real bakery visits count toward recipes (once each, not again through the tool event).
+            FolkShop.OnPlaceActivity += (place, activity) => { if (place == PlaceIds.Bakery) Bakery(S); };
         }
 
         private static void OnDone(TaskItem t)
@@ -55,10 +61,21 @@ namespace BusyBunny
         }
 
         // Always, even with a tool off: what a task gave, un-finishing it takes back.
-        private static void OnUndone(TaskItem t)
+        private static void OnUndone(TaskItem t) => TakeBack(S, t);
+
+        public static void TakeBack(Store s, TaskItem t)
         {
+            var S = s;
             var tr = S.World.Get<HashSet<Guid>>("folk.treasure");
             if (tr.Remove(t.Id)) S.World.Set("folk.treasure", tr);
+            // The map this task completed is no longer paid, and its find leaves the treasure chest (its points go back by themselves).
+            var paid = Paid(S);
+            if (paid.Where(kv => kv.Value == t.Id).Select(kv => kv.Key).ToList() is { Count: > 0 } maps)
+            {
+                foreach (var m in maps) paid.Remove(m);
+                S.World.Set("folk.treasure.paid", paid);
+                BusyBunny.Treasure.TakeBack(S, t.Id);
+            }
             var lost = Found(S);
             foreach (var k in lost.Where(kv => kv.Value == t.Id).Select(kv => kv.Key).ToList()) lost.Remove(k);
             S.World.Set("folk.lost", lost);
@@ -116,7 +133,10 @@ namespace BusyBunny
 
         public const int Pieces = 4;
 
-        /// <summary>A small finished task turns up a map piece; the fourth makes the map whole and leads to a treasure (and 3 points).</summary>
+        /// <summary>Which maps already paid out, and the task that completed each (so un-finishing that task takes the find back).</summary>
+        public static Dictionary<int, Guid> Paid(Store s) => s.World.Get<Dictionary<int, Guid>>("folk.treasure.paid");
+
+        /// <summary>A small finished task turns up a map piece; the fourth makes the map whole and leads to a treasure (and 3 points), once per map.</summary>
         public static string? TreasureFor(Store s, TaskItem t, DateTime now)
         {
             var set = s.World.Get<HashSet<Guid>>("folk.treasure");
@@ -126,8 +146,12 @@ namespace BusyBunny
             int n = set.Count, map = (n - 1) / Pieces;
             string mapName = Folk.Item("folk.maps", map).Get("name");
             if (n % Pieces != 0) return Folk.Pick(s, "folk.mappiece", ("map", mapName), ("left", (Pieces - n % Pieces).ToString()));
+            var paid = Paid(s);
+            if (paid.ContainsKey(map)) return mapName + " is whole again. Its treasure is still safe in your treasure chest.";
+            paid[map] = t.Id;
+            s.World.Set("folk.treasure.paid", paid);
             var tr = Folk.Item("folk.treasures", map);
-            FolkShop.AddTreasure(s, tr.Get("name"), tr.Get("touch"), mapName);
+            FolkShop.AddTreasure(s, tr.Get("name"), tr.Get("touch"), mapName, t.Id);
             if (Ledger.Pay(s, Ledger.Boost(s, 3, t), "A treasure from " + mapName, "folk.treasure", t.Id) is Outcome o && _w != null && s == S) Game.Queue(_w, o);
             s.Save();
             return mapName + " is whole! It led to " + tr.Get("name").ToLowerInvariant() + ". " + Folk.Describe(tr);
@@ -346,24 +370,30 @@ namespace BusyBunny
             return Folk.Pick(s, "folk.gift.arrive", ("gift", g.Get("gift")), ("from", g.Get("from")));
         }
 
+        /// <summary>Leaves this week's gift: the friendship and the "given" mark are one Control Z step, so undo gives the week back.</summary>
+        public static void LeaveGift(Store s, string neighbor, DateTime now)
+        {
+            FolkVillage.AddFriendship(s, neighbor, 2);
+            var left = s.World.Get<Dictionary<string, string>>("folk.gifts.left");
+            left[Folk.WeekKey(now)] = neighbor;
+            s.World.Set("folk.gifts.left", left);
+            s.World.Save();
+        }
+
         private static void Gifts(Window? owner)
         {
             Folk.List(owner, "Gift exchange", () =>
             {
                 var now = DateTime.Now;
                 var rows = new List<Folk.Row>();
-                var given = S.World.GetKept<Dictionary<string, string>>("folk.gifts.given");
+                var given = S.World.Get<Dictionary<string, string>>("folk.gifts.left");
                 if (!given.ContainsKey(Folk.WeekKey(now)))
                     rows.Add(new Folk.Row("Leave a little gift on a neighbor's doorstep this week. Enter to choose who.", win =>
                     {
                         var ids = FolkVillage.Ids;
                         int pick = Folk.Choose(win, "Leave a gift", "Who gets a gift on their doorstep?", ids.Select(id => FolkVillage.NameOf(S, id)).ToList());
                         if (pick < 0) return;
-                        FolkVillage.AddFriendship(S, ids[pick], 2);
-                        var g2 = S.World.GetKept<Dictionary<string, string>>("folk.gifts.given");
-                        g2[Folk.WeekKey(now)] = ids[pick];
-                        S.World.SetKept("folk.gifts.given", g2);
-                        S.World.Save();
+                        LeaveGift(S, ids[pick], now);
                         Folk.Say(win, Bun + " tiptoes over and leaves a ribbon-tied parcel for " + FolkVillage.NameOf(S, ids[pick]) + ". Your friendship grew a little.");
                     }));
                 else rows.Add(new Folk.Row("This week you left a gift for " + FolkVillage.NameOf(S, given[Folk.WeekKey(now)]) + ". Another next week."));
@@ -403,16 +433,21 @@ namespace BusyBunny
         public static GeraldBox G(Store s) => s.World.GetKept<GeraldBox>("folk.gerald");
         private static void SetG(Store s, GeraldBox g) { s.World.SetKept("folk.gerald", g); s.World.Save(); }
 
-        /// <summary>Some mornings Gerald wanders off (never far, never in danger); two or three finished tasks find him.</summary>
+        /// <summary>
+        /// Some ordinary mornings Gerald wanders off (never far, never in danger, never on a rest or rough day). He comes
+        /// home by himself within two days; finished tasks only find him sooner, so a slow day never keeps him away.
+        /// </summary>
         public static bool Wander(Store s, DateTime now, Random rng)
         {
             var g = G(s);
-            if (g.Adopted == default || g.LostSince != null || Calm.FunPaused || !Tools.IsOn("folk.gerald") || rng.Next(6) != 0) return false;
+            if (g.Adopted == default || g.LostSince != null || Calm.FunPaused || !Tools.IsOn("folk.gerald") || Folk.RestToday(s, now) || rng.Next(6) != 0) return false;
             g.LostSince = now;
             g.Need = 2 + rng.Next(2);
             SetG(s, g);
             return true;
         }
+
+        public const double GeraldDays = 2;
 
         public static string? GeraldFound(Store s, DateTime now)
         {
@@ -424,19 +459,25 @@ namespace BusyBunny
             return Folk.Pick(s, "folk.gerald.found");
         }
 
+        /// <summary>After two days Gerald strolls home by himself, whatever she did. The line to keep, or null.</summary>
+        public static string? GeraldHome(Store s, DateTime now)
+        {
+            var g = G(s);
+            if (g.LostSince is not DateTime since || (now - since).TotalDays < GeraldDays) return null;
+            g.LostSince = null;
+            g.Found++;
+            SetG(s, g);
+            return "Gerald strolled home by himself after his slow adventure, perfectly fine and a little smug about it.";
+        }
+
+        /// <summary>The adoption is news, said once in a visit (no window: the story waits in the Gerald tool).</summary>
         private static IEnumerable<string> GeraldVisit(MainWindow w, DateTime now)
         {
             var g = G(S);
-            if (g.Adopted == default)
-            {
-                if (Engine.LevelFor(Engine.Total(S.Data)) < GeraldLevel || Calm.FunPaused) return Array.Empty<string>();
-                g.Adopted = now;
-                SetG(S, g);
-                Folk.Read(w, Bun + " has a pet", Folk.Fill(S, Folk.NthBlock("folk.gerald.adopt", 0)?.Body ?? ""));
-                return new[] { Bun + " adopted Gerald the snail. Gerald the snail, in the toolbox, says what he is up to." };
-            }
-            if (g.LostSince is DateTime since) return new[] { "Gerald has wandered off on a slow adventure. Lost pet posters are up. Finish " + Folk.Plural(Math.Max(1, g.Need - Folk.FinishedSince(S, since)), "more task", "more tasks") + " to find him." };
-            return Array.Empty<string>();
+            if (g.Adopted != default || Engine.LevelFor(Engine.Total(S.Data)) < GeraldLevel || Calm.FunPaused || !Folk.TryAsk()) return Array.Empty<string>();
+            g.Adopted = now;
+            SetG(S, g);
+            return new[] { Bun + " adopted a pet snail called Gerald. Gerald the snail, in the toolbox, tells you how they met." };
         }
 
         private static void Gerald(Window? owner)
@@ -444,10 +485,15 @@ namespace BusyBunny
             var now = DateTime.Now;
             var g = G(S);
             if (g.Adopted == default) { Folk.Say(owner, "At level " + GeraldLevel + ", " + Bun + " adopts a pet. You are level " + Engine.LevelFor(Engine.Total(S.Data)) + "."); return; }
+            if (Folk.First(S, "gerald.story"))
+            {
+                Folk.Read(owner, Bun + " has a pet", Folk.Fill(S, Folk.NthBlock("folk.gerald.adopt", 0)?.Body ?? ""));
+                return;
+            }
+            if (GeraldHome(S, now) is string home) { Folk.Say(owner, home); return; }
             if (g.LostSince is DateTime since)
             {
-                int left = Math.Max(1, g.Need - Folk.FinishedSince(S, since));
-                Folk.Read(owner, "Lost pet poster", Folk.Nth(S, "folk.gerald.posters", Folk.Hash(since.ToString("o"))) + "\n\nFinish " + Folk.Plural(left, "more task", "more tasks") + " and Gerald turns up.");
+                Folk.Read(owner, "Lost pet poster", Folk.Nth(S, "folk.gerald.posters", Folk.Hash(since.ToString("o"))) + "\n\nHe is fine, just exploring, and he comes home by himself in a day or two. There is no rush.");
                 return;
             }
             FolkBunny.Tell(_w, Folk.Pick(S, "folk.gerald.doing") + (g.Found > 0 ? " He has been found " + Folk.Plural(g.Found, "time", "times") + " so far, always perfectly fine." : ""));
@@ -538,6 +584,26 @@ namespace BusyBunny
             int before = Engine.Total(d);
             Need(TreasureFor(store, small[3], now) is string whole && whole.Contains("whole") && Engine.Total(d) > before, "a whole map pays and says so");
             Need(d.Log.Any(e => e.TaskId == small[3].Id && e.Feature == "folk.treasure"), "the treasure points carry the task, so un-finishing takes them back");
+            Need(BusyBunny.Treasure.All(store).Count(f => f.TaskId == small[3].Id) == 1, "the treasure did not reach the treasure chest with its task");
+            // Un-finishing another piece and finishing it again must not pay or add a second find.
+            int paidBefore = d.Log.Count(e => e.Feature == "folk.treasure");
+            TakeBack(store, small[0]);
+            Need(TreasureFor(store, small[0], now) is string again && !again.Contains('{'), "the piece came back");
+            Need(d.Log.Count(e => e.Feature == "folk.treasure") == paidBefore && BusyBunny.Treasure.All(store).Count(f => f.Where == Folk.Item("folk.maps", 0).Get("name")) == 1, "a whole map paid twice");
+            // Un-finishing the task that completed the map takes its find out of the chest.
+            TakeBack(store, small[3]);
+            Need(BusyBunny.Treasure.All(store).All(f => f.TaskId != small[3].Id) && !Paid(store).ContainsKey(0), "un-finishing did not take the treasure back");
+            TreasureFor(store, small[3], now);
+            Need(BusyBunny.Treasure.All(store).Count(f => f.TaskId == small[3].Id) == 1, "finishing again did not find the treasure again");
+
+            // A gift left for a neighbor and the friendship it gave are one Control Z step.
+            string nb = FolkVillage.Ids[0];
+            int fr = FolkVillage.Friendship(store, nb);
+            LeaveGift(store, nb, now);
+            Need(FolkVillage.Friendship(store, nb) == fr + 2 && store.World.Get<Dictionary<string, string>>("folk.gifts.left").ContainsKey(Folk.WeekKey(now)), "leaving a gift");
+            store.Undo();
+            d = store.Data;
+            Need(FolkVillage.Friendship(store, nb) == fr && !store.World.Get<Dictionary<string, string>>("folk.gifts.left").ContainsKey(Folk.WeekKey(now)), "undo of a gift left the week used up");
 
             // Lost and found: only the right kind of task, once a week, and un-finishing puts it back.
             store.World.Set("folk.lost", new Dictionary<string, Guid>());
@@ -566,6 +632,12 @@ namespace BusyBunny
             Need(G(store).LostSince != null && GeraldFound(store, now) == null, "Gerald wandered and is not found with no tasks");
             for (int i = 0; i < 3; i++) d.Log.Add(new LogEntry { Kind = "Done", When = now.AddMinutes(5 + i), Points = 1, TaskId = Guid.NewGuid() });
             Need(GeraldFound(store, now.AddHours(1)) is string gf && gf.Length > 0 && G(store).LostSince == null, "Gerald found by tasks");
+            // He never wanders on a rough day, and comes home by himself after two days with no tasks at all.
+            d.Day(now).Mode = DayMode.RoughDay;
+            Need(Enumerable.Range(0, 100).All(_ => !Wander(store, now, rng)), "Gerald wandered off on a rough day");
+            d.Day(now).Mode = DayMode.Normal;
+            store.World.SetKept("folk.gerald", new GeraldBox { Adopted = now.AddDays(-5), LostSince = now.AddDays(30), Need = 3 });
+            Need(GeraldHome(store, now.AddDays(31)) == null && GeraldHome(store, now.AddDays(32.5)) is string gh && gh.Length > 0 && G(store).LostSince == null, "Gerald did not come home by himself");
 
             // The buried gift: clues grow by day, the dig pays once and is one undo step.
             var monday = Engine.WeekStart(now);

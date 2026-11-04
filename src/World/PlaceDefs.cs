@@ -15,8 +15,8 @@ namespace BusyBunny
     /// </summary>
     public static class PlaceDefs
     {
-        private static void Add(string id, string name, string brief, string? parent, G? goal, Func<Store, List<PlaceThing>>? things = null, string activity = "visit") =>
-            PlaceWorld.Add(new PlaceDef { Id = id, Name = name, Short = brief, Parent = parent, Goal = goal, Things = things, Activity = activity });
+        private static void Add(string id, string name, string brief, string? parent, G? goal, Func<Store, List<PlaceThing>>? things = null, string activity = "visit", string? tool = null) =>
+            PlaceWorld.Add(new PlaceDef { Id = id, Name = name, Short = brief, Parent = parent, Goal = goal, Things = things, Activity = activity, ToolId = tool });
 
         public static void RegisterAll()
         {
@@ -29,13 +29,13 @@ namespace BusyBunny
             Add(P.Tunnels, "The tunnels", "tunnels that open as you level up, and secret rooms", P.Burrow, G.Level(3), PlaceOutdoors.Tunnels, "explore");
             Add(P.HotTub, "The hot tub", "a bubbling tub on the deck outside", P.Burrow, G.Count(s => s.RestDays, 1, "have a rough day or a vacation day", "").Or(G.WeekGoals(1)), PlaceOutdoors.HotTub, "soak");
 
-            Add(P.Garden, "The carrot garden", "plots your finished tasks water", null, null, PlaceGarden.Things, "garden");
+            Add(P.Garden, "The carrot garden", "plots your finished tasks water", null, null, PlaceGarden.Things, "garden", WorldPlaces.GardenTool);
             Add(P.Herbs, "The herb garden", "herbs for the tea house", P.Garden, G.Tasks(25), PlaceOutdoors.Herbs, "garden");
             Add(P.Orchard, "The orchard", "a tree for every semester", P.Garden, G.Tasks(150), PlaceOutdoors.Orchard, "garden");
             Add(P.Hive, "The bee hive", "honey from your streak days", P.Garden, G.Days(10), PlaceOutdoors.Hive, "garden");
 
             Add(P.Village, "The village", "the market, the bakery, the tea house and more", null, null, null);
-            Add(P.Market, "The market", "aisles of things to buy, new stock every Monday", P.Village, null, PlaceOutdoors.Market, "shop");
+            Add(P.Market, "The market", "aisles of things to buy, new stock every Monday", P.Village, null, PlaceOutdoors.Market, "shop", "shop.market");
             Add(P.TeaHouse, "The tea house", "a cup of tea and a bit of gossip", P.Village, G.Tasks(6), PlaceOutdoors.TeaHouse, "tea");
             Add(P.Bakery, "The bakery", "bake your carrots into treats", P.Village, G.Tasks(14), PlaceGarden.Bakery, "bake");
             Add(P.Farmers, "The farmers market", "sell your garden carrots for points", P.Village, G.Days(4), PlaceGarden.Farmers, "sell");
@@ -73,76 +73,38 @@ namespace BusyBunny
             Add(P.Treehouse, "The lookout treehouse", "next week, seen as a landscape", P.Hills, G.Tasks(90), PlaceOutdoors.Treehouse);
             Add(P.Balloon, "The hot air balloon", "a ride over everything at the year's end", P.Hills, G.Tasks(180), PlaceOutdoors.Balloon, "outdoors");
 
-            Add(P.Map, "The map room", "every place, open or not, and what opens it", null, null, PlaceWorld.MapThings);
+            Add(P.Map, "The map room", "every place, open or not, and what opens it", null, null, PlaceWorld.MapThings, tool: "place.map");
         }
 
         // ---- Sonar diving ----
 
+        public const string SonarTool = "place.sonar";
         public static bool SonarOpen(Store s) => PlaceWorld.IsOpen(s, P.Cove) && SonarGoal.Met(PlaceStats.Of(s));
         private static readonly G SonarGoal = G.Sprints(1).Or(G.Tasks(60));
         public static string SonarWords(Store s) => PlaceWorld.IsOpen(s, P.Cove) ? SonarGoal.Words(PlaceStats.Of(s)) : PlaceWorld.UnlockWords(s, P.Cove) + ", then " + SonarGoal.Words(PlaceStats.Of(s));
 
-        // ---- Real weather: fog, rain, storms ----
+        // ---- Real weather: Stage 8's sky (SeasonSky, checked every hour) is the only weather ----
 
-        private static string _weather = "";
-        private static DateTime _weatherAt;
-        public static string Weather => _weather;
-
-        public static async void CheckWeather()
-        {
-            try
-            {
-                if (Engines.Settings is not Settings cfg || cfg.WeatherTown.Length == 0) return;
-                if (DateTime.Now - _weatherAt < TimeSpan.FromMinutes(50)) return;
-                _weatherAt = DateTime.Now;
-                _weather = await RealWorld.Weather(cfg);
-            }
-            catch (Exception e) { ErrorLog.Write("Places weather: " + e.Message); }
-        }
-
-        public static bool Foggy => _weather.Contains("foggy");
-        public static bool Rainy => _weather.Contains("rain") || _weather.Contains("drizzl") || _weather.Contains("pouring");
-        public static bool Stormy => _weather.Contains("stormy");
-
-        public static string WeatherWords() =>
-            _weather.Length == 0 || _weather == RealWorld.Mystery ? "The weather is a mystery today. Type your town in Settings, Fun and tools, and on foggy or rainy days your first task brings a small gift."
-            : _weather + (Foggy ? " Your first task today clears the fog." : Rainy ? " Your first task today brings a rainbow." : " No fog or rain right now.");
-
-        private const string GiftKey = "place.weathergift";
-        public sealed class GiftDay { public string Day { get; set; } = ""; }
-
-        /// <summary>On a real foggy or rainy day, the first task brings a gift for the treasure chest, tied to that task. Returns the line.</summary>
-        public static string? WeatherGift(Store s, TaskItem t, DateTime now, bool? fog = null, bool? rain = null)
-        {
-            bool isFog = fog ?? Foggy, isRain = rain ?? Rainy;
-            if (!isFog && !isRain) return null;
-            var g = s.World.Get<GiftDay>(GiftKey);
-            string day = now.ToString("yyyy-MM-dd");
-            if (g.Day == day) return null;
-            g.Day = day;
-            s.World.Set(GiftKey, g);
-            var shells = PlaceUi.Items("place.shells");
-            var gift = shells.Count == 0 ? null : shells[now.DayOfYear % shells.Count];
-            string name = gift?.Get("name") ?? "A smooth pebble";
-            Treasure.Add(s, name, PlaceUi.Feel(gift), isFog ? "the doorstep on a foggy morning" : "under a rainbow");
-            string line = PlaceUi.Line(s, isFog ? "place.fog.say" : "place.rainbow.say");
-            return line + " The gift: " + name + ", now in the treasure chest.";
-        }
+        public static bool Foggy => SeasonSky.Sky == "foggy";
+        public static bool Rainy => SeasonSky.Rainy(SeasonSky.Sky);
 
         // ---- The clock tower ----
 
-        private const string ChimedKey = "place.chimed";
+        /// <summary>Power hour's own start sound (GetGoingTools registers it under this id).</summary>
+        public const string PowerStartSound = "go.power.start", PowerUsual = "Singing bells, rising", ChimeSound = "Singing bells, chord high";
+
+        /// <summary>Whether the clock tower chime is power hour's start sound now: the tower is open and the chimes are on.</summary>
+        public static bool ChimeForPower(Store s) => Tools.IsOn(WorldPlaces.ChimesTool) && PlaceWorld.IsOpen(s, P.ClockTower);
+
+        /// <summary>
+        /// One sound when a power hour starts, never two: while the clock tower is open and its chimes are on, the chime is
+        /// power hour's start sound (played by power hour itself, with its own calm checks, only when a power hour really
+        /// starts). Otherwise power hour plays its usual sound. Run each minute and at start.
+        /// </summary>
         public static void Chime(DateTime now)
         {
-            if (Engines.Store is not Store s || !PlaceWorld.IsOpen(s, P.ClockTower)) return;
-            var power = Ledger.Active(s, now).FirstOrDefault(m => m.Id.Contains("power", StringComparison.OrdinalIgnoreCase));
-            if (power == null) return;
-            var chimed = s.World.GetKept<Dictionary<string, DateTime>>(ChimedKey);
-            if (chimed.TryGetValue(power.Id, out var until) && until == power.Until) return;
-            chimed[power.Id] = power.Until;
-            s.World.SetKept(ChimedKey, chimed);
-            s.World.Save();
-            if (Calm.Hush(s, Engines.Settings, now) == null) PlaceUi.Play("Singing bells, chord high");
+            if (Engines.Store is not Store s) return;
+            SoundBank.Register(PowerStartSound, ChimeForPower(s) ? ChimeSound : PowerUsual);
         }
 
         // ---- Self-test ----
@@ -168,7 +130,7 @@ namespace BusyBunny
                 "place.lemonade.sale", "place.farmers.sale", "place.boat.row", "place.gym.lift", "place.gym.plate", "place.stretch.do", "place.echo.say",
                 "place.sled.say", "place.cocoa.say", "place.nightowl.say", "place.nightowl.closed", "place.fireflies.say", "place.sandcastle.say",
                 "place.ropeswing.say", "place.bell.say", "place.fairyring.say", "place.lighthouse.say", "place.hotspring.say", "place.pillowfort.say",
-                "place.storm.say", "place.fog.say", "place.rainbow.say", "place.kitchen.snack", "place.night.say", "place.sailing.say", "place.balloon.say",
+                "place.kitchen.snack", "place.sailing.say", "place.balloon.say",
                 "place.well.say", "place.garden.water", "place.garden.droop", "place.garden.harvest", "place.bakery.bake", "place.treat.thanks",
                 "place.hive.say", "place.stars.wait", "place.pottery.done", "place.shop.bought", "place.shop.set", "place.passage.found",
                 "place.museum.say", "place.station.ride", "place.creek.cross", "place.meadow.say", "place.treehouse.light", "place.treehouse.medium",
@@ -221,10 +183,58 @@ namespace BusyBunny
             Need(World.Places.Find(P.Bakery) is Place bakery && !bakery.Unlocked(s), "a place inside the village shows in the top list");
             Need(World.Places.Find(P.Burrow)?.Things(s).First().Name == PlayTime.SpendLine(s.Data), "the burrow does not start with points to spend");
 
-            // Weather gifts: once a day, tied to the task, gone when it is un-finished.
-            var t = new TaskItem { Name = "test", List = s.Data.Lists[0].Name };
-            Need(WeatherGift(s, t, DateTime.Now, fog: true) != null && WeatherGift(s, t, DateTime.Now, fog: true) == null, "the fog gift came twice in a day");
-            Need(WeatherGift(s, t, DateTime.Now.AddDays(1), fog: false, rain: false) == null, "a gift on a clear day");
+            // One burrow: the full burrow is the place, with every room and room building; the old first burrow's tool opens it.
+            Need(World.Places.Find(P.Burrow)!.Things(s).Any(x => x.Name == "Build a room"), "the burrow place is not the full burrow");
+            Need(!World.Places.Find(P.Burrow)!.Things(s).Any(x => x.Name is "The weather window" or "Night in the burrow" or "Storm shelter"), "the burrow still has its own weather window, night or storm line");
+            Need(Content.Lines("place.fog.say").Count == 0 && Content.Lines("place.night.say").Count == 0, "Stage 7's own fog or night lines came back");
+            // Inside places never show in the top list, even while one is being opened (WorldWindow.Listing).
+            Need(PlaceWorld.Inside(P.Bakery) && !PlaceWorld.Inside(P.Village), "which places are inside an area");
+            // A place whose tool is off is closed, and says how to turn it on.
+            var map0 = Tools.Find("place.map");
+            if (map0 != null && Engines.Settings is Settings set0)
+            {
+                bool wasOn = Tools.IsOn("place.map");
+                try
+                {
+                    Tools.SetOn(set0, map0, false);
+                    Need(!PlaceWorld.IsOpen(s, P.Map) && PlaceWorld.UnlockWords(s, P.Map).Contains("Settings"), "the map room stayed open with its tool off");
+                }
+                finally { Tools.SetOn(set0, map0, wasOn); }
+            }
+            // The constellation follows the season: Orion is never up on a summer night, Scorpius never on a winter one.
+            Need(PlaceOutdoors.InSeason(new DateTime(2027, 7, 10, 22, 0, 0)).All(c => !c.Get("name").StartsWith("Orion")) && PlaceOutdoors.InSeason(new DateTime(2027, 1, 10, 22, 0, 0)).Any(c => c.Get("name").StartsWith("Orion")), "Orion in summer");
+            Need(PlaceOutdoors.InSeason(new DateTime(2027, 1, 10, 22, 0, 0)).All(c => c.Get("name") != "Scorpius") && PlaceOutdoors.InSeason(new DateTime(2027, 4, 10, 22, 0, 0)).Count > 0 && PlaceOutdoors.InSeason(new DateTime(2027, 10, 10, 22, 0, 0)).Count > 0, "constellations by season");
+            Need(PlaceUi.Items("place.constellations").All(c => c.Get("season").Length > 0), "a constellation has no season");
+            // Two Done rows for one task (Done not submitted, then Done) count as one finished task.
+            PlaceStats.Forget();
+            int tasks0 = PlaceStats.Of(s).Tasks;
+            var twice = Guid.NewGuid();
+            s.Data.Log.Add(new LogEntry { Kind = "Done", When = DateTime.Now, TaskId = twice });
+            s.Data.Log.Add(new LogEntry { Kind = "Done", When = DateTime.Now, TaskId = twice });
+            Need(PlaceStats.Of(s).Tasks == tasks0 + 1, "one task with two Done rows counted twice");
+            s.Data.Log.RemoveAll(e => e.TaskId == twice);
+            // A rough day counts at once, with no new log entry (the stats cache sees it).
+            int rest0 = PlaceStats.Of(s).RestDays;
+            string roughKey = new DateTime(2001, 1, 2).ToString("yyyy-MM-dd");
+            bool hadDay = s.Data.Days.TryGetValue(roughKey, out var day0);
+            s.Data.Days[roughKey] = new DayInfo { Mode = DayMode.RoughDay };
+            Need(PlaceStats.Of(s).RestDays == rest0 + 1, "a rough day did not count until the next task");
+            if (hadDay) s.Data.Days[roughKey] = day0!; else s.Data.Days.Remove(roughKey);
+            PlaceStats.Forget();
+            // New places are said once: the world window's memory (world.seen) learns what was said after a task.
+            var known0 = s.World.GetKept<List<string>>("place.known");
+            var seen0 = s.World.GetKept<List<string>>("world.seen");
+            try
+            {
+                s.World.SetKept("place.known", new List<string> { P.Burrow });
+                s.World.SetKept("world.seen", new List<string> { P.Burrow });
+                var fresh = PlaceWorld.NewlyOpen(s);
+                var seen1 = s.World.GetKept<List<string>>("world.seen");
+                Need(fresh.Any(f => f.Id == P.Village) && seen1.Contains(P.Village) && !seen1.Contains(P.Market), "a new top place is not shared with the world window");
+                s.World.SetKept("place.known", new List<string> { P.Burrow });
+                Need(!PlaceWorld.NewlyOpen(s).Any(f => f.Id == P.Village), "a top place the world window already said was said again");
+            }
+            finally { s.World.SetKept("place.known", known0); s.World.SetKept("world.seen", seen0); }
 
             PlaceGarden.SelfTest(s);
             PlaceRooms.SelfTest(s);

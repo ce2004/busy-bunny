@@ -1,3 +1,45 @@
+0.14.0
+This is the big one from issue 18: Stages 4 to 8 of your sweep, all at once, so it comes in one update. Everything new is in the Bunny Toolbox (Control Shift H), the Bunny tab or Bunny's world, and every tool can be turned off in Options, Settings, Fun and tools. Help, New in Busy Bunny lists it all. Calm mode still pauses all of it.
+Smarter Bunny (Stage 4):
+New feature: a credit check in Options, Smarter Bunny tells you about how much Claude credit Bunny used this month and today. It is an estimate, counted on this computer.
+New feature: a daily spending cap, off until you turn it on. Once a day's estimate reaches it, Bunny stops until tomorrow and tells you once.
+New feature: import a syllabus with Bunny. Bunny finds the due dates, tests and readings, you tick the ones you want, and one Control Z undoes the whole import. Tasks you already have start unticked.
+New feature: semester setup with Bunny, in the Plan drawer. Paste your class schedule and syllabi, and Bunny suggests tags, class times, weekday plans and due dates for you to approve. A Stop button ends it any time.
+New feature: About me, in Options, Settings. Import a text or Word file about yourself, see line by line what Bunny will remember, and change, export or delete any line. Bunny only gets the few lines a reply needs, and nothing when the About me tool is off.
+New feature: body double. Bunny starts a sprint with you, stays quiet, and asks one question at the end.
+New feature: how long things really take, your best hours and days, what changed this week, and a monthly report to share where you tick exactly what goes in.
+New feature: fresh cheers, a week review and Semester Wrapped written by Bunny when your key is set, and Bunny's monthly check-in on how it has changed.
+Motivation and strategy (Stage 5):
+New feature: the I am stuck drawer has a two-minute dare, just the first line, rough draft mode, future-you messages, a pep talk (Control Shift J), coin flip with a reason, unstick questions, task makeover and pick from three.
+New feature: the Get going drawer has the morning dice roll, power hour, focus music, momentum mode, claim a task, a ten-minute tidy, hard thing first, a two-task warmup, batch mode, micro-goals, a polish timer and dance breaks. Sprints start shorter on low-energy days.
+New feature: the Rest and rough days drawer has a surprise half day (at most once a month, easy to say no to), clean slate, a not today list, mood boost mini tasks, earned free time and a spa day.
+New feature: the Skills drawer has both things are true, how today went (what went right first), five short skills, an optional feelings check, an optional done is done lock, leave it imperfect challenges and an urge timer. These are optional ideas, not treatment.
+New feature: the Plan drawer has promise mode, word of the day, tiny goal big win, daily three, fill the gap, energy-matched order, mood match, good enough mode, dread score, a pre-flight checklist, pick tomorrow's first task, pairing a boring task with something fun, habit stacking, countdowns to fun things, goal ladders, one goal this week, a weekend freedom meter, Sunday reset, Monday preview, a monthly fresh start, a monthly goals board, a reverse planner and a semester goals check-in.
+New feature: the Notes to self drawer has a time capsule, question of the week, a proud moments log, a letter to future you, win of the day and where I left off.
+New feature: small automatic extras, each with its own switch: fair points on low-energy days, help points, self-care counting double on rough days, a second wind bonus, a well-ahead bonus, honest snoozing points, halfway cheers, confetti sounds through the day, class tones that climb, a submission sound, a finish line sound, sprint countdown ticks, tomorrow's treat, hype before tests, your motto now and then, thank-you notes, grace days, how did that feel, a gentle note when you hop between tasks, and a soft landing after vacation.
+New feature: Options, Settings, Plans and little extras for your motto, the name used in thank-you notes, grace days and how often you are asked how a task felt.
+Games and records (Stage 6):
+New feature: weekly bingo, speed runs, a trivia break after sprints, a combo meter, the golden task, challenge Bunny, a reward spin, village quests, snail racing, mini golf, bowling night and a scavenger hunt. None of them have a timer.
+New feature: your own victory tune. Pick up to 8 notes and an instrument and make it your task-done sound, with a button to go back.
+New feature: the marble jar, share a win (Control Shift C, never names a private task), race your past self, the done list, best day replay, personal bests, the effort receipt, task of the week, the Friday wind-down, kindness and boundary points, start, no-overdue and comeback streaks, streak shields, monthly level names, level perks, a 30-tier season pass, the semester trail, year in review, celebration style (quiet, loud or roast), rate a line, and the compliment jar.
+Bunny's world (Stage 7):
+New feature: a much bigger Bunny's world: the burrow, the carrot garden, the village, the pond, the beach cove, the meadows and woods, the hills and the map room, with more than 40 places inside. Each one tells you how it feels first, then how it sounds, then how it looks.
+New feature: the map room lists every place, open or not, and what opens it. When a new place opens, you hear it once.
+New feature: the market with aisles, from furniture to rare finds, new stock every Monday, sets with a bonus item, room upgrades and themes, moving things between rooms or storage (nothing is ever lost), and a wish list that tells you how close you are. Points to spend are always read first.
+New feature: 12 new burrow rooms, like Bunny's bedroom, the pool, the aquarium, the kitchen and the treasure room. Every room you already built stays yours.
+New feature: the carrot garden, your own horse, ATV trails, Bunny's gym, the pottery wheel, instruments to play with the number keys, and sonar diving at the cove, where a ping gets higher and quicker as you get close to treasure.
+New feature: Bunny has a mood with a reason, a personality that slowly changes with what you do together, likes and dislikes, outfits, naps, dreams, a journal, hot takes, a hobby, inside jokes and memories of your firsts.
+New feature: Bunny asks for things, at most once a week, in Visit your bunny. Yes, save toward it, or not now are all fine.
+New feature: eight neighbors with weekly story chapters, including Goldie the golden retriever, who walks you to one task on a rough day. You can rename her.
+New feature: Bunny's mail, the village paper, a weekly radio drama, the animal shelter, Bunny's band, a partner for Bunny that you name, and collections like postcards, the quilt, snow globes and Gerald the snail.
+New feature: the burrow text adventure, a typed puzzle that is new every Saturday, and a monthly village mystery week.
+Seasons and festivals (Stage 8):
+New feature: Bunny's world follows the real calendar: festivals on US holidays, a pumpkin patch in October, winter skating, sledding and a snowman, a spring kite festival, a summer ice cream truck, a fall harvest, village days each month and a Friday night market.
+New feature: your birthday (only if you tell Busy Bunny), Bunny's birthday party, moving day once a year, and end-of-semester events using dates you set in Options, Settings, Seasons and festivals.
+New feature: the round window follows the real weather once you type your town, the burrow gets cozy after the real sunset, and the hill tells you the real moon phase. Set a private full moon intention, and Bunny reads it back at the next full moon.
+New feature: Bunny's weather report, the real forecast told in a silly way.
+New feature: the background music changes with the season, the weather and the night, and keeps your music switch and volume.
+Bug fixed: points from different features could stack past four times a task's points. Now all the bonuses for one task share a limit of four times, and un-finishing a task takes all of them back.
 0.13.0
 New feature: the Bunny Toolbox. Press Control Shift H anywhere, or Fun, Open the toolbox. Every fun and strategy tool is in a drawer, like I am stuck, Get going, Plan, Rest and rough days, Wins and records, Bunny's world, Games and Notes to self, one line each with what it does. Pick a drawer at the top, or type in the search box to find a tool in any drawer. Enter uses it, Control D makes it a favorite, and Escape takes you back to where you were. Your favorites and the tools you used lately come first.
 New feature: the Bunny tab, after Upcoming. It has Visit your bunny, Bunny's world, the burrow, this week's quest, Vex, bets, the mystery box and your sound packs, one line each. Enter opens the one you are on.

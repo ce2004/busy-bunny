@@ -213,10 +213,6 @@ namespace BusyBunny
             return pay;
         }
 
-        /// <summary>What the running multipliers add on top of a task's base points: base times (Factor minus 1). Paid once, by GetGoingTools.</summary>
-        public static int RunningExtra(Store store, int basePoints, DateTime now) =>
-            (int)Math.Round(Math.Max(0, basePoints) * (Factor(store, now) - 1));
-
         public static void SelfTest(Store store)
         {
             void Need(bool ok, string what) { if (!ok) throw new Exception("ledger: " + what); }

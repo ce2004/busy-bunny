@@ -380,6 +380,9 @@ namespace BusyBunny
         }
 
         /// <summary>Drops goal days (and this week's goal) that the points no longer reach, after points were taken back.</summary>
+        /// <summary>Set by streak shields: a goal day a shield covered is kept, whatever its points.</summary>
+        public static Func<Store, string, bool>? KeepGoalDay;
+
         public static void RecheckGoals(Store store, IEnumerable<DateTime> days, DateTime now)
         {
             var d = store.Data;
@@ -387,6 +390,7 @@ namespace BusyBunny
             foreach (var day in days)
             {
                 string key = day.ToString("yyyy-MM-dd");
+                if (KeepGoalDay?.Invoke(store, key) == true) continue;
                 if (g.GoalDays.Contains(key) && PointsOn(d, day) < DailyGoalFor(store, day)) g.GoalDays.Remove(key);
             }
             if (g.WeekGoalWeek == WeekStart(now).ToString("yyyy-MM-dd") && PointsInWeek(d, now) < WeeklyGoalFor(d))

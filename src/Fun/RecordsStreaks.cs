@@ -18,7 +18,7 @@ namespace BusyBunny
         private Store S => _w.Store;
 
         public sealed class Days { public HashSet<string> Keys { get; set; } = new(); }
-        public sealed class Shields { public int Have { get; set; } public List<string> Earned { get; set; } = new(); public List<string> Used { get; set; } = new(); public List<int> PerkLevels { get; set; } = new(); }
+        public sealed class Shields { public int Have { get; set; } public List<string> Earned { get; set; } = new(); public List<string> Used { get; set; } = new(); public List<int> PerkLevels { get; set; } = new(); public int LastStreak { get; set; } }
         public sealed class Months { public Dictionary<string, string> Titles { get; set; } = new(); public List<string> Badges { get; set; } = new(); public string Settled { get; set; } = ""; }
         public sealed class Pass { public string Semester { get; set; } = ""; public int Announced { get; set; } }
         public sealed class YearNote { public string Said { get; set; } = ""; }
@@ -38,6 +38,7 @@ namespace BusyBunny
             Tool(YearId, "Year in review", "Your whole year, like Semester Wrapped. Opens in December.", ShowYear);
             BunnyTab.Register("Season pass", "your tier and the items so far", ShowPass, PassId);
 
+            Engine.KeepGoalDay = Shielded;
             GameEvents.TaskStarted += _ => MarkStarted(S, DateTime.Now);
             GameEvents.StreakChanged += days => { if (Tools.IsOn(ShieldId)) EarnShield(S, days, DateTime.Now); };
             GameEvents.LevelUp += level => { if (Tools.IsOn(PerkId)) PerkShields(S, level); };
@@ -56,7 +57,7 @@ namespace BusyBunny
             {
                 if (!Tools.IsOn(PassId) || PassTier(S, DateTime.Now) is not string line) return;
                 S.Save();
-                Celebration.Sound(S, "Singing bells, rising");
+                Celebration.Sound(S, "Organ, four up");
                 Calm.AfterTaskDone(_w, Game.Other, Celebration.Line(S, line));
             };
             GameEvents.TaskUndone += _ => PassBack(S, DateTime.Now);
@@ -129,22 +130,46 @@ namespace BusyBunny
 
         // ---- Streak shields ----
 
+        /// <summary>
+        /// Her shields, in an undoable bag: the step that spends them (UseShields) or earns them (a finish) puts them
+        /// back with Control Z. Shields kept by an older version in the bookkeeping move over once.
+        /// </summary>
+        public static Shields ShieldsOf(Store s)
+        {
+            var sh = s.World.Get<Shields>(ShieldId);
+            if (sh.Have > 0 || sh.Earned.Count > 0 || sh.Used.Count > 0 || sh.PerkLevels.Count > 0 || sh.LastStreak > 0) return sh;
+            var old = s.World.GetKept<Shields>(ShieldId);
+            if (old.Have == 0 && old.Earned.Count == 0 && old.Used.Count == 0 && old.PerkLevels.Count == 0) return sh;
+            s.World.Set(ShieldId, old);
+            s.World.SetKept(ShieldId, new Shields());
+            s.World.Save();
+            return old;
+        }
+
+        private static void PutShields(Store s, Shields sh) { s.World.Set(ShieldId, sh); s.World.Save(); }
+
+        /// <summary>A shield for every multiple of 14 the streak reached since the last change (a jump from 13 to 15 still earns the 14).</summary>
         public static void EarnShield(Store s, int days, DateTime now)
         {
-            if (days <= 0 || days % ShieldEvery != 0) return;
-            var sh = s.World.GetKept<Shields>(ShieldId);
-            string key = s.Key(now) + ":" + days;
-            if (sh.Earned.Contains(key)) return;
-            sh.Earned.Add(key);
-            sh.Have = Math.Min(MaxShields, sh.Have + 1);
-            s.World.SetKept(ShieldId, sh);
-            s.World.Save();
-            Game.Note(s, "You earned a streak shield for " + days + " days in a row. You have " + sh.Have + ".");
+            var sh = ShieldsOf(s);
+            int from = days < sh.LastStreak ? 0 : sh.LastStreak;
+            sh.LastStreak = Math.Max(0, days);
+            int got = 0;
+            for (int m = (from / ShieldEvery + 1) * ShieldEvery; m <= days; m += ShieldEvery)
+            {
+                string key = s.Key(now) + ":" + m;
+                if (sh.Earned.Contains(key)) continue;
+                sh.Earned.Add(key);
+                sh.Have = Math.Min(MaxShields, sh.Have + 1);
+                got++;
+            }
+            PutShields(s, sh);
+            if (got > 0) Game.Note(s, "You earned a streak shield for " + days + " days in a row. You have " + sh.Have + ".");
         }
 
         public static void PerkShields(Store s, int level)
         {
-            var sh = s.World.GetKept<Shields>(ShieldId);
+            var sh = ShieldsOf(s);
             bool changed = false;
             foreach (var p in Perks().Where(p => p.Level <= level && p.Kind == "shield" && !sh.PerkLevels.Contains(p.Level)))
             {
@@ -152,8 +177,11 @@ namespace BusyBunny
                 sh.Have = Math.Min(MaxShields, sh.Have + 1);
                 changed = true;
             }
-            if (changed) { s.World.SetKept(ShieldId, sh); s.World.Save(); }
+            if (changed) PutShields(s, sh);
         }
+
+        /// <summary>Whether a shield covered this goal day: Engine.RecheckGoals keeps it when a task of that day is un-finished.</summary>
+        public static bool Shielded(Store s, string dayKey) => ShieldsOf(s).Used.Contains(dayKey);
 
         /// <summary>
         /// At the start of a day: missed days just before it (not vacation or rough days) right after a goal day are
@@ -161,7 +189,7 @@ namespace BusyBunny
         /// </summary>
         public static string? UseShields(Store s, DateTime now)
         {
-            var sh = s.World.GetKept<Shields>(ShieldId);
+            var sh = ShieldsOf(s);
             if (sh.Have <= 0) return null;
             var goals = s.Data.Game.GoalDays.ToHashSet();
             var missed = new List<DateTime>();
@@ -179,16 +207,15 @@ namespace BusyBunny
             foreach (var m in missed) s.Data.Game.GoalDays.Add(GamesFunKit.Key(m));
             sh.Have -= missed.Count;
             sh.Used.AddRange(missed.Select(GamesFunKit.Key));
-            s.World.SetKept(ShieldId, sh);
-            s.World.Save();
+            PutShields(s, sh);
             return Content.Pick(s, "records.shield") + " " + (missed.Count == 1 ? "A streak shield covered yesterday" : GamesFunKit.Plural(missed.Count, "streak shield") + " covered the missed days") +
                 ", so your " + GamesFunKit.Plural(streak + missed.Count, "day") + " streak is safe. " + GamesFunKit.Plural(sh.Have, "shield") + " left.";
         }
 
         public static string ShieldLine(Store s)
         {
-            var sh = s.World.GetKept<Shields>(ShieldId);
-            int cur = Engine.Streaks(s.Data, DateTime.Now).Current, next = ShieldEvery - cur % ShieldEvery;
+            var sh = ShieldsOf(s);
+            int cur =Engine.Streaks(s.Data, DateTime.Now).Current, next = ShieldEvery - cur % ShieldEvery;
             return "You have " + GamesFunKit.Plural(sh.Have, "streak shield") + " of " + MaxShields + ". " + (sh.Have >= MaxShields ? "That is the most you can hold." : "The next comes in " + GamesFunKit.Plural(next, "more streak day") + ".") +
                 " A shield steps in by itself when you miss a day." + (sh.Used.Count > 0 ? " Shields have covered " + GamesFunKit.Plural(sh.Used.Count, "day") + " so far." : "");
         }
@@ -214,9 +241,12 @@ namespace BusyBunny
             var m = s.World.GetKept<Months>(MonthId);
             string key = last.ToString("yyyy-MM");
             if (string.CompareOrdinal(m.Settled, key) >= 0) { MonthTitle(s, now); return null; }
+            bool first = m.Settled.Length == 0;
             m.Settled = key;
             s.World.SetKept(MonthId, m);
             s.World.Save();
+            // The very first run: last month never had a title, so no badge named for a month she never saw.
+            if (first) { MonthTitle(s, now); return null; }
             bool any = s.Data.Log.Any(e => e.Kind is "Done" or "DidAThing" && e.When.Year == last.Year && e.When.Month == last.Month);
             string title = MonthTitle(s, now);
             if (!any) return null;
@@ -357,7 +387,7 @@ namespace BusyBunny
             var tag = done.Where(e => e.Tag.Length > 0).GroupBy(e => e.Tag, StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).FirstOrDefault();
             if (tag != null) lines.Add("Most finished tag: " + tag.Key + ", " + GamesFunKit.Plural(tag.Count(), "task") + ".");
             lines.Add("Badges earned: " + d.Game.Badges.Count(b => b.Value.Year == year) + ". Monthly titles: " + s.World.GetKept<Months>(MonthId).Badges.Count(b => b.Contains(year.ToString())) + ".");
-            lines.Add("Kindnesses logged: " + s.World.Get<RecordsWins.Kindness>(RecordsWins.KindId).Total + ". Marble jars filled: " + s.World.Get<RecordsWins.Jar>(RecordsWins.MarbleId).Filled.Count(f => f.When.Year == year) + ".");
+            lines.Add("Kindnesses logged this year: " + log.Count(e => e.Kind == "DidAThing" && e.Text.StartsWith(RecordsWins.HelpedText, StringComparison.Ordinal)) + ". Marble jars filled: " + s.World.Get<RecordsWins.Jar>(RecordsWins.MarbleId).Filled.Count(f => f.When.Year == year) + ".");
             int level = Engine.LevelFor(Engine.Total(d));
             lines.Add("You are level " + level + ", " + Engine.LevelName(level) + ". " + Content.Pick(s, "records.year"));
             return lines;
@@ -395,18 +425,33 @@ namespace BusyBunny
             Need(GamesFunKit.Streak(set, d, today).Current == 1, "a missed day did not end the run");
             // Shields: one every 14 days, at most 3, and one covers a missed day after a streak.
             store.World.SetKept(ShieldId, new Shields());
+            store.World.Set(ShieldId, new Shields());
+            EarnShield(store, 13, today);
+            EarnShield(store, 15, today);
+            Need(ShieldsOf(store).Have == 1, "a streak that jumped from 13 to 15 skipped the 14-day shield");
+            store.World.Set(ShieldId, new Shields());
             for (int k = 1; k <= 5; k++) EarnShield(store, 14 * k, today.AddDays(k));
             EarnShield(store, 14, today.AddDays(1));
-            Need(store.World.GetKept<Shields>(ShieldId).Have == MaxShields, "more than 3 shields, or a shield earned twice");
+            Need(ShieldsOf(store).Have == MaxShields, "more than 3 shields, or a shield earned twice");
             d.Game.GoalDays.Clear();
             for (int k = 2; k <= 6; k++) d.Game.GoalDays.Add(GamesFunKit.Key(today.AddDays(-k)));
             string? note = UseShields(store, today);
-            Need(note != null && d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))) && store.World.GetKept<Shields>(ShieldId).Have == MaxShields - 1, "a shield did not cover the missed day");
+            Need(note != null && d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))) && ShieldsOf(store).Have == MaxShields - 1, "a shield did not cover the missed day");
             Need(Engine.Streaks(d, today).Current == 6, "the streak was not kept by the shield");
+            // Un-finishing a task of a shielded day keeps the day: RecheckGoals asks the shields.
+            Engine.KeepGoalDay ??= Shielded;
+            Engine.RecheckGoals(store, new[] { today.AddDays(-1) }, today);
+            Need(d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))), "rechecking goals dropped a day a shield covered");
             store.Undo();
             d = store.Data;
             Need(!d.Game.GoalDays.Contains(GamesFunKit.Key(today.AddDays(-1))), "Control Z did not take the shield's day back");
+            Need(ShieldsOf(store).Have == MaxShields && ShieldsOf(store).Used.Count == 0, "Control Z of a streak shield did not give the shield back");
             d.Game.GoalDays.Clear();
+            // The first run settles last month quietly: no badge for a month that never had a title.
+            store.World.SetKept(MonthId, new Months());
+            d.Log.Add(new LogEntry { Kind = "Done", When = today.AddMonths(-1), Points = 1, TaskId = Guid.NewGuid() });
+            Need(SettleMonth(store, today) == null && store.World.GetKept<Months>(MonthId).Badges.Count == 0, "the first run gave a badge for last month");
+            d.Log.RemoveAt(d.Log.Count - 1);
             // Season pass: tiers come from points, never past 30, and un-finishing lowers what was announced.
             Need(Tier(new Data(), today) == 0, "a new semester starts at tier 0");
             var fresh = new Data();

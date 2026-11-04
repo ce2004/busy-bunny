@@ -38,15 +38,24 @@ namespace BusyBunny
     {
         public int Tasks, Sprints, Level, WeekGoals, Days, Streak, Bosses, RestDays, Evening, GoalDays, Subtasks, Kindness;
 
-        private static (int Count, DateTime Last, int Tasks)? _key;
+        private static (int Count, DateTime Last, int Tasks, int Days, int RestCount, int Subtasks, int WeekGoals, int GoalDays)? _key;
         private static PlaceStats? _last;
+
+        /// <summary>
+        /// Finished tasks from the log, one row per task: a task set to Done not submitted and later to Done logs two Done rows,
+        /// and still counts once. Rows without a task id count one each.
+        /// </summary>
+        public static List<LogEntry> DoneTasks(Data d) =>
+            d.Log.Where(e => e.Kind == "Done").GroupBy(e => e.TaskId ?? Guid.NewGuid()).Select(g => g.First()).ToList();
 
         public static PlaceStats Of(Store s)
         {
             var d = s.Data;
-            var key = (d.Log.Count, d.Log.Count > 0 ? d.Log[^1].When : DateTime.MinValue, d.Tasks.Count);
+            // Rough and vacation days, ticked subtasks and goals change without a log entry, so they are part of the key too.
+            var key = (d.Log.Count, d.Log.Count > 0 ? d.Log[^1].When : DateTime.MinValue, d.Tasks.Count, d.Days.Count,
+                d.Days.Values.Count(i => i.Mode is DayMode.RoughDay or DayMode.Vacation), d.Tasks.Sum(t => t.Subtasks.Count(x => x.Done)), d.Game.WeekGoalsMet, d.Game.GoalDays.Count);
             if (_key == key && _last != null && ReferenceEquals(_lastData, d)) return _last;
-            var done = d.Log.Where(e => e.Kind == "Done").ToList();
+            var done = DoneTasks(d);
             var st = new PlaceStats
             {
                 Tasks = done.Count,
@@ -56,10 +65,10 @@ namespace BusyBunny
                 Days = done.Select(e => e.When.Date).Distinct().Count(),
                 Streak = Math.Max(d.Game.LongestStreak, Engine.Streaks(d, DateTime.Today).Longest),
                 Bosses = d.Log.Count(e => e.Kind == "Boss"),
-                RestDays = d.Days.Values.Count(i => i.Mode is DayMode.RoughDay or DayMode.Vacation),
+                RestDays = key.Item5,
                 Evening = done.Count(e => e.When.Hour >= 18),
                 GoalDays = d.Game.GoalDays.Count,
-                Subtasks = d.Tasks.Sum(t => t.Subtasks.Count(x => x.Done)),
+                Subtasks = key.Item6,
                 Kindness = d.Log.Count(e => e.Kind == "DidAThing" || e.Kind == Ledger.FunKind && e.Feature.Contains("kind", StringComparison.OrdinalIgnoreCase)),
             };
             _key = key; _last = st; _lastData = d;
@@ -96,6 +105,8 @@ namespace BusyBunny
         public Func<Store, List<PlaceThing>>? Things;
         /// <summary>Activity word for PlaceEvents.Did when she does the place's main thing.</summary>
         public string Activity = "visit";
+        /// <summary>The toolbox switch this place belongs to (the market, the map room, the garden): off closes the place.</summary>
+        public string? ToolId;
     }
 
     /// <summary>Other features add their lines to a place here (neighbors at the tea house, the duck family at the pond).</summary>

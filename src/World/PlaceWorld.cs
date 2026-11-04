@@ -26,7 +26,12 @@ namespace BusyBunny
         public static bool IsOpen(Store s, string id)
         {
             var d = Def(id);
-            if (d == null) return World.Places.Find(id) is Place p && p.Unlocked(s);
+            if (d == null)
+            {
+                if (_adopted.TryGetValue(id, out var a)) return IsOpen(s, a.Parent) && Safe(() => a.Original.Unlocked(s), false);
+                return World.Places.Find(id) is Place p && p.Unlocked(s);
+            }
+            if (d.ToolId != null && !Tools.IsOn(d.ToolId)) return false;
             if (d.RoomId != null) return HasRoom(s, d.RoomId);
             if (d.Parent != null && !IsOpen(s, d.Parent)) return false;
             return d.Goal == null || d.Goal.Met(PlaceStats.Of(s));
@@ -36,6 +41,7 @@ namespace BusyBunny
         {
             var d = Def(id);
             if (d == null) return "";
+            if (d.ToolId != null && !Tools.IsOn(d.ToolId)) return "turn on " + (Tools.Find(d.ToolId)?.Name ?? d.Name) + " in Settings, Fun and tools";
             if (d.RoomId != null) return PlaceRooms.BuildWords(s, d.RoomId);
             if (d.Parent != null && !IsOpen(s, d.Parent)) return "first open " + NameOf(d.Parent).Replace("The ", "the ") + ": " + UnlockWords(s, d.Parent);
             return d.Goal == null ? "always open" : d.Goal.Words(PlaceStats.Of(s));
@@ -44,17 +50,77 @@ namespace BusyBunny
         /// <summary>From a thing inside a place: walks into another place (Escape comes back).</summary>
         public static void Open(Window owner, string id)
         {
+            if (Engines.Store is Store s && !IsOpen(s, id)) { _opening = null; PlaceUi.Say(owner, ClosedWords(s, id)); return; }
             _opening = id;
             WorldWindow.GoTo(owner, id);
         }
 
-        /// <summary>Opens Bunny's world straight into a place, even one inside an area.</summary>
+        /// <summary>Opens Bunny's world straight into a place, even one inside an area (the bakery, a room, the round window).</summary>
         public static void Show(MainWindow w, string id)
         {
-            if (!IsOpen(w.Store, id)) { w.Say(NameOf(id) + " is not open yet. It opens when you " + UnlockWords(w.Store, id) + ".", true); return; }
-            if (Def(id)?.Parent != null || Def(id)?.RoomId != null) _opening = id;
-            WorldWindow.Show(w, id);
             _opening = null;
+            if (!IsOpen(w.Store, id)) { w.Say(ClosedWords(w.Store, id), true); return; }
+            if (Inside(id)) _opening = id;
+            try { WorldWindow.Show(w, id); }
+            finally { _opening = null; }
+        }
+
+        private static string ClosedWords(Store s, string id)
+        {
+            string how = UnlockWords(s, id);
+            return how.Length > 0 ? NameOf(id) + " is not open yet. It opens when you " + how + "." : NameOf(id) + " is closed right now.";
+        }
+
+        /// <summary>A place inside an area: it shows in the world window only while she walks into it, never in the top list.</summary>
+        public static bool Inside(string id) => _adopted.ContainsKey(id) || Def(id) is PlaceDef d && (d.Parent != null || d.RoomId != null);
+
+        // ---- Places from other features that live inside one of mine ----
+
+        private sealed record Adoption(string Parent, Place Original, Place Wrapper);
+        private static readonly Dictionary<string, Adoption> _adopted = new();
+        private static readonly Dictionary<string, string> _pending = new();
+
+        /// <summary>
+        /// Moves another feature's place inside one of mine (the round window into the burrow, the village green into the
+        /// village): it leaves the top list, and the parent lists it with a line that walks in. Its own Unlocked still decides
+        /// whether it is there (a switched-off tool hides it). Call any time in Attach; calling again is harmless.
+        /// Tools that open it must use PlaceWorld.Show(mainWindow, placeId), not WorldWindow.Show.
+        /// </summary>
+        public static void Adopt(string placeId, string parentId)
+        {
+            var current = World.Places.Find(placeId);
+            if (current == null) { _pending[placeId] = parentId; return; }
+            if (_adopted.TryGetValue(placeId, out var had) && ReferenceEquals(had.Wrapper, current))
+            {
+                if (had.Parent == parentId) return;
+                current = had.Original;
+            }
+            var original = current;
+            var wrapper = original with
+            {
+                Unlocked = st => !WorldWindow.Listing && _opening == placeId && IsOpen(st, placeId),
+                Things = st => { if (_opening == placeId) _opening = null; return original.Things(st); },
+            };
+            _adopted[placeId] = new Adoption(parentId, original, wrapper);
+            _pending.Remove(placeId);
+            World.Places.Register(wrapper);
+        }
+
+        /// <summary>Applies adoptions again once every feature has attached (for a place registered late, or registered again).</summary>
+        internal static void AdoptAgain()
+        {
+            foreach (var (id, parent) in _pending.ToList()) Adopt(id, parent);
+            foreach (var (id, a) in _adopted.ToList())
+                if (World.Places.Find(id) is Place now && !ReferenceEquals(now, a.Wrapper)) { _adopted.Remove(id); Adopt(id, a.Parent); }
+        }
+
+        /// <summary>The places adopted into a parent (for the self-test and the map).</summary>
+        public static IEnumerable<string> AdoptedInto(string parentId) => _adopted.Where(x => x.Value.Parent == parentId).Select(x => x.Key);
+
+        private static T Safe<T>(Func<T> f, T fallback)
+        {
+            try { return f(); }
+            catch (Exception e) { ErrorLog.Write("Places: " + e.GetType().Name + ": " + e.Message); return fallback; }
         }
 
         private static Dictionary<string, string> Content(string id) =>
@@ -69,7 +135,7 @@ namespace BusyBunny
             _defs.RemoveAll(x => x.Id == d.Id);
             _defs.Add(d);
             World.Places.Register(new Place(d.Id, d.Name, s => Describe(s, d),
-                s => d.Parent == null && d.RoomId == null ? IsOpen(s, d.Id) : _opening == d.Id && IsOpen(s, d.Id),
+                s => d.Parent == null && d.RoomId == null ? IsOpen(s, d.Id) : !WorldWindow.Listing && _opening == d.Id && IsOpen(s, d.Id),
                 s => ThingsOf(s, d)));
         }
 
@@ -88,6 +154,14 @@ namespace BusyBunny
                 if (feel.Length > 0) things.Insert(d.Id == PlaceIds.Burrow ? Math.Min(1, things.Count) : 0, new PlaceThing("Feel and listen", First(feel), o => { PlaceUi.Play(PlaysOf(d.Id)); PlaceUi.Say(o, feel); }));
             }
             things.AddRange(PlaceHooks.For(d.Id, s));
+            // Other features' places that live here (the round window in the burrow, the village green in the village).
+            foreach (var (id, a) in _adopted.Where(x => x.Value.Parent == d.Id).ToList())
+            {
+                if (!Safe(() => a.Original.Unlocked(s), false)) continue;
+                string pid = id;
+                var orig = a.Original;
+                things.Add(new PlaceThing(orig.Name, Safe(() => orig.Describe(s), ""), o => Open(o, pid)));
+            }
             // An area lists the places inside it: open ones go in, closed ones say what opens them.
             foreach (var child in _defs.Where(c => c.Parent == d.Id && c.RoomId == null))
             {
@@ -109,7 +183,7 @@ namespace BusyBunny
             return dot > 0 ? text[..(dot + 1)] : text;
         }
 
-        private const string VisitedKey = "place.visited", KnownKey = "place.known";
+        private const string VisitedKey = "place.visited", KnownKey = "place.known", SeenKey = "world.seen";
         private static List<string> Visited(Store s) => s.World.GetKept<List<string>>(VisitedKey);
         private static void MarkVisited(Store s, string id)
         {
@@ -130,8 +204,19 @@ namespace BusyBunny
             if (fresh.Count == 0) return fresh;
             known.AddRange(fresh.Select(d => d.Id));
             s.World.SetKept(KnownKey, known);
+            // The world window announces new top places too (world.seen), so they share one memory: a top place said here is
+            // not said again there, and one the window already said is not said here. Before her first visit to the window
+            // it learns everything quietly, so nothing is added then.
+            var seen = s.World.GetKept<List<string>>(SeenKey);
+            var say = fresh;
+            if (seen.Count > 0)
+            {
+                say = fresh.Where(d => !(d.Parent == null && d.RoomId == null && seen.Contains(d.Id))).ToList();
+                foreach (var d in fresh.Where(d => d.Parent == null && d.RoomId == null && !seen.Contains(d.Id))) seen.Add(d.Id);
+                s.World.SetKept(SeenKey, seen);
+            }
             s.World.Save();
-            return first ? new List<PlaceDef>() : fresh;
+            return first ? new List<PlaceDef>() : say;
         }
 
         /// <summary>The closed place nearest to opening, for "what opens next".</summary>
@@ -164,7 +249,7 @@ namespace BusyBunny
     /// </summary>
     public sealed class WorldPlaces : IFeature
     {
-        public const string NewPlacesTool = "place.newplaces", GardenTool = "place.garden", ChimesTool = "place.chimes", WeatherTool = "place.weathergifts";
+        public const string NewPlacesTool = "place.newplaces", GardenTool = "place.garden", ChimesTool = "place.chimes";
         private MainWindow _w = null!;
 
         public void Attach(MainWindow w)
@@ -181,7 +266,7 @@ namespace BusyBunny
                 if (!PlaceWorld.IsOpen(_w.Store, PlaceIds.Cove) || !PlaceDefs.SonarOpen(_w.Store)) { _w.Say("Sonar diving opens when you " + PlaceDefs.SonarWords(_w.Store) + ".", true); return; }
                 var back = _w.KeepFocus(); Sonar.Show(_w, _w.Store); back();
             }) { Since = "0.14.0" });
-            Tools.Register(new BunnyTool("place.music", "Play an instrument", Drawers.World, "Play the instruments you bought with the number keys.", () => PlaceRide.Instruments(_w, _w.Store)) { Since = "0.14.0" });
+            Tools.Register(new BunnyTool("place.music", "Play an instrument", Drawers.World, "Play the instruments you bought with the number keys.", () => { var back = _w.KeepFocus(); PlaceRide.Instruments(_w, _w.Store); back(); }) { Since = "0.14.0" });
             Tools.Register(new BunnyTool("place.chest", "The treasure chest", Drawers.Wins, "Every treasure you have found, newest first.", () => { var back = _w.KeepFocus(); PlaceRooms.OpenChest(_w, _w.Store); back(); }) { Since = "0.14.0" });
             Tools.Register(new BunnyTool(NewPlacesTool, "What opens next", Drawers.World, "The places closest to opening. Also says when a new place opens after a task.", () =>
             {
@@ -189,7 +274,6 @@ namespace BusyBunny
                 _w.Say(next.Count == 0 ? "Every place in Bunny's world is open." : "Next to open: " + string.Join(" ", next.Take(3)), true);
             }) { Since = "0.14.0" });
             Tools.Register(new BunnyTool(ChimesTool, "Clock tower chimes", Drawers.World, "The village clock tower chimes when a power hour starts.", () => { PlaceUi.Play("Singing bells, chord high"); _w.Say("The clock tower chimes when a power hour starts. Turn it off in Settings, Fun and tools.", true); }) { Since = "0.14.0" });
-            Tools.Register(new BunnyTool(WeatherTool, "Fog and rainbow gifts", Drawers.World, "On a real foggy or rainy day, your first task brings a small gift.", () => _w.Say(PlaceDefs.WeatherWords(), true)) { Since = "0.14.0" });
             BunnyTab.Register("The market", "aisles of things to buy for the burrow", () => ShopWindow.Market(_w, _w), "shop.market");
             BunnyTab.Register("The map room", "every place, open or not", () => PlaceWorld.Show(_w, PlaceIds.Map), "place.map");
 
@@ -198,8 +282,6 @@ namespace BusyBunny
                 var s = _w.Store;
                 if (Tools.IsOn(GardenTool) && PlaceGarden.Water(s, t, DateTime.Now) is string ready && !Calm.FunPaused)
                     Calm.AfterTaskDone(_w, Game.Chatter, ready);
-                if (Tools.IsOn(WeatherTool) && !Calm.FunPaused && PlaceDefs.WeatherGift(s, t, DateTime.Now) is string gift)
-                    Calm.AfterTaskDone(_w, Game.Other, gift);
                 if (Tools.IsOn(NewPlacesTool) && !Calm.FunPaused)
                 {
                     var fresh = PlaceWorld.NewlyOpen(s);
@@ -209,9 +291,9 @@ namespace BusyBunny
             // Always, even with a tool off: what a task gave goes back with it.
             GameEvents.TaskUndone += t => { PlaceGarden.Unwater(_w.Store, t); Treasure.TakeBack(_w.Store, t.Id); };
             GameEvents.ToolUsed += id => PlaceRooms.CountGame(_w.Store, id);
-            GameEvents.DayStarted += _ => PlaceDefs.CheckWeather();
-            w.Started += () => { PlaceDefs.CheckWeather(); PlaceWorld.NewlyOpen(_w.Store); };
-            Ticker.Every("place.chimes", now => Tools.IsOn(ChimesTool) && !Calm.FunPaused, PlaceDefs.Chime);
+            w.Started += () => { PlaceWorld.AdoptAgain(); PlaceWorld.NewlyOpen(_w.Store); PlaceDefs.Chime(DateTime.Now); };
+            // Keeps power hour's start sound the chime while the clock tower chimes are on, and its usual sound otherwise.
+            Ticker.Every("place.chimes", _ => true, PlaceDefs.Chime);
         }
 
         public void SelfTest(Store store)

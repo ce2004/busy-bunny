@@ -1,118 +1,138 @@
 name: The Big Dipper
+season: all year
 touch: Seven bumps in a row: four make a square bowl you can cup your paw in, and three trail off in a gently bent handle.
 sound: Crickets in the grass and a soft breeze through the telescope stand.
 looks: Seven bright stars shaped like a ladle hanging in the north.
 myth: Long ago a kind cook used this ladle to serve soup to every creature who was hungry. When she was done, she hung it in the sky so nobody would forget there is always enough to share.
 
 name: Orion the Hunter
+season: winter
 touch: Two bumps for shoulders, two for knees, and three close dots straight across the middle like buttons on a belt.
 sound: The owl hooting softly from the far side of the field.
 looks: A tall figure of bright stars with a famous belt of three in a line.
 myth: In this village, Orion is not a hunter at all but a gardener who wanders the winter sky. His belt holds his seed pouch, and every spring he scatters the stars that turn into flowers.
 
 name: Cassiopeia
+season: fall, winter
 touch: Five bumps zigzagging up and down, like tracing the letter W with your finger.
 sound: A faraway train whistle drifting over the hills.
 looks: A bright W of stars that tips and turns through the night.
 myth: Cassiopeia was a queen who loved her rocking chair more than her throne. The sky lets her rock all night long, tipping back and forth around the north star.
 
 name: The Little Dipper
+season: all year
 touch: A tiny bowl of four dots and a curly handle that ends at one firm, steady bump.
 sound: Wind chimes tinkling on the observatory porch.
 looks: A small faint ladle with the bright north star at the tip of its handle.
 myth: The little dipper belongs to the big dipper's child, who wanted a ladle of her own. The north star at its end never moves, so lost travelers can always find their way home.
 
 name: Cygnus the Swan
+season: summer, fall
 touch: One long line from tail to beak crossed by a wider line for wings, like a soft plus sign stretched out.
 sound: Frogs singing in the pond below.
 looks: A great cross of stars flying down the river of the Milky Way.
 myth: A swan once flew so far that she got tired, and the sky offered her a place to rest. She glides along the starry river every summer, and the ducks say she waves to them.
 
 name: Lyra the Harp
+season: summer
 touch: A small neat diamond hanging from one very bright bump at the top.
 sound: A faint hum, almost like a harp string after it is plucked.
 looks: A tiny parallelogram of stars dangling from brilliant Vega.
 myth: Lyra was a harp whose music was so gentle that it put worries to sleep. The stars kept it in the sky so its quiet song can drift down to anyone who needs rest.
 
 name: Leo the Lion
+season: spring
 touch: A curve like a backwards question mark for the mane, then a triangle of three dots for the hind legs and tail.
 sound: The rooster snoring very faintly in the barn.
 looks: A crouching lion of stars resting in the spring sky.
 myth: Leo was a lion who roared so softly that everyone mistook it for a purr. He decided he liked being cuddly far more than being fierce, and he naps across the sky every spring.
 
 name: Scorpius
+season: summer
 touch: A long curling line of bumps ending in a little hook, like tracing a fishing line with a curl at the end.
 sound: Warm summer wind through tall grass.
 looks: A curving string of stars with a red one glowing at its heart.
 myth: In this retelling, Scorpius is a curly tailed lizard who loves warm summer nights. The red star is his tiny lantern, which he carries so no one walks home in the dark.
 
 name: Pegasus
+season: fall
 touch: A big open square of four bumps, wide enough to lay your whole paw inside.
 sound: Hoofbeats, faint and far away, like the pony trotting in her dreams.
 looks: A great square of stars that is the body of a flying horse.
 myth: Pegasus was a horse with wings who gave rides to anyone who was tired of walking. The pony in the village swears she has seen him wink.
 
 name: The Pleiades
+season: fall, winter
 touch: A tiny cluster of six or seven bumps all huddled close together, like a pawful of seeds.
 sound: A soft giggle on the wind, or maybe just leaves rustling.
 looks: A misty little cluster of blue white stars.
 myth: The seven sisters loved each other so much that they never wanted to be apart. They sit together in a little huddle, sharing secrets and keeping each other warm.
 
 name: Gemini the Twins
+season: winter, spring
 touch: Two long parallel lines of bumps, side by side, each topped with one bright dot.
 sound: Two crickets chirping in perfect time.
 looks: Two stick figures of stars standing shoulder to shoulder.
 myth: The twins were best friends who did everything together, even chores. They hold hands across the sky to remind everyone that hard things are lighter when shared.
 
 name: Draco the Dragon
+season: all year
 touch: A long, long winding line that snakes and loops, with a little box of four bumps at its head.
 sound: A low gentle rumble, like a very large creature purring.
 looks: A dim twisting trail of stars wrapping around the north.
 myth: Draco was a dragon who was afraid of nothing except being lonely. He curls around the north star like a cat around a teacup, keeping it company forever.
 
 name: Ursa Major the Great Bear
+season: all year
 touch: The seven dipper bumps, plus a scatter of dots for paws and a long snout, like a bear walking across your palm.
 sound: The squirrel chattering happily in a tree.
 looks: A big shaggy bear of stars with the dipper on its back and tail.
 myth: The great bear is famous for giving the warmest hugs in the sky. Every autumn she walks low near the hills to check that the burrows are cozy for winter.
 
 name: Aquila the Eagle
+season: summer
 touch: A short straight line of three bumps with the brightest in the middle, and wide wing lines stretching out to each side.
 sound: A soft swish, like feathers cutting the air.
 looks: A soaring bird of stars with bright Altair at its heart.
 myth: Aquila was an eagle who carried messages between friends who lived far apart. She still flies across the summer sky, making sure every kind word gets delivered.
 
 name: The Teapot
+season: summer
 touch: A little box of four bumps with a triangle spout on one side and a curved handle on the other.
 sound: Something like a kettle whistling very far off.
 looks: Part of Sagittarius that looks exactly like a teapot pouring into the Milky Way.
 myth: The village says this is where the Milky Way comes from: a teapot in the sky pouring warm milk forever. Anyone who looks at it is said to sleep extra well.
 
 name: The Bunny Ears
+season: spring
 touch: Two tall slim lines of bumps leaning toward each other at the top, like stroking two soft upright ears.
 sound: A tiny thump, thump, like a happy bunny foot.
 looks: A village constellation of faint stars standing up like listening ears.
 myth: The first bunny of the village fell asleep in the meadow and dreamed so happily that her ears floated up to the sky. They stay there, listening for anyone who needs a friend.
 
 name: The Snail's Shell
+season: fall
 touch: A spiral of bumps curling inward, around and around, to one tiny dot in the middle.
 sound: Nothing hurried at all, just a long patient quiet.
 looks: A slow spiral of faint stars, named in honor of Gerald.
 myth: The village says a wise snail took a hundred years to climb into the sky, and that was perfectly fine. His shell reminds everyone that slow and steady still gets there.
 
 name: The Owl's Lantern
+season: winter
 touch: A small rectangle of four bumps with one dot dangling below and one perched on top like a handle.
 sound: A soft whoo from the old oak tree.
 looks: A cozy little lantern of stars that rises late at night.
 myth: The night shift owl hung her lantern in the sky one evening so the moon would have company. Now it glows every night while she works, and she says it makes the hours fly.
 
 name: The Teacup and Saucer
+season: summer
 touch: A small curve of bumps like the rim of a cup, sitting on a wider flat line, with one loop for the handle.
 sound: The faint clink of china, though no one is having tea.
 looks: A village constellation of soft stars shaped like a cup on a saucer.
 myth: The hedgehog librarian named this one after her favorite reading companion. They say if you spot it, you have earned a warm drink and a quiet chapter.
 
 name: The Carrot Patch
+season: spring
 touch: Three little triangles of bumps in a row, each with a tiny cluster of dots on top for leafy greens.
 sound: A crunchy munch, maybe imagined, maybe from the burrow.
 looks: Three orange tinted stars in a row, with tiny leaves of faint white ones.

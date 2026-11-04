@@ -34,7 +34,8 @@ namespace BusyBunny
             Tools.Register(new BunnyTool(BowlId, "Bowling night", Drawers.Games, "Bowl ten frames with the neighbors. Every task you finish this month is a strike.", () => Bowling(_w)) { Since = "0.14.0" });
             Tools.Register(new BunnyTool(HuntId, "Scavenger hunt", Drawers.Games, "Three things hidden around your burrow, with clues.", () => ScavengerHunt(_w)) { Since = "0.14.0" });
             BunnyTab.Register("Village quests", "what the neighbors posted this week", () => ShowQuests(_w), QuestId);
-            World.Places.Register(new Place(PlaceId, "The village board", s => BoardLine(s, DateTime.Now), _ => true, Things));
+            // Inside the village of Bunny's world (Stage 7), after its own things: one village, not two.
+            PlaceHooks.AddThings(PlaceIds.Village, Things);
 
             GameEvents.WeekStarted += _ => { if (Tools.IsOn(QuestId)) BoardFor(S, DateTime.Now); };
             GameEvents.TaskDone += t =>
@@ -55,17 +56,19 @@ namespace BusyBunny
             };
         }
 
-        private List<PlaceThing> Things(Store s)
+        /// <summary>The village's lines from these games: only the ones she has turned on.</summary>
+        public List<PlaceThing> Things(Store s)
         {
-            var b = BoardFor(s, DateTime.Now);
-            var things = new List<PlaceThing>
+            var things = new List<PlaceThing>();
+            if (Tools.IsOn(QuestId))
             {
-                new("The board", "rough wood under your paws, pins that click when you touch them, paper that crinkles in the breeze", o => Speech.Say(o, BoardLine(s, DateTime.Now) + ".", true)),
-            };
-            foreach (var q in b.Quests) { var line = QuestLine(s, q); things.Add(new(line, "Enter reads it", o => Speech.Say(o, line, true))); }
-            things.Add(new("Snail racing", "the snail track behind the board", o => Snails(o)));
-            things.Add(new("Mini golf", "the little course by the pond", o => Golf(o)));
-            things.Add(new("Bowling night", "the old lanes at the village hall", o => Bowling(o)));
+                var b = BoardFor(s, DateTime.Now);
+                things.Add(new("The quest board", "rough wood under your paws, pins that click when you touch them, paper that crinkles in the breeze", o => Speech.Say(o, BoardLine(s, DateTime.Now) + ".", true)));
+                foreach (var q in b.Quests) { var line = QuestLine(s, q); things.Add(new(line, "Enter reads it", o => Speech.Say(o, line, true))); }
+            }
+            if (Tools.IsOn(SnailId)) things.Add(new("Snail racing", "the snail track behind the quest board", o => Snails(o)));
+            if (Tools.IsOn(GolfId)) things.Add(new("Mini golf", "the little course by the pond", o => Golf(o)));
+            if (Tools.IsOn(BowlId)) things.Add(new("Bowling night", "the old lanes at the village hall", o => Bowling(o)));
             return things;
         }
 
@@ -82,6 +85,14 @@ namespace BusyBunny
             var b = s.World.Get<Board>(QuestId);
             string week = GamesFunKit.Key(Engine.WeekStart(now));
             if (b.Week == week) return b;
+            // The posted quests are kept apart from Control Z: an undo of an earlier change brings back the same board.
+            var made = s.World.GetKept<Board>(QuestId + ".made");
+            if (made.Week == week)
+            {
+                b = new Board { Week = week, Quests = made.Quests.Select(q => new Quest { Index = q.Index }).ToList() };
+                GamesFunKit.Put(s, QuestId, b);
+                return b;
+            }
             var items = QuestItems();
             var picks = new List<int>();
             foreach (int i in Enumerable.Range(0, items.Count).OrderBy(_ => GamesFunKit.Rng.Next()))
@@ -91,6 +102,7 @@ namespace BusyBunny
                 picks.Add(i);
             }
             b = new Board { Week = week, Quests = picks.Select(i => new Quest { Index = i }).ToList() };
+            s.World.SetKept(QuestId + ".made", new Board { Week = week, Quests = picks.Select(i => new Quest { Index = i }).ToList() });
             GamesFunKit.Put(s, QuestId, b);
             return b;
         }
@@ -133,12 +145,20 @@ namespace BusyBunny
         public static void QuestUndone(Store s, TaskItem t)
         {
             var b = s.World.Get<Board>(QuestId);
+            var items = QuestItems();
             bool changed = false;
+            var days = new HashSet<DateTime>();
             foreach (var q in b.Quests)
             {
                 changed |= q.Tasks.Remove(t.Id);
-                if (q.PaidBy == t.Id) { q.Paid = false; q.PaidBy = null; changed = true; }
+                if (q.PaidBy == t.Id) { q.Paid = false; q.PaidBy = null; changed = true; continue; }
+                // An earlier task of a finished quest went back: the quest is short again, and its reward goes (re-paid at the next finish that counts).
+                if (!q.Paid || q.PaidBy is not Guid by || q.Index >= items.Count || items[q.Index]["rule"] == "sprint" || q.Tasks.Count >= Num(items[q.Index], "target", 1)) continue;
+                string reason = items[q.Index]["who"] + "'s village quest";
+                foreach (var e in s.Data.Log.Where(e => e.Kind == Ledger.FunKind && e.Feature == QuestId && e.TaskId == by && e.Text == reason).ToList()) { days.Add(e.When.Date); s.Data.Log.Remove(e); }
+                q.Paid = false; q.PaidBy = null; changed = true;
             }
+            if (days.Count > 0) Engine.RecheckGoals(s, days, DateTime.Now);
             if (changed) { s.World.Set(QuestId, b); s.World.Save(); }
         }
 
@@ -224,10 +244,15 @@ namespace BusyBunny
         public static List<Dictionary<string, string>> Holes() => Content.Items("games.golf").Where(i => i.ContainsKey("name")).ToList();
         public static int OpenHoles(Data d, int count) => Math.Min(count, 3 + d.Game.WeekGoalsMet);
 
-        /// <summary>One putt: soft rolls about 2, medium 4, firm 7, give or take one. Returns the distance left (within 1 is in the cup).</summary>
+        /// <summary>
+        /// One putt: soft rolls about 2, medium 4, firm 8, give or take one; now and then a firm putt catches a lucky
+        /// bounce and rolls 3 farther. Holes are 11 steps or longer, so a hole in one takes that bounce: rare, not free.
+        /// Returns the distance left (within 1 is in the cup).
+        /// </summary>
         public static int Putt(int left, int power, Random rng)
         {
-            int roll = new[] { 2, 4, 7 }[Math.Clamp(power, 0, 2)] + rng.Next(-1, 2);
+            int p = Math.Clamp(power, 0, 2);
+            int roll = new[] { 2, 4, 8 }[p] + rng.Next(-1, 2) + (p == 2 && rng.Next(10) == 0 ? 3 : 0);
             int after = Math.Abs(left - roll);
             return after <= 1 ? 0 : after;
         }
@@ -335,7 +360,7 @@ namespace BusyBunny
                     line += " This month's bowling night pays " + pay + " points. " + PlayTime.SpendLine(S.Data) + ".";
                 }
                 else if (mine > p.BowlBest) { p.BowlBest = mine; GamesFunKit.Put(S, BowlId, p); line += " Your best game yet."; }
-                Celebration.Sound(S, "Bunny, thump");
+                Celebration.Sound(S, "Pizzicato strings, four up");
                 return Celebration.Line(S, line);
             }
             GamesFunKit.Play(owner, "Bowling night", "Bowling night with " + rival + ". You have " + GamesFunKit.Plural(banked, "strike") + " banked from tasks finished this month. The first game each month pays points.",
@@ -359,12 +384,13 @@ namespace BusyBunny
 
         public static Hunt HuntFor(Store s, DateTime now)
         {
-            var h = s.World.Get<Hunt>(HuntId);
+            // Kept apart from Control Z: an undo of an earlier change never hides a new set of things mid-hunt.
+            var h = s.World.GetKept<Hunt>(HuntId);
             if (h.Day == s.Key(now)) return h;
             var spots = Spots(s).OrderBy(_ => GamesFunKit.Rng.Next()).Take(3).ToList();
             var items = Enumerable.Range(0, Content.Items("games.hunt.items").Count).OrderBy(_ => GamesFunKit.Rng.Next()).Take(spots.Count).ToList();
             h = new Hunt { Day = s.Key(now), Things = spots.Select((sp, k) => new Hidden { Item = items[k], Spot = sp.Id }).ToList() };
-            GamesFunKit.Put(s, HuntId, h);
+            s.World.SetKept(HuntId, h); s.World.Save();
             return h;
         }
 
@@ -377,7 +403,7 @@ namespace BusyBunny
             var items = Content.Items("games.hunt.items");
             if (next.Spot != spotId) return ("Not here. " + Content.Pick(s, "games.hunt.miss"), false);
             next.Found = true;
-            GamesFunKit.Put(s, HuntId, h);
+            s.World.SetKept(HuntId, h); s.World.Save();
             var it = items[Math.Min(next.Item, items.Count - 1)];
             string found = "Found it: " + it.GetValueOrDefault("name") + ". " + string.Join(" ", new[] { "touch", "sound", "looks" }.Where(it.ContainsKey).Select(k => it[k]));
             return (found, h.Things.All(x => x.Found));
@@ -385,17 +411,19 @@ namespace BusyBunny
 
         private void ScavengerHunt(Window owner)
         {
+            // What the last search found goes at the start of the next window's intro, so its focus speech never cuts it.
+            string? last = null;
             while (true)
             {
                 var now = DateTime.Now;
                 var h = HuntFor(S, now);
                 var spots = Spots(S);
                 var next = h.Things.FirstOrDefault(x => !x.Found);
-                if (next == null) { _w.Say("You found all " + h.Things.Count + " things today. Bunny is hiding new ones tomorrow.", true); return; }
+                if (next == null) { _w.Say((last != null ? last + " " : "") + "You found all " + h.Things.Count + " things today. Bunny is hiding new ones tomorrow.", true); return; }
                 var spot = spots.FirstOrDefault(x => x.Id == next.Spot);
                 string clue = spot == null ? "It is somewhere in the burrow." : spot.Clues[h.Things.IndexOf(next) % spot.Clues.Count];
                 int i = GamesFunKit.Pick(owner, "Scavenger hunt", "_Search", spots.Select(x => "Search " + x.Name).ToList(), 0,
-                    "Thing " + (h.Things.IndexOf(next) + 1) + " of " + h.Things.Count + ". Clue: " + clue + " Pick where to search. Escape stops; the hunt waits for you.");
+                    (last != null ? last + " " : "") + "Thing " + (h.Things.IndexOf(next) + 1) + " of " + h.Things.Count + ". Clue: " + clue + " Pick where to search. Escape stops; the hunt waits for you.");
                 if (i < 0) return;
                 var (line, complete) = Search(S, spots[i].Id, now);
                 if (complete && S.World.Get<Prizes>(HuntId) is Prizes p && p.HuntDay != S.Key(now))
@@ -409,7 +437,7 @@ namespace BusyBunny
                     _w.Say(Celebration.Line(S, line + " That was the last one! " + HuntPrize + " points. " + PlayTime.SpendLine(S.Data) + "."), true);
                     return;
                 }
-                Speech.Say(owner, line, true);
+                last = line;
             }
         }
 
@@ -420,7 +448,16 @@ namespace BusyBunny
             foreach (var topic in new[] { "games.snail", "games.golf.shots", "games.bowling", "games.hunt.miss" }) Need(Content.Lines(topic).Count >= 20, topic + " has fewer than 20 lines");
             Need(Holes().Count >= 9 && Holes().All(h => h.ContainsKey("touch") && h.ContainsKey("sound")), "mini golf holes need a touch and a sound");
             Need(Content.Items("games.hunt.items").Count >= 20 && Content.Items("games.hunt.items").All(h => h.ContainsKey("touch")), "scavenger hunt things need a touch description");
-            Need(World.Places.Find(PlaceId) != null, "the village board is not in Bunny's world");
+            // One village: these games live inside Stage 7's village, and each shows only while its tool is on.
+            Need(World.Places.Find(PlaceId) == null, "a second village board place is still in Bunny's world");
+            var lines = Things(store).Select(x => x.Name).ToList();
+            Need(lines.Contains("Snail racing") == Tools.IsOn(SnailId) && lines.Contains("Mini golf") == Tools.IsOn(GolfId) && lines.Contains("Bowling night") == Tools.IsOn(BowlId)
+                && lines.Contains("The quest board") == Tools.IsOn(QuestId), "the village shows a game that is turned off, or hides one that is on");
+            // A hole in one is rare: no hole is short enough for a plain firm putt to drop.
+            Need(Holes().All(h => Num(h, "length", 8) >= 11), "a mini golf hole is short enough for an easy hole in one");
+            var golfRng = new Random(4);
+            int aces = Enumerable.Range(0, 1000).Count(_ => Putt(11, 2, golfRng) == 0);
+            Need(aces > 0 && aces < 200, "holes in one came " + aces + " times in 1000 firm putts");
             // Bowling scores the usual way.
             Need(BowlScore(Enumerable.Repeat(10, 12).ToList()) == 300, "a perfect game is not 300");
             Need(BowlScore(Enumerable.Repeat(5, 21).ToList()) == 150, "all spares of 5 is not 150");
@@ -453,12 +490,30 @@ namespace BusyBunny
             Engine.Unfinish(store, lastTask, DateTime.Now);
             QuestUndone(store, lastTask);
             Need(Engine.Total(store.Data) == before && !store.World.Get<Board>(QuestId).Quests[0].Paid, "un-finishing kept the quest reward");
+            if (target > 1)
+            {
+                // Paid by the last task, then an earlier one goes back: the quest is short again and its reward goes.
+                lastTask.Status = Status.Done;
+                QuestDone(store, lastTask, DateTime.Now);
+                Need(Engine.Total(store.Data) == before + reward, "the quest did not pay again when finished again");
+                var firstTask = tasks[0];
+                firstTask.Status = Status.Today;
+                Engine.Unfinish(store, firstTask, DateTime.Now);
+                QuestUndone(store, firstTask);
+                Need(Engine.Total(store.Data) == before && !store.World.Get<Board>(QuestId).Quests[0].Paid, "un-finishing an earlier task kept a quest that is short again");
+            }
             foreach (var t in tasks) store.Data.Tasks.Remove(t);
+            // The posted board survives an undo that puts back an older bag.
+            store.World.Set(QuestId, new Board());
+            store.World.SetKept(QuestId + ".made", new Board());
+            var posted = BoardFor(store, DateTime.Now).Quests.Select(q => q.Index).ToList();
+            store.World.Set(QuestId, new Board());
+            Need(BoardFor(store, DateTime.Now).Quests.Select(q => q.Index).SequenceEqual(posted), "losing the bag posted a new village board");
             // The hunt: three spots even in a new burrow, and searching the right one finds it.
             var h = HuntFor(store, DateTime.Now);
             Need(h.Things.Count == 3, "the hunt hid " + h.Things.Count + " things");
             foreach (var x in h.Things.ToList()) Search(store, x.Spot, DateTime.Now);
-            Need(store.World.Get<Hunt>(HuntId).Things.All(x => x.Found), "searching the right spots did not find everything");
+            Need(store.World.GetKept<Hunt>(HuntId).Things.All(x => x.Found), "searching the right spots did not find everything");
         }
     }
 }

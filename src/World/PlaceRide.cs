@@ -251,7 +251,7 @@ namespace BusyBunny
             var panel = new StackPanel { Margin = new Thickness(12) };
             panel.Children.Add(new Label { Content = "_Instruments: number keys play notes", Target = list, Padding = new Thickness(0, 0, 0, 2) });
             panel.Children.Add(list);
-            panel.Children.Add(new TextBlock { Text = "Arrow to an instrument, then press 1 to 9 and 0 to play, low to high. Escape closes.", TextWrapping = TextWrapping.Wrap, MaxWidth = 480 });
+            panel.Children.Add(new TextBlock { Text = "Arrow to an instrument, then press 1 to 9 and 0 on the number row to play, low to high. Escape closes.", TextWrapping = TextWrapping.Wrap, MaxWidth = 480 });
             panel.Children.Add(Layout.Button("Close", isCancel: true));
             w.Content = panel;
             w.Loaded += (_, _) => TextViewer.Select(list, 0);

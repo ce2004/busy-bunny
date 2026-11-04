@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Automation;
+using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -191,68 +192,126 @@ namespace BusyBunny
             return t.Get("name") + ". " + PlaceUi.Feel(t);
         }
 
+        /// <summary>
+        /// One dive's state, kept apart from the window so the self-test can press keys. After a find, Enter or an arrow starts
+        /// a new dive; the spot she found is never kept twice and never pings again.
+        /// </summary>
+        public sealed class Dive
+        {
+            public int X = Size / 2, Y = Size - 1, Tx, Ty, Moves;
+            public bool Found;
+            private readonly Random _rng;
+            public Dive(Random rng) { _rng = rng; Hide(Size - 2); }
+
+            private void Hide(int rows)
+            {
+                do { Tx = _rng.Next(Size); Ty = _rng.Next(rows); } while (Math.Abs(Tx - X) + Math.Abs(Ty - Y) < 5);
+            }
+
+            /// <summary>A new treasure somewhere else; she stays where she is.</summary>
+            public void Again() { Found = false; Moves = 0; Hide(Size); }
+
+            public enum Swim { Moved, Bottom, Wall, NewDive }
+
+            /// <summary>An arrow. After a find it starts a new dive first, then swims.</summary>
+            public Swim Move(int dx, int dy)
+            {
+                bool fresh = false;
+                if (Found) { Again(); fresh = true; }
+                int nx = X + dx, ny = Y + dy;
+                if (nx < 0 || ny < 0 || nx >= Size || ny >= Size) return fresh ? Swim.NewDive : ny >= Size ? Swim.Bottom : Swim.Wall;
+                X = nx; Y = ny; Moves++;
+                return fresh ? Swim.NewDive : Swim.Moved;
+            }
+
+            public enum Grab { Found, NewDive, Sand }
+
+            /// <summary>Enter or Space: a new dive after a find, the treasure when she is on it, otherwise sand.</summary>
+            public Grab Press()
+            {
+                if (Found) { Again(); return Grab.NewDive; }
+                if (X == Tx && Y == Ty) { Found = true; return Grab.Found; }
+                return Grab.Sand;
+            }
+        }
+
+        /// <summary>The sea: focusable, with an automation peer so NVDA reads its name and instructions.</summary>
+        private sealed class Sea : ContentControl
+        {
+            protected override AutomationPeer OnCreateAutomationPeer() => new SeaPeer(this);
+            private sealed class SeaPeer : FrameworkElementAutomationPeer
+            {
+                public SeaPeer(FrameworkElement owner) : base(owner) { }
+                protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Custom;
+                protected override string GetClassNameCore() => "SonarSea";
+                protected override bool IsContentElementCore() => true;
+                protected override bool IsKeyboardFocusableCore() => true;
+            }
+        }
+
+        private const string HowTo = "Arrows swim. Enter grabs what is under you. H gives a hint. Escape swims back up. No hurry: there is no timer.";
+
         public static void Show(Window owner, Store s)
         {
             var rng = new Random();
-            int x = Size / 2, y = Size - 1, tx, ty, moves = 0;
-            do { tx = rng.Next(Size); ty = rng.Next(Size - 2); } while (Math.Abs(tx - x) + Math.Abs(ty - y) < 5);
+            var dive = new Dive(rng);
             var w = Layout.Dialog(owner, "Sonar diving");
-            var sea = new ContentControl
+            var sea = new Sea
             {
                 Focusable = true, IsTabStop = true, Width = 420, Height = 120,
-                Content = new TextBlock { Text = "Arrows swim. Enter grabs what is under you. H gives a hint. Escape swims back up. No hurry: there is no timer.", TextWrapping = TextWrapping.Wrap },
+                Content = new TextBlock { Text = HowTo, TextWrapping = TextWrapping.Wrap },
             };
             AutomationProperties.SetName(sea, "Sonar diving. Arrows swim, Enter grabs, H for a hint, Escape swims up.");
             var timer = new DispatcherTimer();
-            void PingNow() { var (c, p) = Hear(x, y, tx, ty); PlaceAudio.Ping(c, p); timer.Interval = TimeSpan.FromSeconds(Gap(c)); }
+            void PingNow() { var (c, p) = Hear(dive.X, dive.Y, dive.Tx, dive.Ty); PlaceAudio.Ping(c, p); timer.Interval = TimeSpan.FromSeconds(Gap(c)); }
             timer.Tick += (_, _) => PingNow();
-            bool found = false;
             sea.PreviewKeyDown += (_, e) =>
             {
                 int dx = e.Key == Key.Left ? -1 : e.Key == Key.Right ? 1 : 0, dy = e.Key == Key.Up ? -1 : e.Key == Key.Down ? 1 : 0;
                 if (dx != 0 || dy != 0)
                 {
                     e.Handled = true;
-                    int nx = x + dx, ny = y + dy;
-                    if (nx < 0 || ny < 0 || nx >= Size || ny >= Size) { PlaceAudio.Bump(dx); Speech.Say(w, ny >= Size ? "The sandy bottom." : "The reef wall.", true); return; }
-                    x = nx; y = ny; moves++;
+                    var swim = dive.Move(dx, dy);
+                    if (swim == Dive.Swim.Bottom || swim == Dive.Swim.Wall) { PlaceAudio.Bump(dx); Speech.Say(w, swim == Dive.Swim.Bottom ? "The sandy bottom." : "The reef wall.", true); return; }
+                    if (swim == Dive.Swim.NewDive) Speech.Say(w, "A new dive. Listen for the ping.", true);
                     timer.Stop(); PingNow(); timer.Start();
                 }
                 else if (e.Key == Key.H)
                 {
                     e.Handled = true;
-                    var (c, _) = Hear(x, y, tx, ty);
-                    string side = tx < x ? "to your left" : tx > x ? "to your right" : "straight";
-                    string ahead = ty < y ? "ahead" : ty > y ? "behind you" : "level with you";
+                    if (dive.Found) { Speech.Say(w, "You found this one. Enter dives again, or Escape swims back up.", true); return; }
+                    var (c, _) = Hear(dive.X, dive.Y, dive.Tx, dive.Ty);
+                    string side = dive.Tx < dive.X ? "to your left" : dive.Tx > dive.X ? "to your right" : "straight";
+                    string ahead = dive.Ty < dive.Y ? "ahead" : dive.Ty > dive.Y ? "behind you" : "level with you";
                     Speech.Say(w, (c > 0.85 ? "Very warm, " : c > 0.6 ? "Warm, " : c > 0.35 ? "Cool, " : "Cold, ") + side + " and " + ahead + ".", true);
                 }
                 else if (e.Key is Key.Enter or Key.Space)
                 {
                     e.Handled = true;
-                    if (x == tx && y == ty)
+                    switch (dive.Press())
                     {
-                        timer.Stop();
-                        found = true;
-                        PlaceUi.Play("Singing bells, sparkle");
-                        var d = s.World.GetKept<Dives>(Bag);
-                        string what = Keep(s, d.Count + rng.Next(1000));
-                        d.Count++;
-                        int score = Math.Max(1, 100 - moves);
-                        if (score > d.Best) d.Best = score;
-                        s.World.SetKept(Bag, d);
-                        s.World.Save();
-                        Arcade.Score(s, "Sonar diving", score);
-                        PlaceEvents.RaiseDid(PlaceIds.Cove, "dive");
-                        Speech.Say(w, "Found it: " + what + " It is in the treasure chest. Escape swims back up, or Enter dives again.", true);
+                        case Dive.Grab.Found:
+                            timer.Stop();
+                            PlaceUi.Play("Singing bells, sparkle");
+                            var d = s.World.GetKept<Dives>(Bag);
+                            string what = Keep(s, d.Count + rng.Next(1000));
+                            d.Count++;
+                            int score = Math.Max(1, 100 - dive.Moves);
+                            if (score > d.Best) d.Best = score;
+                            s.World.SetKept(Bag, d);
+                            s.World.Save();
+                            Arcade.Score(s, "Sonar diving", score);
+                            PlaceEvents.RaiseDid(PlaceIds.Cove, "dive");
+                            Speech.Say(w, "Found it: " + what + " It is in the treasure chest. Escape swims back up, or Enter dives again.", true);
+                            break;
+                        case Dive.Grab.NewDive:
+                            Speech.Say(w, "A new dive. Listen for the ping.", true);
+                            timer.Stop(); PingNow(); timer.Start();
+                            break;
+                        default:
+                            Speech.Say(w, "Just sand here. Keep listening for the ping.", true);
+                            break;
                     }
-                    else if (found)
-                    {
-                        found = false; moves = 0;
-                        do { tx = rng.Next(Size); ty = rng.Next(Size); } while (Math.Abs(tx - x) + Math.Abs(ty - y) < 5);
-                        Speech.Say(w, "A new dive. Listen for the ping.", true);
-                        PingNow(); timer.Start();
-                    }
-                    else Speech.Say(w, "Just sand here. Keep listening for the ping.", true);
                 }
                 else if (e.Key == Key.Escape) { e.Handled = true; w.Close(); }
             };
@@ -262,7 +321,13 @@ namespace BusyBunny
             done.Click += (_, _) => w.Close();
             panel.Children.Add(done);
             w.Content = panel;
-            w.Loaded += (_, _) => { sea.Focus(); PingNow(); timer.Start(); };
+            w.Loaded += (_, _) =>
+            {
+                sea.Focus();
+                PingNow(); timer.Start();
+                // Said once focus has landed, so the instructions are heard even if the screen reader only reads the title.
+                w.Dispatcher.BeginInvoke(() => Speech.Say(w, HowTo), DispatcherPriority.ApplicationIdle);
+            };
             w.Closed += (_, _) => timer.Stop();
             w.ShowDialog();
         }
@@ -273,6 +338,18 @@ namespace BusyBunny
             var near = Hear(5, 5, 6, 5);
             if (!(near.Closeness > far.Closeness && Gap(near.Closeness) < Gap(far.Closeness))) throw new Exception("sonar: nearer is not higher and quicker");
             if (!(Hear(5, 5, 1, 5).Pan < 0 && Hear(5, 5, 9, 5).Pan > 0)) throw new Exception("sonar: left and right are swapped");
+            // Enter on the spot finds once; Enter again starts a new dive instead of keeping a second treasure.
+            var dive = new Dive(new Random(7));
+            dive.X = dive.Tx; dive.Y = dive.Ty;
+            if (dive.Press() != Dive.Grab.Found || dive.Press() != Dive.Grab.NewDive || dive.Found) throw new Exception("sonar: Enter after a find kept another treasure");
+            if (dive.X == dive.Tx && dive.Y == dive.Ty) throw new Exception("sonar: the new dive hid the treasure under her");
+            // An arrow after a find starts a new dive too, so the old spot never pings again.
+            var dive2 = new Dive(new Random(3));
+            dive2.X = dive2.Tx; dive2.Y = dive2.Ty;
+            int oldX = dive2.Tx, oldY = dive2.Ty;
+            dive2.Press();
+            if (dive2.Move(0, -1) != Dive.Swim.NewDive || dive2.Found || dive2.Moves > 1) throw new Exception("sonar: an arrow after a find did not start a new dive");
+            if (dive2.Tx == oldX && dive2.Ty == oldY) throw new Exception("sonar: the old spot still pings");
             if (PlaceAudio.PingWav(0.5, -1).Length < 1000 || PlaceAudio.HoovesWav("creek").Length < 1000 || PlaceAudio.RumbleWav().Length < 1000)
                 throw new Exception("sonar: a place sound could not be made from the recordings");
         }

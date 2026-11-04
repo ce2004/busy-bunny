@@ -19,6 +19,9 @@ namespace BusyBunny
         private const string SeenKey = "world.seen";
         private static readonly Dictionary<Window, string> _goTo = new();
 
+        /// <summary>True while the window builds its top list of places: places inside an area (PlaceWorld) say no then.</summary>
+        public static bool Listing { get; private set; }
+
         /// <summary>For a thing inside a place: goes into another place (like the parking lot room inside the burrow). Escape there comes back.</summary>
         public static void GoTo(Window worldWindow, string placeId) => _goTo[worldWindow] = placeId;
 
@@ -40,7 +43,9 @@ namespace BusyBunny
             void ShowPlaces(int select)
             {
                 inside = null;
-                places = World.Places.All.Where(p => Safe(() => p.Unlocked(store), false)).ToList();
+                Listing = true;
+                try { places = World.Places.All.Where(p => Safe(() => p.Unlocked(store), false)).ToList(); }
+                finally { Listing = false; }
                 list.Items.Clear();
                 foreach (var p in places) list.Items.Add(new ListBoxItem { Content = p.Name + ": " + Safe(() => p.Describe(store), "") });
                 if (places.Count == 0) list.Items.Add(new ListBoxItem { Content = "Nowhere to go yet." });
@@ -128,7 +133,8 @@ namespace BusyBunny
             {
                 var start = startPlace == null ? null : World.Places.Find(startPlace);
                 ShowPlaces(0);
-                if (start != null && places.Contains(start)) { placeAt = places.IndexOf(start); Enter(start); }
+                // A place inside an area (the bakery, a room) is not in the list: it is entered straight away, and Escape goes to the places.
+                if (start != null && (places.Contains(start) || Safe(() => start.Unlocked(store), false))) { placeAt = Math.Max(0, places.IndexOf(start)); Enter(start); }
                 // New places, said once each, then they wait quietly in the list.
                 var seen = store.World.GetKept<List<string>>(SeenKey);
                 var fresh = places.Where(p => !seen.Contains(p.Id)).ToList();

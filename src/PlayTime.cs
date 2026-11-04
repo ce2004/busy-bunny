@@ -82,20 +82,6 @@ namespace BusyBunny
         /// <summary>Sweep 11.1: like 340 points to spend, 2,180 Karma earned all time. Read first in the burrow and at the market.</summary>
         public static string SpendLine(Data d) => Wallet(d).ToString("N0") + " points to spend, " + Engine.Total(d).ToString("N0") + " Karma earned all time";
 
-        /// <summary>The burrow in Bunny's world: the points line, each room (Enter plays its sound and says how it feels), then building one.</summary>
-        private List<PlaceThing> BurrowThings(Store s)
-        {
-            var things = new List<PlaceThing> { new(SpendLine(s.Data), "Spending never lowers your level", owner => Speech.Say(owner, SpendLine(s.Data) + ".", true)) };
-            foreach (var r in Built(s.Data.Play))
-            {
-                var room = r;
-                things.Add(new PlaceThing(room.Name, room.Feel, owner => { if (Sounds.Enabled) Sounds.PlayNamed(room.Sound); Speech.Say(owner, room.Feel, true); }));
-            }
-            things.Add(new PlaceThing("The parking lot", s.Data.Parking.Count + (s.Data.Parking.Count == 1 ? " thought parked" : " thoughts parked") + ". Enter goes in", owner => WorldWindow.GoTo(owner, "parking")));
-            things.Add(new PlaceThing("Build a room", "the rooms you can build and what they cost", owner => ShowBurrow(owner)));
-            return things;
-        }
-
         // ---- The burrow ----
 
         public static readonly Room[] Rooms =
@@ -273,7 +259,7 @@ namespace BusyBunny
             Sounds.PackOpen = p => !Collectible.Contains(p) || P.Packs.Contains(p);
             // Out of the Fun menu (sweep 2.7): the toolbox, the Bunny tab and Bunny's world.
             Tools.Register(new BunnyTool("world", "Bunny's world", Drawers.World, "Walk through the places in Bunny's world.", () => WorldWindow.Show(_w)));
-            Tools.Register(new BunnyTool("burrow", "The burrow", Drawers.World, "Your rooms, points to spend, and rooms to build.", () => ShowBurrow()) { MovedFrom = "the Fun menu, Adventures" });
+            Tools.Register(new BunnyTool("burrow", "The burrow", Drawers.World, "Your rooms, points to spend, and rooms to build.", () => PlaceWorld.Show(_w, PlaceIds.Burrow)) { MovedFrom = "the Fun menu, Adventures" });
             Tools.Register(new BunnyTool("packs", "Sound pack collection", Drawers.World, "The sound packs you have collected and the ones still hidden.", ShowCollection) { MovedFrom = "the Fun menu, Adventures" });
             Tools.Register(new BunnyTool("rival", "Rival: " + Rival, Drawers.Games, "This week's score against " + Rival + ", and any letter " + Rival + " left.", ShowRival) { MovedFrom = "the Fun menu, Adventures" });
             Tools.Register(new BunnyTool("bet", "Make a bet", Drawers.Games, "Bet points that you finish a task in time. Win double.", MakeBet) { MovedFrom = "the Fun menu, Adventures" });
@@ -290,13 +276,15 @@ namespace BusyBunny
                 _w.Say(Cfg.NarratorOn ? "The dramatic narrator is on now. It clears its throat." : "The dramatic narrator is off now. It takes a vow of silence.", true);
             }) { MovedFrom = "the Fun menu, Adventures", State = () => Cfg.NarratorOn ? "on" : "off" });
             BunnyTab.Register("Bunny's world", "the places in Bunny's world, with the burrow and the parking lot", () => WorldWindow.Show(_w), "world");
-            BunnyTab.Register("The burrow", "your rooms, points to spend, and rooms to build", () => ShowBurrow(), "burrow");
+            BunnyTab.Register("The burrow", "your rooms, points to spend, and rooms to build", () => PlaceWorld.Show(_w, PlaceIds.Burrow), "burrow");
             BunnyTab.Register("This week's quest", "the story so far", ShowQuest, "quest");
             BunnyTab.Register("Rival: " + Rival, "this week's score", ShowRival, "rival");
             BunnyTab.Register("Make a bet", "bet points that you finish a task in time", MakeBet, "bet");
             BunnyTab.Register("Open a mystery box", "finish its task today for a bonus", MysteryBox, "mysterybox");
             BunnyTab.Register("Sound pack collection", "the packs you have and the ones still hidden", ShowCollection, "packs");
-            World.Places.Register(new Place("burrow", "The burrow", s => SpendLine(s.Data) + ". " + Built(s.Data.Play).Count() + " of " + Rooms.Length + " rooms built", _ => true, BurrowThings));
+            // Keeps the burrow first in Bunny's world. Stage 7 (WorldPlaces, PlaceDefs) replaces it with the full burrow, where every
+            // room built here stays built and owned.
+            World.Places.Register(new Place("burrow", "The burrow", s => SpendLine(s.Data), _ => true, _ => new List<PlaceThing>()));
 
             w.StatusChanged += OnStatus;
             w.Started += () => { Daily(DateTime.Now, quiet: true); };
@@ -501,62 +489,6 @@ namespace BusyBunny
         }
 
         // ---- Windows ----
-
-        private void ShowBurrow(Window? owner = null)
-        {
-            var w = Layout.Dialog(owner ?? _w, "The burrow");
-            var panel = new StackPanel { Margin = new Thickness(14), Width = 480 };
-            var wallet = new TextBlock { TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 6) };
-            var rooms = new ListBox { Height = 200 };
-            var shop = new ListBox { Height = 160 };
-            void Fill()
-            {
-                wallet.Text = SpendLine(S.Data) + ". Spending never lowers your level.";
-                rooms.ItemsSource = Built(P).Select(r => r.Name + ". " + r.Feel).ToList();
-                var left = Rooms.Where(r => !Built(P).Contains(r)).ToList();
-                shop.ItemsSource = left.Count == 0 ? new List<string> { "Every room is built. The burrow is complete." }
-                    : left.Select(r => r.Name + ", " + r.Cost + " points" + (r.Pack != null ? ", comes with the " + r.Pack + " sound pack" : "") + ". " + r.Feel).ToList();
-            }
-            Fill();
-            rooms.SelectionChanged += (_, _) => { if (rooms.SelectedIndex >= 0 && Sounds.Enabled) Sounds.PlayNamed(Built(P).ElementAt(rooms.SelectedIndex).Sound); };
-            void BuildChosen()
-            {
-                var left = Rooms.Where(r => !Built(P).Contains(r)).ToList();
-                int i = shop.SelectedIndex;
-                if (i < 0 || i >= left.Count) { Speech.Say(w, "Pick a room to build first.", true); return; }
-                bool had = Built(P).Contains(left[i]);
-                string said = Build(S, left[i]);
-                if (!had && Built(P).Contains(left[i]))
-                {
-                    _w.SaveAndRefresh();
-                    Sounds.Play(Sounds.Event.SurpriseReward);
-                    Fill();
-                    // The focused item went with the old list: put focus back on the shop, near where she was.
-                    int count = shop.Items.Count;
-                    if (count > 0) TextViewer.Select(shop, Math.Min(i, count - 1));
-                    said += " " + SpendLine(S.Data) + ".";
-                }
-                Speech.Say(w, said, true);
-            }
-            shop.KeyDown += (_, e) => { if (e.Key == Key.Enter) { e.Handled = true; BuildChosen(); } };
-            panel.Children.Add(wallet);
-            panel.Children.Add(Layout.Row("_Rooms you have: arrows to walk through them", rooms, 480));
-            panel.Children.Add(Layout.Row("Rooms to _build: Enter builds one", shop, 480));
-            var row = new StackPanel { Orientation = Orientation.Horizontal };
-            var build = Layout.Button("B_uild this room");
-            build.Click += (_, _) => BuildChosen();
-            row.Children.Add(build);
-            row.Children.Add(Layout.Button("Close", isCancel: true));
-            panel.Children.Add(row);
-            w.Content = panel;
-            w.Loaded += (_, _) =>
-            {
-                rooms.SelectedIndex = 0;
-                (rooms.ItemContainerGenerator.ContainerFromIndex(0) as ListBoxItem)?.Focus();
-                Speech.Say(w, wallet.Text);
-            };
-            w.ShowDialog();
-        }
 
         private void ShowRival()
         {

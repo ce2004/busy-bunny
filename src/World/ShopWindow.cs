@@ -36,7 +36,7 @@ namespace BusyBunny
             {
                 var sale = Shop.OnSale(s, DateTime.Now);
                 string a = aisles[Math.Max(0, aisle.SelectedIndex)];
-                return (a == ForRoom ? sale.Where(i => i.Room == room) : sale.Where(i => i.Aisle == a)).OrderBy(i => i.BasePrice).ThenBy(i => i.Name).ToList();
+                return (a == ForRoom ? Shop.ForRoom(s, room!, DateTime.Now) : sale.Where(i => i.Aisle == a)).OrderBy(i => i.BasePrice).ThenBy(i => i.Name).ToList();
             }
 
             string LineFor(ShopItem i)
@@ -284,8 +284,7 @@ namespace BusyBunny
                 var th = t;
                 options.Add(("Buy " + t.Name + ", " + Shop.Price(s, t.Price) + " points. " + PlaceWorld.First(t.Touch), () =>
                 {
-                    if (!Shop.BuyTheme(s, th.Id, out var said)) { PlaceUi.Say(owner, said); return; }
-                    Shop.SetTheme(s, room, th.Id);
+                    if (!Shop.BuyTheme(s, th.Id, out var said, room)) { PlaceUi.Say(owner, said); return; }
                     PlaceUi.Play(th.Plays);
                     PlaceUi.Say(owner, said + " It is on this room now. " + th.Feel);
                 }));

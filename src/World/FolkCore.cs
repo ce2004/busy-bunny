@@ -31,9 +31,46 @@ namespace BusyBunny
             return t;
         }
 
-        /// <summary>A part of Visit your bunny that runs only while its tool is on (and never in Calm mode when it asks something).</summary>
-        public static void Visit(string toolId, Func<MainWindow, DateTime, IEnumerable<string>> part) =>
-            GameFeature.VisitHooks.Add((w, now) => Tools.IsOn(toolId) ? part(w, now) : Array.Empty<string>());
+        /// <summary>
+        /// A part of Visit your bunny that runs only while its tool is on and the visit still has room for an extra line
+        /// (GameFeature.MaxVisitExtras). Asking parts (ask true) run first, and only one of them may ask (TryAsk).
+        /// A part never opens a window: an ask is a line telling her which tool to answer it in.
+        /// </summary>
+        public static void Visit(string toolId, Func<MainWindow, DateTime, IEnumerable<string>> part, bool ask = false)
+        {
+            Func<MainWindow, DateTime, IEnumerable<string>> hook = (w, now) => Tools.IsOn(toolId) && GameFeature.VisitExtrasLeft > 0 ? part(w, now).ToList() : Array.Empty<string>();
+            if (ask) GameFeature.VisitHooks.Insert(0, hook); else GameFeature.VisitHooks.Add(hook);
+        }
+
+        /// <summary>
+        /// A reminder for Visit your bunny (something waiting for her, not news): a few words, folded with the others into
+        /// one "Waiting for you" line after how Bunny is, and said at most once a day. Null or empty when nothing waits.
+        /// </summary>
+        public static void Reminder(string toolId, string key, Func<Store, DateTime, string?> what) =>
+            GameFeature.VisitHooks.Add((w, now) =>
+            {
+                if (Tools.IsOn(toolId) && what(w.Store, now) is string t && t.Trim().Length > 0) Remind(w.Store, key, now, t.Trim());
+                return Array.Empty<string>();
+            });
+
+        /// <summary>Adds a reminder to this visit's "Waiting for you" line, unless it was already said today.</summary>
+        public static void Remind(Store s, string key, DateTime now, string what)
+        {
+            var said = s.World.GetKept<Dictionary<string, string>>("folk.reminded");
+            if (said.TryGetValue(key, out var day) && day == s.Key(now)) return;
+            said[key] = s.Key(now);
+            s.World.SetKept("folk.reminded", said);
+            s.World.Save();
+            GameFeature.VisitReminders.Add(what);
+        }
+
+        /// <summary>True for the first ask of this visit; every later part must not ask (sweep 12.2: one thing at a time).</summary>
+        public static bool TryAsk()
+        {
+            if (GameFeature.AskedThisVisit) return false;
+            GameFeature.AskedThisVisit = true;
+            return true;
+        }
 
         /// <summary>A line offered after a finished task (one is spoken per finish; the rest go to What happened today).</summary>
         public static void AfterTask(MainWindow w, string text) { if (text.Trim().Length > 0) Calm.AfterTaskDone(w, Game.Chatter, text.Trim()); }
@@ -64,20 +101,18 @@ namespace BusyBunny
 
         private sealed class StartBox { public DateTime When { get; set; } }
 
-        /// <summary>The day she came to the village: her first logged point, or the first time these features ran.</summary>
+        /// <summary>
+        /// The day she came to the village: the same first day the seasons calendar uses for the village anniversary
+        /// (SeasonCalendar.FirstDay), so there is only ever one anniversary.
+        /// </summary>
         public static DateTime Start(Store s)
         {
-            var b = s.World.GetKept<StartBox>("folk.start");
-            if (b.When == default)
-            {
-                b.When = (s.Data.Log.Count > 0 ? s.Data.Log.Min(e => e.When) : DateTime.Now).Date;
-                s.World.SetKept("folk.start", b);
-                s.World.Save();
-            }
-            return b.When;
+            var test = s.World.GetKept<StartBox>("folk.start.test");
+            return test.When != default ? test.When : SeasonCalendar.FirstDay(s);
         }
 
-        public static void SetStart(Store s, DateTime when) { s.World.SetKept("folk.start", new StartBox { When = when.Date }); s.World.Save(); }
+        /// <summary>Only for self-tests on their throwaway store: pretends she came on this day.</summary>
+        public static void SetStart(Store s, DateTime when) { s.World.SetKept("folk.start.test", new StartBox { When = when.Date }); s.World.Save(); }
 
         /// <summary>Whole weeks (Monday to Monday) since she came to the village.</summary>
         public static int Weeks(Store s, DateTime now) => Math.Max(0, (int)((Engine.WeekStart(now) - Engine.WeekStart(Start(s))).TotalDays / 7));

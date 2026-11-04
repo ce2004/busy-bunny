@@ -277,9 +277,9 @@ namespace BusyBunny
 
         public static string Where(SeasonEvent e) => e.Group switch
         {
-            Weather => "It is at the round window in Bunny's world.",
-            Moon => "It is on the moonlit hill in Bunny's world.",
-            _ => "It is on the village green in Bunny's world.",
+            Weather => "It is at the round window, in the burrow in Bunny's world.",
+            Moon => "It is on the stargazing hill, in the hills in Bunny's world.",
+            _ => "It is on the village green, in the village in Bunny's world.",
         };
 
         /// <summary>

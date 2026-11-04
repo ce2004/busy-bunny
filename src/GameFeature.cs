@@ -145,6 +145,8 @@ namespace BusyBunny
                 if (info.Mode == DayMode.Vacation) return name + " is on vacation with you, ears flopped, expecting nothing.";
                 if (info.Mode == DayMode.RoughDay) return name + " is curled up against you, quiet. Rough days count as rest days here.";
             }
+            // One mood line: with Bunny's mood tool on, its mood with a reason is the one she hears everywhere.
+            if (Tools.IsOn("folk.mood")) { var (m, r) = FolkBunny.MoodNow(s, now); return name + " feels " + m + ". " + Folk.End(r); }
             int today = Engine.PointsOn(d, now);
             int recent = Enumerable.Range(1, 3).Sum(i => Engine.PointsOn(d, now.AddDays(-i)));
             if (today >= Engine.DailyGoalFor(s, now)) return name + " is doing happy little jumps around the room. You earned that.";
@@ -159,27 +161,63 @@ namespace BusyBunny
         /// </summary>
         public static readonly List<Func<MainWindow, DateTime, IEnumerable<string>>> VisitHooks = new();
 
+        /// <summary>At most this many extra lines from the hooks in one visit, so it stays short.</summary>
+        public const int MaxVisitExtras = 3;
+        /// <summary>For this visit: whether a hook already asked her something (only one may), how many extra lines are left, and the reminders.</summary>
+        public static bool AskedThisVisit;
+        public static int VisitExtrasLeft = MaxVisitExtras;
+        public static readonly List<string> VisitReminders = new();
+
+        public static void StartVisit()
+        {
+            AskedThisVisit = false;
+            VisitExtrasLeft = MaxVisitExtras;
+            VisitReminders.Clear();
+        }
+
+        /// <summary>
+        /// Sweep 11.4: the most recent thing Bunny said or did first, newest first, then at most three extra lines, then how
+        /// the bunny is, then one short line with everything waiting for her.
+        /// </summary>
+        public static List<string> ComposeVisit(List<string> newest, List<string> extras, List<string> status, List<string> reminders)
+        {
+            var lines = new List<string>(newest);
+            lines.AddRange(extras.Where(x => x.Trim().Length > 0).Take(MaxVisitExtras));
+            lines.AddRange(status);
+            var waiting = reminders.Where(x => x.Trim().Length > 0).Distinct().Take(4).ToList();
+            if (waiting.Count > 0)
+                lines.Add("Waiting for you: " + (waiting.Count == 1 ? waiting[0] : string.Join(", ", waiting.Take(waiting.Count - 1)) + " and " + waiting[^1]) + ".");
+            return lines;
+        }
+
         private void VisitBunny()
         {
             var now = DateTime.Now;
             int total = Engine.Total(S.Data), level = Engine.LevelFor(total);
             G.BunnyVisits++;
             S.Save();
+            StartVisit();
             var extra = new List<string>();
             foreach (var hook in VisitHooks)
-                try { extra.AddRange(hook(_w, now)); }
+            {
+                try
+                {
+                    var got = hook(_w, now).Where(x => x.Trim().Length > 0).ToList();
+                    extra.AddRange(got.Take(Math.Max(0, VisitExtrasLeft)));
+                    VisitExtrasLeft -= got.Count;
+                }
                 catch (Exception e) { ErrorLog.Write("Visit your bunny: a part failed: " + e); }
-            // Sweep 11.4: the most recent thing Bunny said or did first, newest first, then how the bunny is.
-            var lines = new List<string>();
-            if (G.HappenedDay == S.Key(now)) lines.AddRange(Enumerable.Reverse(G.Happened).Take(20));
-            lines.AddRange(extra);
-            lines.AddRange(new List<string>
+            }
+            var newest = G.HappenedDay == S.Key(now) ? Enumerable.Reverse(G.Happened).Take(20).ToList() : new List<string>();
+            var status = new List<string>
             {
                 G.BunnyName + " is " + Engine.BunnyStage(level) + ", level " + level + ": " + Engine.LevelName(level) + ".",
                 Mood(S, now),
                 (Engine.Threshold(level + 1) - total) + " more points to level " + (level + 1) + ", when " + G.BunnyName + " grows a little.",
                 "Rename your bunny in Options, Settings, Bunny and goals.",
-            });
+            };
+            var lines = ComposeVisit(newest, extra, status, VisitReminders.ToList());
+            StartVisit();
             TextViewer.Show(_w, G.BunnyName, lines);
         }
 

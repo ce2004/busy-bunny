@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -43,8 +44,14 @@ namespace BusyBunny
         /// <summary>The news, then the cheer the style asks for.</summary>
         public static string Line(Store s, string news) => (news + " " + Cheer(s)).Trim();
 
-        /// <summary>Plays a celebration sound unless the style is quiet (the sound bank applies Calm mode and the sound switch).</summary>
-        public static void Sound(Store s, string id) { if (Style(s) != Quiet) SoundBank.Play(id); }
+        /// <summary>
+        /// Plays a celebration sound unless the style is quiet or Calm mode is on (the sound bank lets event names like
+        /// SurpriseReward through in Calm mode, and celebrations use them). Tools she opens may call SoundBank.Play directly.
+        /// </summary>
+        public static void Sound(Store s, string id) { if (Plays(s)) SoundBank.Play(id); }
+
+        /// <summary>Whether Sound would play now (for the self-test).</summary>
+        public static bool Plays(Store s) => Style(s) != Quiet && !Calm.FunPaused;
 
         public static string Describe(string style) => style switch
         {
@@ -81,6 +88,7 @@ namespace BusyBunny
             BunnyTab.Register("Compliment jar", "a kind line about your work", ShowJar, JarId);
 
             Content.Rating = (store, topic, line) => Tools.IsOn(RateId) ? RatingOf(store, topic, line) : 0;
+            Speech.Said += NoteHeard;
             // A rough day: one kind line from the jar, once that day. Kept in What happened today, and said when the calm rules allow.
             Ticker.Every(JarId + ".rough", _ => true, now =>
             {
@@ -138,13 +146,35 @@ namespace BusyBunny
             s.World.Save();
         }
 
+        /// <summary>The last library line she actually heard: topic, line as typed, and the words as said. Null before the first.</summary>
+        public static (string Topic, string Line, string Said)? Heard { get; private set; }
+
+        /// <summary>
+        /// Called with every line handed to the screen reader: the newest library pick found in it becomes the line to
+        /// rate. Picks never spoken (a cheer that lost to a level up, a marble line only kept) never count. Placeholders
+        /// filled after the pick ({n}, {task}) match any words.
+        /// </summary>
+        public static void NoteHeard(string spoken)
+        {
+            if (string.IsNullOrWhiteSpace(spoken)) return;
+            for (int k = Content.Recent.Count - 1; k >= 0; k--)
+            {
+                var (topic, line, given) = Content.Recent[k];
+                if (given.Trim().Length < 4) continue;
+                var parts = Regex.Split(given.Trim(), @"\{\w+\}").Select(Regex.Escape);
+                var m = Regex.Match(spoken, string.Join(".+?", parts));
+                if (!m.Success) continue;
+                Heard = (topic, line, m.Value);
+                return;
+            }
+        }
+
         private void Rate()
         {
-            if (Content.Last is not (string topic, string line)) { _w.Say("There is no fun line to rate yet. Finish something first.", true); return; }
-            string said = line.Replace("{name}", _w.Store.Data.Game.BunnyName);
+            if (Heard is not (string topic, string line, string said)) { _w.Say("There is no fun line to rate yet. Finish something first.", true); return; }
             int now = RatingOf(_w.Store, topic, line);
             var choices = new[] { "Thumbs up: more like this", "Thumbs down: not this one again", "No rating" };
-            int i = GamesFunKit.Pick(_w, "Rate a line", "_Your rating", choices, now > 0 ? 0 : now < 0 ? 1 : 2, "The last fun line was: " + said);
+            int i = GamesFunKit.Pick(_w, "Rate a line", "_Your rating", choices, now > 0 ? 0 : now < 0 ? 1 : 2, "The last fun line you heard was: " + said);
             if (i < 0) return;
             SetRating(_w.Store, topic, line, i == 0 ? 1 : i == 1 ? -1 : 0);
             _w.Say(i == 0 ? "Thumbs up. You will hear lines like that a bit more." : i == 1 ? "Thumbs down. That line is out of the rotation." : "Rating cleared.", true);
@@ -217,7 +247,23 @@ namespace BusyBunny
                 int at = lines.FindIndex(l => l.Replace("{name}", store.Data.Game.BunnyName) == p);
                 Need(at % 2 == 0, "a thumbs down line came up: " + p);
             }
-            Need(Content.Last?.Topic == "records.cheer.roast", "the last line was not kept for rating");
+            // Rate a line rates what she heard, not the last pick: a line picked but never said does not count.
+            string spoken = Content.Pick(store, "records.cheer.roast", rng);
+            Content.Pick(store, "records.marbles.drop", rng);
+            NoteHeard("Level up! " + spoken + " 12 points to spend.");
+            Need(Heard?.Topic == "records.cheer.roast" && Heard?.Said == spoken, "Rate a line did not pick the line she heard");
+            var ceremony = Content.Lines("records.ceremony").FirstOrDefault(l => l.Contains("{task}"));
+            if (ceremony != null)
+            {
+                Content.Recent.Add(("records.ceremony", ceremony, ceremony));
+                NoteHeard("Task of the week: Essay. " + ceremony.Replace("{task}", "Essay") + " 5 points.");
+                Need(Heard?.Topic == "records.ceremony" && Heard?.Said.Contains("Essay") == true, "Rate a line missed a line with its task filled in");
+            }
+            // Calm mode and quiet style keep celebration sounds silent.
+            Celebration.Set(store, Celebration.Quiet);
+            Need(!Celebration.Plays(store), "quiet style still plays celebration sounds");
+            Celebration.Set(store, Celebration.Loud);
+            Need(Celebration.Plays(store) == !Calm.FunPaused, "Calm mode does not silence celebration sounds");
             for (int k = 1; k < lines.Count; k += 2) SetRating(store, "records.cheer.roast", lines[k], 0);
             Need(RatingOf(store, "records.cheer.roast", lines[1]) == 0, "clearing a rating");
             _cache = null; _cacheFor = null;

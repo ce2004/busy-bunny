@@ -3,21 +3,21 @@ touch: Short springy turf under your paws, and a gust of air each time a blade s
 sound: A wooden creak and a soft whoosh, round and round.
 looks: A little red windmill with white blades.
 par: 3
-length: 9
+length: 12
 
 name: The Lily Pond Bridge
 touch: A wooden bridge that gives a little under your weight, cool spray on your nose.
 sound: Frogs plopping into the water and a trickle under the boards.
 looks: A humped bridge over a pond with lily pads.
 par: 3
-length: 10
+length: 12
 
 name: The Carrot Tunnel
 touch: A smooth tunnel shaped like a giant carrot, cool and hollow when you knock on it.
 sound: Your ball rumbles through it like a tiny train.
 looks: Bright orange, with green leafy tops at the end.
 par: 2
-length: 6
+length: 11
 
 name: The Bumpy Hill
 touch: The turf rises and dips under your feet like a gentle wave.
@@ -31,7 +31,7 @@ touch: A curved rim you can trace with a paw, smooth and glazed like a real cup.
 sound: The ball spins around the inside with a ringing whirr.
 looks: A giant teacup with blue flowers painted on it.
 par: 3
-length: 8
+length: 11
 
 name: The Waterfall
 touch: Fine mist on your face and wet stone at the edge of the green.
@@ -45,42 +45,42 @@ touch: A spiral path that curls inward, with soft rubber walls.
 sound: The ball rolls round and round with a fading hum.
 looks: A giant spiral shell painted gold.
 par: 3
-length: 9
+length: 12
 
 name: The Treehouse Ramp
 touch: A wooden ramp, rough grain, warm from the sun.
 sound: A hollow thunk as the ball rolls up and drops off the end.
 looks: A ramp leading up to a little treehouse door.
 par: 3
-length: 10
+length: 12
 
 name: The Sleeping Bear
 touch: A huge soft fur-covered shape that rises and falls very slowly.
 sound: Deep, gentle snoring. Try not to wake it.
 looks: A stuffed bear curled around the hole.
 par: 3
-length: 8
+length: 11
 
 name: The Rain Barrel
 touch: Cool metal hoops around wooden staves, damp to the touch.
 sound: The ball drops in with a booming echo and rolls out the bottom.
 looks: An old barrel lying on its side.
 par: 2
-length: 7
+length: 11
 
 name: The Music Box
 touch: Little raised pins along the path, like the drum of a music box.
 sound: Each pin plays a note as the ball rolls over it.
 looks: A long brass box with a crank on the side.
 par: 3
-length: 10
+length: 12
 
 name: The Pumpkin Patch
 touch: Cool round pumpkins with ridges you can count, and dry leaves underfoot.
 sound: Leaves crunching and the ball thumping off a pumpkin.
 looks: Orange pumpkins scattered across the green.
 par: 3
-length: 9
+length: 12
 
 name: The Lighthouse
 touch: A tall smooth tower you walk around, with a salty breeze.
@@ -101,21 +101,21 @@ touch: Pillowy bumpers that squish when the ball hits them.
 sound: A soft boing each time the ball bounces.
 looks: White puffy clouds on sticks.
 par: 3
-length: 9
+length: 12
 
 name: The Train Track
 touch: Metal rails, cold and smooth, with wooden ties between them.
 sound: A tiny train whistle toots when the ball passes.
 looks: A little railway crossing the green.
 par: 3
-length: 10
+length: 12
 
 name: The Star Window
 touch: Night-cool turf and a curved glass dome over your head.
 sound: A quiet chime, like starlight would sound if it could.
 looks: A green under a dome with painted stars.
 par: 3
-length: 8
+length: 11
 
 name: The Big Finish
 touch: A wide green that slopes down toward a wooden clown with an open mouth.

@@ -33,14 +33,12 @@ namespace BusyBunny
         }
 
         /// <summary>
-        /// The extra points a feature's own multiplier (golden task 3, a combo 1.3) adds to base points. The ledger's
-        /// running multipliers count first, and everything together never goes past Ledger.MaxBoost (4 times).
+        /// The extra points a feature's own multiplier (golden task 3, a combo 1.3) adds to base points, at most
+        /// Ledger.MaxBoost (4 times) in all. Pay it with Ledger.PayExtra: that keeps every feature's extras for one task
+        /// together under the same 4 times ceiling, so nothing here counts the running multipliers.
         /// </summary>
-        public static int Extra(Store s, int basePoints, double mine, DateTime now)
-        {
-            double f = Ledger.Factor(s, now);
-            return (int)Math.Round(basePoints * Math.Max(0, Math.Min(Ledger.MaxBoost, f * Math.Max(1, mine)) - f));
-        }
+        public static int Extra(Store s, int basePoints, double mine, DateTime now) =>
+            (int)Math.Round(basePoints * (Math.Min(Ledger.MaxBoost, Math.Max(1, mine)) - 1));
 
         /// <summary>Tasks she may hear about here: on a list that is not archived.</summary>
         public static IEnumerable<TaskItem> Live(Store s) => s.Data.Tasks.Where(t => !s.ListOf(t).Archived);
@@ -94,6 +92,8 @@ namespace BusyBunny
             if (intro != null) panel.Children.Add(Words(intro));
             var list = new ListBox { MaxHeight = 340 };
             foreach (var c in choices) list.Items.Add(new ListBoxItem { Content = c });
+            // The question or clue as the list's description, so NVDA can read it again (NVDA plus Tab) if focus speech cut the intro.
+            if (intro != null) AutomationProperties.SetHelpText(list, intro);
             panel.Children.Add(Layout.Row(label, list, 460));
             int result = -1;
             void Choose()

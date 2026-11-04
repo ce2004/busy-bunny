@@ -1,6 +1,6 @@
 Pebble
 
-Dot
+Button
 
 Sir Slimeington
 

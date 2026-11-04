@@ -16,6 +16,7 @@ namespace BusyBunny
         public const string MarbleId = "records.marbles", ShareId = "records.share", RaceId = "records.race", DoneListId = "records.donelist",
             BestDayId = "records.bestday", BestsId = "records.bests", ReceiptId = "records.receipt", WeekTaskId = "records.taskweek",
             WindId = "records.winddown", KindId = "records.kindness", NoId = "records.boundary";
+        public const string HelpedFeature = "records.helped", HelpedText = "Helped someone: ";
         public const int JarSize = 50, KindPoints = 10, NoPoints = 5, PaidADay = 3, AwardPoints = 5;
         private MainWindow _w = null!;
         private Store S => _w.Store;
@@ -35,7 +36,7 @@ namespace BusyBunny
             _w = w;
             void Tool(string id, string name, string what, Action run, string keys = "") => Tools.Register(new BunnyTool(id, name, Drawers.Wins, what, run) { Since = "0.14.0", Keys = keys });
             Tool(MarbleId, "The marble jar", "Every finished task drops a marble in. Fifty fills the jar and gives a prize.", ShowJar);
-            Tool(ShareId, "Share a win", "Copies a short brag line about today, ready to paste to a friend.", Share, "Control Alt W");
+            Tool(ShareId, "Share a win", "Copies a short brag line about today, ready to paste to a friend.", Share, "Control Shift C");
             Tool(RaceId, "Race your past self", "Today's points so far against the same day last week at this time.", ShowRace);
             Tool(DoneListId, "Done list", "Only what you finished today, including I did a thing.", ShowDoneList);
             Tool(BestDayId, "Best day replay", "Your best day ever: what you finished and how it went.", ShowBestDay);
@@ -45,7 +46,7 @@ namespace BusyBunny
             Tool(WindId, "Friday wind-down", "A short recap of your week, with a line from Bunny.", () => _ = WindDown(true));
             Tool(KindId, "I helped someone", "Log a kindness. It pays " + KindPoints + " kindness points and grows a wildflower.", Kind);
             Tool(NoId, "I said no", "Log a time you said no to an extra commitment. Boundaries pay " + NoPoints + " points.", SaidNo);
-            w.AddKey(ModifierKeys.Control | ModifierKeys.Alt, Key.W, Tools.Guard(ShareId, Share), "Control Alt W: share a win, copies a brag line about today");
+            w.AddKey(ModifierKeys.Control | ModifierKeys.Shift, Key.C, Tools.Guard(ShareId, Share), "Control Shift C: share a win, copies a brag line about today");
             BunnyTab.Register("The marble jar", "marbles from your finished tasks", ShowJar, MarbleId);
             BunnyTab.Register("Wildflowers", "a flower for each kindness", ShowFlowers, KindId);
 
@@ -81,8 +82,10 @@ namespace BusyBunny
             {
                 if (Tools.IsOn(MarbleId) && Drop(S, t, now) is (true, var full))
                 {
-                    if (Ledger.Pay(S, Ledger.Boost(S, 1, t), "A marble for " + t.Name, MarbleId, t.Id) is Outcome o) Game.Queue(_w, o);
-                    Celebration.Sound(S, "Coffee, clink");
+                    // A flat prize, not a multiple of the task: plain Pay, so it never takes room from the task's extras ceiling.
+                    if (Ledger.Pay(S, 1, "A marble for " + t.Name, MarbleId, t.Id) is Outcome o) Game.Queue(_w, o);
+                    // The clink only for a full jar: the task-done sound (her tune, a list pack) just played.
+                    if (full != null) Celebration.Sound(S, "Coffee, clink");
                     int n = S.World.Get<Jar>(MarbleId).Tasks.Count;
                     if (full != null) Offer(Game.Goals, Celebration.Line(S, "The marble jar is full! Fifty marbles. Your prize: " + full.Prize + ". A new jar starts."));
                     else Offer(Game.Chatter, Content.Pick(S, "records.marbles.drop") + " " + GamesFunKit.Plural(n, "marble") + " of " + JarSize + ".");
@@ -335,6 +338,9 @@ namespace BusyBunny
             string week = GamesFunKit.Key(monday);
             if (a.All.Any(x => x.Week == week) || WeekTask(s, monday) is not TaskItem t) return null;
             string line = Content.Pick(s, "records.ceremony").Replace("{task}", t.Name);
+            // Its own Control Z step: paid from WeekEnded, outside any finish, so an undo of an earlier change keeps it.
+            s.Remember("task of the week");
+            a = s.World.Get<Awards>(WeekTaskId);
             a.All.Add(new Award { Week = week, Task = t.Name, Line = line });
             GamesFunKit.Put(s, WeekTaskId, a);
             var o = Ledger.Pay(s, AwardPoints, "Task of the week: " + t.Name, WeekTaskId, t.Id);
@@ -363,13 +369,23 @@ namespace BusyBunny
             return line;
         }
 
+        /// <summary>
+        /// The wind-down prompt for Claude: built only from tasks Bunny may see (BunnyWrite.Visible), finished in that
+        /// week. No points and no counts from private or archived lists; the full recap stays local, for what she hears.
+        /// </summary>
+        public static string WindPrompt(Store s, DateTime monday)
+        {
+            var seen = BunnyWrite.Visible(s).Where(t => GamesFunKit.Finished(t) && t.DoneAt is DateTime d && d >= monday.Date && d < monday.Date.AddDays(7)).OrderBy(t => t.DoneAt).ToList();
+            var names = seen.Select(t => t.Name).Take(8).ToList();
+            return "Write one warm, short sentence to wind down her week. She finished " + GamesFunKit.Plural(seen.Count, "task") + " this week that you may hear about." +
+                (names.Count > 0 ? " Some of them: " + string.Join("; ", names) + "." : "");
+        }
+
         private async System.Threading.Tasks.Task WindDown(bool asked, DateTime? week = null)
         {
             var monday = Engine.WeekStart(week ?? DateTime.Now);
             string recap = WeekRecap(S, monday);
-            var names = BunnyWrite.Visible(S).Where(t => GamesFunKit.Finished(t) && t.DoneAt >= monday).Select(t => t.Name).Take(8).ToList();
-            string prompt = "Write one warm, short sentence to wind down her week. " + recap + (names.Count > 0 ? " Some things she finished: " + string.Join("; ", names) + "." : "");
-            string bunny = await BunnyWrite.Short(S, WindId, prompt, "records.winddown");
+            string bunny = await BunnyWrite.Short(S, WindId, WindPrompt(S, monday), "records.winddown");
             string text = recap + " " + bunny;
             RecordsStyle.KeepCompliment(S, bunny);
             GamesFunKit.Put(S, WindId, new Recap { Week = GamesFunKit.Key(monday), Text = text });
@@ -382,7 +398,7 @@ namespace BusyBunny
         public static string LogKindness(Store s, string what, DateTime now)
         {
             s.Remember("a kindness");
-            s.Data.Log.Add(new LogEntry { When = now, Kind = "DidAThing", Text = "Helped someone: " + what, Points = 1 });
+            s.Data.Log.Add(new LogEntry { When = now, Kind = "DidAThing", Text = HelpedText + what, Points = 1 });
             var k = s.World.Get<Kindness>(KindId);
             if (k.Day != s.Key(now)) { k.Day = s.Key(now); k.PaidToday = 0; }
             var flowers = Content.Items("records.wildflowers");
@@ -393,7 +409,8 @@ namespace BusyBunny
             bool pay = k.PaidToday < PaidADay;
             if (pay) k.PaidToday++;
             GamesFunKit.Put(s, KindId, k);
-            if (pay) Ledger.Pay(s, KindPoints, "Kindness points", KindId);
+            // Not "records.kindness": Bunny's world counts Fun entries with "kind" in the feature, and the I did a thing line already counts once.
+            if (pay) Ledger.Pay(s, KindPoints, "Kindness points", HelpedFeature);
             s.Save();
             return "Kindness logged. " + (pay ? KindPoints + " kindness points. " : "") + "A new wildflower opens: " + k.Flowers[^1];
         }
@@ -462,8 +479,17 @@ namespace BusyBunny
             bool was = list.PrivateFromBunny;
             list.PrivateFromBunny = true;
             Need(!ShareLine(store, now).Contains("ZZ secret"), "share a win named a private task");
+            // The wind-down prompt for Claude: no private names, and no private tasks in its count.
+            var monday = Engine.WeekStart(now);
+            string prompt = WindPrompt(store, monday);
+            int visible = BunnyWrite.Visible(store).Count(t => GamesFunKit.Finished(t) && t.DoneAt >= monday && t.DoneAt < monday.AddDays(7));
+            Need(!prompt.Contains("ZZ secret") && prompt.Contains(GamesFunKit.Plural(visible, "task")) && !prompt.Contains("point"), "the wind-down prompt counted or named a private task");
             list.PrivateFromBunny = was;
             store.Data.Tasks.Remove(secret);
+            var later = new TaskItem { Name = "ZZ later thing", List = list.Name, Status = Status.Done, DoneAt = monday.AddDays(-5) };
+            store.Data.Tasks.Add(later);
+            Need(!WindPrompt(store, monday.AddDays(-14)).Contains("ZZ later") && (list.PrivateFromBunny || list.Archived || WindPrompt(store, monday.AddDays(-7)).Contains("ZZ later")), "a wind-down used the wrong week's tasks");
+            store.Data.Tasks.Remove(later);
             // Kindness: points, a wildflower and a done list line, all undone in one step; 3 paid a day.
             int before = Engine.Total(store.Data);
             LogKindness(store, "carried groceries", now);

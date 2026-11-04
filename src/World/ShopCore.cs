@@ -127,6 +127,13 @@ namespace BusyBunny
         }
 
         /// <summary>A holiday item's day (MM-DD) is within about three weeks after this Monday or the week before it, so the stock is the same all week.</summary>
+        /// <summary>
+        /// The room's own aisle (Shop for this room): every regular thing made for the room, whatever the week, plus the
+        /// seasonal, holiday and rare things for it that are on sale now.
+        /// </summary>
+        public static List<ShopItem> ForRoom(Store s, string room, DateTime now) =>
+            Catalog.Where(i => i.Room == room && i.Regular).Concat(OnSale(s, now).Where(i => i.Room == room)).Distinct().ToList();
+
         public static bool HolidayNear(string mmdd, DateTime now)
         {
             if (!DateTime.TryParseExact(now.Year + "-" + mmdd, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var day)) return false;
@@ -227,16 +234,18 @@ namespace BusyBunny
             return true;
         }
 
-        /// <summary>Buys a theme once; it can then go on any room for free.</summary>
-        public static bool BuyTheme(Store s, string themeId, out string said)
+        /// <summary>Buys a theme once; it can then go on any room for free. With a room, it goes on that room in the same Control Z step.</summary>
+        public static bool BuyTheme(Store s, string themeId, out string said, string? room = null)
         {
             var t = Themes.FirstOrDefault(x => x.Id == themeId);
             if (t == null) { said = "No such theme."; return false; }
-            if (Bag(s).ThemesOwned.Contains(themeId)) { said = "You already have the " + t.Name + " theme."; return true; }
+            if (Bag(s).ThemesOwned.Contains(themeId)) { if (room != null) SetTheme(s, room, themeId); said = "You already have the " + t.Name + " theme."; return true; }
             int price = Price(s, t.Price);
             if (!Ledger.Spend(s, price, "the " + t.Name + " theme", Id)) { said = Short(s, "The " + t.Name + " theme", price); return false; }
             var b = Bag(s);
             b.ThemesOwned.Add(themeId);
+            // Ledger.Spend already remembered: putting it on the room here keeps buying and wearing it one undo step.
+            if (room != null) b.Theme[room] = themeId;
             Put(s, b);
             said = "The " + t.Name + " theme is yours, for any room. " + PlayTime.SpendLine(s.Data) + ".";
             return true;
@@ -327,6 +336,15 @@ namespace BusyBunny
             SetTheme(s, "nook", Themes[0].Id);
             Need(ThemeOf(s, "nook")?.Id == Themes[0].Id, "setting a theme");
             Need(Upgrade(s, "nook", out _) && TierOf(s, "nook") == 1 && Upgrade(s, "nook", out _) && !Upgrade(s, "nook", out _), "room tiers");
+            // Buying a theme from a room puts it on in the same step: one Control Z gives the points back and takes it off.
+            if (Themes.Count > 1)
+            {
+                Ledger.Pay(s, 1000, "theme test", "test", remember: true);
+                int before = Ledger.Wallet(s);
+                Need(BuyTheme(s, Themes[1].Id, out _, "tea") && ThemeOf(s, "tea")?.Id == Themes[1].Id, "buying a theme for a room");
+                s.Undo();
+                Need(ThemeOf(s, "tea") == null && Ledger.Wallet(s) == before && !Bag(s).ThemesOwned.Contains(Themes[1].Id), "a theme bought from a room took two Control Z steps");
+            }
             RemoveWish(s, rare.Id);
             Need(Wishes(s).Count == 0, "removing a wish");
             // The bag saves and reads back.

@@ -69,7 +69,7 @@ namespace BusyBunny
             void Try(Action a) { try { a(); } catch (Exception e) { ErrorLog.Write("Games: " + e.GetType().Name + ": " + e.Message); } }
             int basePts = GamesFunKit.BasePoints(s, t);
 
-            // Golden task and combo: one multiplier together, with the ledger's, never past 4 times.
+            // Golden task and combo: one multiplier together, paid through the ledger's per-task ceiling (4 times with every other feature's extras).
             double golden = 1, combo = 1;
             int step = 0;
             Try(() =>
@@ -88,13 +88,16 @@ namespace BusyBunny
             int comboExtra = GamesFunKit.Extra(s, basePts, golden * combo, now) - goldExtra;
             if (golden > 1)
             {
-                var o = Ledger.Pay(s, goldExtra, "Golden task: " + t.Name, GoldenId, t.Id);
+                int room = Ledger.Room(s, t, basePts, now);
+                var o = Ledger.PayExtra(s, t, basePts, goldExtra, "Golden task: " + t.Name, GoldenId);
+                goldExtra = Math.Min(goldExtra, room);
                 said.Add((o, Game.Goals, Celebration.Line(s, "Golden task! " + t.Name + " was the golden one: triple points, " + GamesFunKit.Plural(goldExtra, "extra point") + ". " + Content.Pick(s, "games.golden"))));
                 Celebration.Sound(s, "SurpriseReward");
             }
             if (step > 0)
             {
-                var o = Ledger.Pay(s, comboExtra, "Combo times " + (step + 1), ComboId, t.Id);
+                comboExtra = Math.Max(0, Math.Min(comboExtra, Ledger.Room(s, t, basePts, now)));
+                var o = Ledger.PayExtra(s, t, basePts, comboExtra, "Combo times " + (step + 1), ComboId);
                 said.Add((o, Game.Chatter, "Combo times " + (step + 1) + ": " + step * 10 + " percent extra" + (comboExtra > 0 ? ", " + GamesFunKit.Plural(comboExtra, "point") : "") + ". " + Content.Pick(s, "games.combo")));
             }
 
@@ -173,10 +176,20 @@ namespace BusyBunny
         {
             var g = s.World.Get<Golden>(GoldenId);
             if (g.Day == s.Key(now)) return g;
+            // The roll is kept apart from Control Z (made outside any step): an undo of an earlier change may put back
+            // yesterday's bag, but the same golden task comes back, never a fresh roll.
+            var made = s.World.GetKept<Golden>(GoldenId + ".made");
+            if (made.Day == s.Key(now))
+            {
+                g = new Golden { Day = made.Day, Task = made.Task };
+                GamesFunKit.Put(s, GoldenId, g);
+                return g;
+            }
             var pool = GamesFunKit.Live(s).Where(t => !GamesFunKit.Finished(t) && t.Status != Status.Waiting && !t.IsMeeting && !Store.IsOverdue(t, now) && t.Due?.Date != now.Date).ToList();
             var preferred = pool.Where(t => t.Status is Status.Today or Status.ThisWeek).ToList();
             if (preferred.Count > 0) pool = preferred;
             g = new Golden { Day = s.Key(now), Task = pool.Count == 0 ? null : pool[GamesFunKit.Rng.Next(pool.Count)].Id };
+            s.World.SetKept(GoldenId + ".made", new Golden { Day = g.Day, Task = g.Task });
             GamesFunKit.Put(s, GoldenId, g);
             return g;
         }
@@ -234,6 +247,15 @@ namespace BusyBunny
             var c = s.World.Get<Card>(BingoId);
             string week = GamesFunKit.Key(Engine.WeekStart(now));
             if (c.Week == week && c.Squares.Count == 25) return c;
+            // The card's squares are kept apart from Control Z: an undo of an earlier change brings back this week's same card.
+            var made = s.World.GetKept<Card>(BingoId + ".made");
+            if (made.Week == week && made.Squares.Count == 25)
+            {
+                foreach (var q in made.Squares) q.DoneBy = null;
+                c = new Card { Week = week, Squares = made.Squares };
+                GamesFunKit.Put(s, BingoId, c);
+                return c;
+            }
             var squares = new List<Square>();
             var open = GamesFunKit.Live(s).Where(t => !GamesFunKit.Finished(t) && !t.IsMeeting && t.Status != Status.Waiting)
                 .OrderBy(t => t.Due ?? t.DoDate ?? DateTime.MaxValue).ThenBy(t => t.Priority == 0 ? 99 : t.Priority).ToList();
@@ -253,6 +275,7 @@ namespace BusyBunny
             squares = squares.OrderBy(_ => GamesFunKit.Rng.Next()).ToList();
             squares.Insert(12, new Square { Text = "Free square", Free = true });
             c = new Card { Week = week, Squares = squares };
+            s.World.SetKept(BingoId + ".made", new Card { Week = week, Squares = squares.Select(q => new Square { Text = q.Text, Task = q.Task, Rule = q.Rule, Free = q.Free }).ToList() });
             GamesFunKit.Put(s, BingoId, c);
             return c;
         }
@@ -442,9 +465,22 @@ namespace BusyBunny
             Need(AddHit(store, Make("late"), now.AddHours(3)) == 0, "a long gap kept the combo going");
             // The ledger cap: a golden task under a running 2 times multiplier pays at most 4 times in all.
             Need(GamesFunKit.Extra(store, 10, 3, now) == 20, "golden triple of 10 should add 20");
-            Ledger.AddMultiplier(store, "test.games", 2, DateTime.Now.AddHours(1), "test");
-            Need(GamesFunKit.Extra(store, 10, 3, DateTime.Now) == 20 && GamesFunKit.Extra(store, 10, 3 * 1.5, DateTime.Now) == 20, "golden plus combo went past the 4 times cap");
-            Ledger.RemoveMultiplier(store, "test.games");
+            Need(GamesFunKit.Extra(store, 10, 3 * 1.5, now) == 30 && GamesFunKit.Extra(store, 10, 9, now) == 30, "golden plus combo went past 4 times");
+            // The shared ceiling: with 25 extra points already paid on a base of 10 by other features, golden and combo add only 5 more.
+            {
+                var capped = Make("capped one");
+                capped.Status = Status.Done; capped.DoneAt = DateTime.Now;
+                store.Data.Log.Add(new LogEntry { Kind = "Done", When = DateTime.Now, Points = 10, TaskId = capped.Id, Text = capped.Name });
+                Ledger.CountAsExtra(store, "test.other");
+                store.Data.Log.Add(new LogEntry { Kind = Ledger.FunKind, When = DateTime.Now, Points = 25, TaskId = capped.Id, Feature = "test.other", Text = "test" });
+                store.World.Set(GoldenId, new Golden { Day = store.Key(DateTime.Now), Task = capped.Id });
+                store.World.Set(ComboId, new Combo { Hits = { new Hit { Task = Guid.NewGuid(), When = DateTime.Now.AddMinutes(-5), Step = 2 } } });
+                Done(store, capped, DateTime.Now);
+                int extras = store.Data.Log.Where(e => e.TaskId == capped.Id && e.Feature is GoldenId or ComboId).Sum(e => e.Points);
+                Need(extras == 5, "golden and combo passed the 4 times ceiling for one task: " + extras);
+                Unfinish(capped);
+                store.Data.Log.RemoveAll(e => e.TaskId == capped.Id);
+            }
 
             // Golden: pays triple once, and un-finishing takes it back.
             store.World.Set(ComboId, new Combo());
@@ -465,11 +501,19 @@ namespace BusyBunny
 
             // Bingo: a large task fills two squares; a full row pays once; un-finishing breaks it and takes the prize back.
             store.World.Set(BingoId, new Card());
+            store.World.SetKept(BingoId + ".made", new Card());
             var big = Make("big bingo task", Size.Large);
             var allTasks = store.Data.Tasks;
             store.Data.Tasks = new List<TaskItem> { big };
             var card = CardFor(store, DateTime.Now);
             store.Data.Tasks = allTasks;
+            // An undo that puts back an older bag brings back the same card, not a new roll.
+            store.World.Set(BingoId, new Card());
+            Need(CardFor(store, DateTime.Now).Squares.Select(q => q.Text).SequenceEqual(card.Squares.Select(q => q.Text)), "losing the bag rolled a new bingo card");
+            store.World.Set(GoldenId, new Golden());
+            var rolled = RollGolden(store, DateTime.Now);
+            store.World.Set(GoldenId, new Golden());
+            Need(RollGolden(store, DateTime.Now).Task == rolled.Task, "losing the bag rolled a new golden task");
             Need(card.Squares.Count == 25 && card.Squares[12].Free, "the card is not 5 by 5 with a free center");
             Need(card.Squares.Count(q => q.Task == big.Id) == 2, "a large task did not get two squares");
             Need(SquareName(0) == "B1" && SquareName(12) == "N3" && SquareName(24) == "O5", "square names");
