@@ -1,0 +1,41 @@
+Time is up. {task} is done, and done is done.
+
+That is enough polishing. {task} is good as it is.
+
+Polish timer over. {task} is ready. Let it go out into the world.
+
+Time. {task} is finished, and it is good.
+
+The polish timer rang. {task} is shiny enough.
+
+Done is done. {task} does not need another pass.
+
+That is it for {task}. Good enough is truly good here.
+
+Time is up on {task}. Any more would just be worry wearing a polishing cloth.
+
+{name} says {task} looks great. Step away from it.
+
+Polishing over. {task} is complete. You can rest that part of your brain.
+
+{task} is done. More polishing would not change much, and you know it.
+
+The timer says stop, and so does {name}. {task} is ready.
+
+Finished. {task} is better than you think it is.
+
+Time is up. Hand {task} in, or put it away. Either way, it is done.
+
+That is the end of the polishing for {task}. Well done.
+
+{task} is good. The urge to fiddle more is not a sign it needs it.
+
+Done means done. {task} can go now.
+
+The polish timer is up. {task} has had all the care it needs.
+
+{task} is finished. Let it be finished.
+
+Enough. {task} is done, and you did it well.
+
+Time to let {task} go. It is ready.

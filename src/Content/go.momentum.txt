@@ -1,0 +1,41 @@
+Three in a row. While you are rolling, one more quick win: {task}.
+
+You are on a streak of three. One tiny extra, if you want it: {task}.
+
+Momentum looks good on you. One more quick one: {task}. Or stop, that is fine too.
+
+Three done back to back. Want one more easy one? {task}.
+
+{name} is bouncing. Three in a row! One quick win to keep it going: {task}.
+
+That is three. If you have one more in you, {task} is a quick one.
+
+Hot streak. One more small win is right there: {task}.
+
+Three finished in a row. Ride the wave with {task}, or take a bow.
+
+You are flying. One more quick win, just one: {task}.
+
+Three down. {task} is tiny, if you feel like a fourth.
+
+Nice run of three. One last easy one, only if you want: {task}.
+
+The engine is warm. {task} would take hardly a minute.
+
+Three in a row, look at you. One more quick win: {task}.
+
+You have rhythm right now. {task} fits right into it.
+
+That is a hat trick. A bonus round, if you like: {task}.
+
+Three tasks, no pause. One more small one is waiting: {task}.
+
+{name} counts on its paws: one, two, three. Maybe four? {task}.
+
+Rolling along nicely. One more quick win while it is easy: {task}.
+
+Three in a row is worth a grin. One more if you want: {task}.
+
+Momentum alert. {task} is quick, and then you can rest.
+
+Three done. One more tiny thing and you can call it a streak: {task}.

@@ -1,0 +1,41 @@
+The morning dice rolled {list}. Its tasks earn double today.
+
+Clatter, clatter, the dice land on {list}. Double points there until midnight.
+
+{name} rolls the dice with both front paws. {list} wins: double points today.
+
+Today's lucky list is {list}. Everything finished there counts twice.
+
+The dice tumble across the table and stop on {list}. Double points all day.
+
+Dice roll: {list}. Its tasks are worth double today.
+
+The dice have spoken, and they said {list}. Double points until bedtime.
+
+{name} blows on the dice for luck. They pick {list}: double today.
+
+A soft rattle and a click. {list} is today's double-points list.
+
+The dice like {list} today. Its tasks earn twice the points.
+
+Roll of the day: {list}. Every task there pays double.
+
+The dice bounce off the wall and land on {list}. Lucky you, double points.
+
+{name} peeks at the dice and squeaks. {list} earns double today.
+
+Today the dice favor {list}. Finish something there for twice the points.
+
+Tumble, tumble, stop. {list}, double points, all day long.
+
+The dice picked {list} this morning. Its tasks count double.
+
+Good morning from the dice: {list} pays double today.
+
+{list} won the morning roll. Double points there until midnight.
+
+The dice rattle in their cup and choose {list}. Two times the points today.
+
+A lucky roll for {list}. Its tasks earn double today.
+
+The dice say {list}, and the dice are never wrong. Double points today.

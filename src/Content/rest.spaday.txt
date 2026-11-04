@@ -1,0 +1,109 @@
+name: The warm towel room
+touch: A heavy towel, warm from the rack, settles over your shoulders like a hug.
+sound: Water trickles somewhere nearby, slow and steady.
+looks: Soft lamps glow amber against wooden walls.
+
+name: The foot soak
+touch: Your feet slide into warm water with smooth pebbles at the bottom.
+sound: {name} hums quietly while stirring in a little lavender.
+looks: Steam curls up from a wide copper bowl.
+
+name: The cozy robe
+touch: A thick, fluffy robe, so soft it feels like wearing a cloud.
+sound: The robe makes a gentle whisper every time you move.
+looks: It is the color of fresh cream, with a carrot stitched on the pocket.
+
+name: The cucumber nap
+touch: Two cool cucumber slices rest on your closed eyes.
+sound: {name} turns the music down until it is barely there.
+looks: The room is dim and green, like the shade under a tree.
+
+name: The hot stone bench
+touch: Smooth stones under your back, warm all the way through.
+sound: Rain taps on the roof, soft and far away.
+looks: The stones are dark and glossy, lined up in a neat row.
+
+name: The bubble bath
+touch: Warm water up to your chin, bubbles tickling your nose.
+sound: Tiny pops as the bubbles burst one by one.
+looks: A mountain of white foam with {name} peeking over the edge.
+
+name: The hand massage
+touch: {name} kneads your palms with tiny, careful paws.
+sound: A slow piano tune drifts from the next room.
+looks: A small dish of almond oil glints in the light.
+
+name: The steam room
+touch: Warm, damp air wraps around you, loosening every muscle.
+sound: A soft hiss as more steam rolls in.
+looks: Everything is hazy and white and calm.
+
+name: The tea corner
+touch: A warm cup of chamomile, the handle just the right size for your fingers.
+sound: The kettle sighs as it cools down.
+looks: A little tray holds honey, lemon and a single cookie.
+
+name: The blanket nest
+touch: Three blankets, each one softer than the last, piled around you.
+sound: {name} settles in next to you with a happy little huff.
+looks: Pillows everywhere, in every shade of blue.
+
+name: The face mask
+touch: A cool, smooth mask spread gently over your cheeks.
+sound: {name} whispers that you are not allowed to make it crack by laughing.
+looks: You and {name} both look like very calm green ghosts.
+
+name: The shoulder wrap
+touch: A warm rice pillow drapes across your neck, heavy and soothing.
+sound: The rice shifts with a quiet, sandy sound.
+looks: The pillow is covered in a pattern of tiny carrots.
+
+name: The rain window
+touch: You curl up on a padded window seat, knees tucked under a blanket.
+sound: Rain runs down the glass in soft streams.
+looks: Grey sky outside, warm golden light inside.
+
+name: The herb garden bath
+touch: Warm water with mint leaves floating past your fingers.
+sound: Birds chatter softly in the garden outside.
+looks: Pots of herbs line the window ledge, bright and green.
+
+name: The slipper station
+touch: Fuzzy slippers, pre-warmed, slip right onto your feet.
+sound: {name} gives a tiny cheer when they fit.
+looks: A row of slippers in every size, from bunny to human.
+
+name: The scalp rub
+touch: Slow, gentle circles at your temples and the back of your head.
+sound: The quiet tick of a clock you can barely hear.
+looks: The room is lit by a single candle.
+
+name: The quiet pool
+touch: Warm water holds you up as you float on your back.
+sound: Your ears are under the water, so everything is muffled and far away.
+looks: The ceiling is painted with soft, sleepy stars.
+
+name: The lotion and socks
+touch: Thick lotion on your feet, then warm wool socks over the top.
+sound: {name} pats the socks twice, very satisfied.
+looks: The socks are striped, mismatched on purpose.
+
+name: The sauna bench
+touch: Dry, gentle warmth soaks into your back and arms.
+sound: The wood creaks softly as it warms up.
+looks: Golden cedar boards, smooth from years of use.
+
+name: The nap pod
+touch: A soft mattress that curves around you, with a weighted blanket on top.
+sound: A low, steady hum, like a fan on a summer night.
+looks: A curved hood dims the light down to almost nothing.
+
+name: The garden hammock
+touch: Netting sways under you, and a breeze lifts your hair.
+sound: Leaves rustle overhead, and {name} snores very quietly.
+looks: Dappled sunlight moves across your blanket.
+
+name: The orange peel
+touch: You peel a ripe orange, slowly, and the skin comes off in one piece.
+sound: The peel tears with a soft, juicy sound.
+looks: Bright orange against a plain white plate.
